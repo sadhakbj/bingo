@@ -40,7 +40,7 @@ class UsersController
         #[Query('limit')] ?int $limit = 10,
         #[Query('page')] ?int $page = 1
     ): Response {
-        // Showcase NestJS-style query parameters
+        // Query parameters with type conversion
         return Response::json([
             'message' => 'Search users',
             'query' => $query,
@@ -53,7 +53,7 @@ class UsersController
     #[Get('/debug')]
     public function debug(#[ReqAttr] Request $request): Response
     {
-        // 🔥 Full request debugging (like NestJS @Req())
+        // Full request object access
         return Response::json([
             'headers' => $request->headers->all(),
             'query' => $request->query->all(),
@@ -100,7 +100,7 @@ class UsersController
         #[Headers('x-api-version')] ?string $apiVersion = null,
         #[UploadedFile('avatar')] ?File $avatar = null
     ): Response {
-        // 🔥 Like NestJS @Body() @Req() @Headers() @UploadedFile()
+        // Multiple parameter sources: body, headers, files
         return Response::json([
             'api_version' => $apiVersion,
             'avatar_info' => $avatar ? [
@@ -127,7 +127,7 @@ class UsersController
         #[Headers('x-api-version')] ?string $apiVersion = null,
         #[UploadedFiles] array $files = [] // array<string, UploadedFile> - PHP doesn't support generics yet
     ): Response {
-        // 🔥 Like NestJS @UploadedFiles() - handle multiple files
+        // Handle multiple file uploads
         $fileInfos = [];
         /** @var UploadedFile $file */
         foreach ($files as $key => $file) {

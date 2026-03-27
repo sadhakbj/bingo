@@ -73,7 +73,7 @@ class Application
     }
 
     /**
-     * Express.js style use() method to add middleware
+     * Intuitive use() method to add middleware
      */
     public function use($middleware): self
     {
@@ -180,7 +180,7 @@ class Application
     }
 
     /**
-     * Express.js style application factory
+     * Application factory method
      */
     public static function create(array $config = []): self
     {

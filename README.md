@@ -1,5 +1,5 @@
 
-# Attribute Framework
+# Bingo
 
 A high-performance PHP 8.5+ framework designed for **API-first development** and **microservices**. Features clean attribute-based routing, powerful middleware system, and zero-configuration setup using the best Symfony packages.
 
@@ -51,8 +51,8 @@ class UsersController {
 ### Installation
 
 ```bash
-git clone <repository>
-cd php-attribute-framework
+git clone https://github.com/sadhakbj/bingo.git
+cd bingo
 composer install
 cp .env.example .env  # Configure your environment
 ```
@@ -240,7 +240,7 @@ CACHE_DRIVER=file
 $debug = $_ENV['APP_DEBUG'] ?? false;
 ```
 
-### 🏷️ NestJS-Style Attribute Routing
+### 🏷️ Attribute-Based Routing
 Define routes directly on methods using PHP 8 attributes:
 
 ```php
@@ -499,7 +499,7 @@ Purpose-built for modern microservices and APIs:
 
 ## 🔧 Application API
 
-The framework provides an Express.js-inspired API with Laravel-style architecture:
+Bingo provides an intuitive API with clean architecture:
 
 ### Application Setup
 ```php
@@ -684,19 +684,19 @@ Response::redirect($url, $status = 302)  // Redirect response
 
 ---
 
-## 🎯 Framework Comparison
+## 🎯 Bingo Framework Features
 
-| Feature | Laravel | Express.js | NestJS | This Framework |
-|---------|---------|------------|--------|----------------|
-| Route Attributes | ❌ | ❌ | ✅ | ✅ |
-| Parameter Binding | ❌ | ❌ | ✅ | ✅ |
-| Middleware Pipeline | ✅ | ✅ | ✅ | ✅ |
-| Express.js-style API | ❌ | ✅ | ❌ | ✅ |
-| DTOs Built-in | ❌ | ❌ | ✅ | ✅ |
-| Eloquent ORM | ✅ | ❌ | ❌ | ✅ |
-| Type Safety | Partial | ❌ | ✅ | ✅ |
-| Environment Loading | ✅ | Manual | Manual | ✅ |
-| API-First Design | Partial | ✅ | ✅ | ✅ |
+| Feature | Description | Status |
+|---------|-------------|--------|
+| Route Attributes | Clean `#[Get]`, `#[Post]` method decorators | ✅ |
+| Parameter Binding | Auto-extract `#[Body]`, `#[Query]`, `#[Param]` | ✅ |
+| Middleware Pipeline | Chainable `app.use()` middleware system | ✅ |
+| DTOs Built-in | Type-safe data transfer objects | ✅ |
+| Eloquent ORM | Laravel's powerful database ORM | ✅ |
+| Type Safety | End-to-end PHP 8.5+ type checking | ✅ |
+| Environment Loading | Automatic `.env` configuration | ✅ |
+| API-First Design | Optimized for microservices and APIs | ✅ |
+| Zero Configuration | Works out of the box | ✅ |
 
 **Modern advantage**: Combines attribute-based routing, powerful middleware, and mature PHP ecosystem.
 
@@ -773,8 +773,8 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ### Development Setup
 ```bash
-git clone <repository>
-cd php-attribute-framework
+git clone https://github.com/sadhakbj/bingo.git
+cd bingo
 composer install
 php -S localhost:8000 -t public
 ```
@@ -794,7 +794,7 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Made with ❤️ for developers who love clean architecture**
+**Made with ❤️ for developers who love clean, modern PHP**
 
 [Documentation](docs/) • [Examples](examples/) • [Contributing](CONTRIBUTING.md)
 

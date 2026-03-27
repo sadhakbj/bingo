@@ -1,6 +1,6 @@
 {
-    "name": "kilo/php-attribute-framework",
-    "description": "A modern NestJS-inspired PHP framework using PHP 8.3+ attributes for clean, type-safe APIs",
+    "name": "sadhakbj/bingo",
+    "description": "Bingo - A high-performance PHP 8.5+ framework for API-first development with attribute-based routing and powerful middleware",
     "type": "project",
     "license": "MIT",
     "autoload": {
@@ -11,8 +11,8 @@
     },
     "authors": [
         {
-            "name": "Kilo",
-            "email": "kilo@example.com"
+            "name": "Bijaya Prasad Kuikel",
+            "email": "sadhakbj@gmail.com"
         }
     ],
     "require": {
