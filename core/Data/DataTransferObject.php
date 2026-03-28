@@ -62,7 +62,7 @@ abstract class DataTransferObject
             
             if (array_key_exists($propertyName, $data)) {
                 $value = $data[$propertyName];
-                
+
                 // Handle type casting based on property type
                 if ($property->hasType()) {
                     $type = $property->getType();
@@ -74,8 +74,10 @@ abstract class DataTransferObject
                         }
                     }
                 }
-                
+
                 $property->setValue($this, $value);
+            } elseif ($property->hasType() && $property->getType()->allowsNull()) {
+                $property->setValue($this, null);
             }
         }
     }

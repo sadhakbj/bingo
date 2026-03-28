@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Table(name: 'users')]
-#[Fillable(columns: ['name', 'email', 'password'])]
+#[Fillable(columns: ['name', 'email', 'password', 'age', 'bio'])]
 #[Hidden(columns: ['password'])]
 class User extends Model
 {

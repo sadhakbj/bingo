@@ -8,7 +8,7 @@ use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\LogMiddleware;
 use App\Models\User;
 use Core\Attributes\Middleware;
-use Core\Attributes\Route;
+use Core\Attributes\Route\Route;
 use Core\Http\Request;
 use Core\Http\Response;
 

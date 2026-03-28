@@ -7,8 +7,8 @@ namespace Tests\Stubs\Controllers;
 use Core\Attributes\ApiController;
 use Core\Attributes\Get;
 use Core\Attributes\Post;
-use Core\Attributes\Param;
-use Core\Attributes\Query;
+use Core\Attributes\Route\Param;
+use Core\Attributes\Route\Query;
 use Core\Http\Response;
 
 #[ApiController('/stub')]

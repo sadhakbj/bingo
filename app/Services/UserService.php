@@ -15,14 +15,12 @@ class UserService
     public function createUser(CreateUserDTO $dto): ApiResponse
     {
         try {
-            // DTO is already validated - just like NestJS!
-            // No need to extract data, use DTO directly
             $this->validateBusinessRules($dto);
-            
+
             $user = $this->persistUser($dto);
-            
-            $userDTO = UserDTO::from((array) $user);
-            
+
+            $userDTO = UserDTO::fromModel($user->load('posts'));
+
             return ApiResponse::success(
                 data: $userDTO,
                 message: 'User created successfully',
@@ -31,7 +29,7 @@ class UserService
                     'user_metadata' => $userDTO->getMetadata()
                 ]
             );
-            
+
         } catch (Exception $e) {
             return ApiResponse::error(
                 message: 'Failed to create user: ' . $e->getMessage(),
@@ -42,66 +40,41 @@ class UserService
 
     private function validateBusinessRules(CreateUserDTO $dto): void
     {
-        // Example business logic validation
         if ($this->emailExists($dto->email)) {
             throw new Exception('Email already exists');
         }
-
-        if ($dto->age && $dto->age < 13) {
-            throw new Exception('Users must be at least 13 years old');
-        }
-
-        // More business rules...
     }
 
     private function emailExists(string $email): bool
     {
-        // Check if email exists in database
-        // This would use your database layer
-        return false; // Placeholder
+        return User::where('email', $email)->exists();
     }
 
-    private function persistUser(CreateUserDTO $dto): object
+    private function persistUser(CreateUserDTO $dto): User
     {
-        // Convert DTO to model for persistence
-        // In a real implementation, this would use your ORM/database layer
-        
-        // For demo, simulate saved user with ID
-        $userData = $dto->toArray();
-        $userData['id'] = rand(1, 1000);
-        $userData['created_at'] = date('Y-m-d H:i:s');
-        $userData['updated_at'] = date('Y-m-d H:i:s');
-        $userData['posts'] = [];
-        
-        return (object) $userData; // Simulate model
+        return User::create([
+            'name'  => $dto->name,
+            'email' => $dto->email,
+            'age'   => $dto->age ?? null,
+            'bio'   => $dto->bio ?? null,
+        ]);
     }
 
     public function getUserById(int $id): ApiResponse
     {
-        try {
-            // Simulate database fetch
-            $userData = [
-                'id' => $id,
-                'email' => 'user@example.com',
-                'name' => 'John Doe',
-                'age' => 25,
-                'bio' => 'Software developer',
-                'created_at' => '2024-01-01 12:00:00',
-                'updated_at' => '2024-01-01 12:00:00',
-                'posts' => []
-            ];
+        $user = User::with('posts')->find($id);
 
-            $userDTO = UserDTO::from($userData);
-            
-            return ApiResponse::success(
-                data: $userDTO,
-                meta: [
-                    'user_metadata' => $userDTO->getMetadata()
-                ]
-            );
-            
-        } catch (Exception $e) {
+        if (!$user) {
             return ApiResponse::notFound('User not found');
         }
+
+        $userDTO = UserDTO::fromModel($user);
+
+        return ApiResponse::success(
+            data: $userDTO,
+            meta: [
+                'user_metadata' => $userDTO->getMetadata()
+            ]
+        );
     }
 }

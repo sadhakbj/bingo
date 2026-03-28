@@ -5,7 +5,14 @@ declare(strict_types=1);
 namespace Core\Router;
 
 use Core\Attributes\Middleware;
-use Core\Attributes\Route;
+use Core\Attributes\Route\Body;
+use Core\Attributes\Route\Headers;
+use Core\Attributes\Route\Param;
+use Core\Attributes\Route\Query;
+use Core\Attributes\Route\Request as RequestAttr;
+use Core\Attributes\Route\Route;
+use Core\Attributes\Route\UploadedFile;
+use Core\Attributes\Route\UploadedFiles;
 use Core\Http\Middleware\MiddlewarePipeline;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -199,7 +206,7 @@ class Router
                 $instance = $attr->newInstance();
                 
                 // #[Body] - Extract DTO from request body
-                if ($instance instanceof \Core\Attributes\Body) {
+                if ($instance instanceof Body) {
                     $handled = true;
                     $type = $param->getType();
                     if ($type && $type instanceof \ReflectionNamedType) {
@@ -219,7 +226,7 @@ class Router
                 }
                 
                 // #[Query] - Extract query parameter
-                if ($instance instanceof \Core\Attributes\Query) {
+                if ($instance instanceof Query) {
                     $handled = true;
                     $key = $instance->key ?? $param->getName();
                     $value = $req->query->get($key);
@@ -240,7 +247,7 @@ class Router
                 }
                 
                 // #[Param] - Extract route parameter
-                if ($instance instanceof \Core\Attributes\Param) {
+                if ($instance instanceof Param) {
                     $handled = true;
                     $value = $parameters[$instance->key] ?? null;
                     
@@ -258,7 +265,7 @@ class Router
                 }
                 
                 // #[Headers] - Extract header value
-                if ($instance instanceof \Core\Attributes\Headers) {
+                if ($instance instanceof Headers) {
                     $handled = true;
                     $key = $instance->key ?? $param->getName();
                     $value = $req->headers->get($key);
@@ -266,7 +273,7 @@ class Router
                 }
                 
                 // #[UploadedFile] - Extract single uploaded file
-                if ($instance instanceof \Core\Attributes\UploadedFile) {
+                if ($instance instanceof UploadedFile) {
                     $handled = true;
                     $key = $instance->key ?? $param->getName();
                     $value = $req->files->get($key);
@@ -274,14 +281,14 @@ class Router
                 }
                 
                 // #[UploadedFiles] - Extract all uploaded files
-                if ($instance instanceof \Core\Attributes\UploadedFiles) {
+                if ($instance instanceof UploadedFiles) {
                     $handled = true;
                     $value = $req->files->all();
                     break;
                 }
                 
                 // #[Request] - Inject request object
-                if ($instance instanceof \Core\Attributes\Request) {
+                if ($instance instanceof RequestAttr) {
                     $handled = true;
                     $value = $req;
                     break;
