@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Core\Http\Middleware;
 
+use Core\Contracts\MiddlewareInterface;
 use Core\Http\Request;
 use Core\Http\Response;
 
-class CorsMiddleware
+class CorsMiddleware implements MiddlewareInterface
 {
     private array $config;
     
@@ -23,7 +24,7 @@ class CorsMiddleware
         ], $config);
     }
 
-    public function handle(Request $request, ?callable $next = null): Response
+    public function handle(Request $request, callable $next): Response
     {
         $origin = $request->headers->get('Origin');
         

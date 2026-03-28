@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Core\Http\Middleware;
 
+use Core\Contracts\MiddlewareInterface;
 use Core\Http\Request;
 use Core\Http\Response;
 
-class RequestIdMiddleware
+class RequestIdMiddleware implements MiddlewareInterface
 {
     private array $config;
     
@@ -20,7 +21,7 @@ class RequestIdMiddleware
         ], $config);
     }
 
-    public function handle(Request $request, ?callable $next = null): Response
+    public function handle(Request $request, callable $next): Response
     {
         // Check if request already has an ID
         $requestId = $request->headers->get($this->config['header_name']);

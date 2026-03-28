@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Core\Http\Middleware;
 
+use Core\Contracts\MiddlewareInterface;
 use Core\Http\Request;
 use Core\Http\Response;
 
-class SecurityHeadersMiddleware
+class SecurityHeadersMiddleware implements MiddlewareInterface
 {
     private array $config;
     
@@ -28,7 +29,7 @@ class SecurityHeadersMiddleware
         ], $config);
     }
 
-    public function handle(Request $request, ?callable $next = null): Response
+    public function handle(Request $request, callable $next): Response
     {
         $response = $next ? $next($request) : Response::json(['message' => 'OK']);
         

@@ -159,13 +159,15 @@ class RouterTest extends TestCase
     // Plain (non-API) controller
     // -------------------------------------------------------------------------
 
-    public function test_dispatch_plain_controller_returns_string(): void
+    public function test_dispatch_plain_controller_returns_response(): void
     {
         $this->router->registerController(StubPlainController::class);
         $request = $this->makeRequest('/plain', 'GET');
 
         $result = $this->router->dispatch($request);
 
-        $this->assertSame('plain response', $result);
+        // Plain string returns are wrapped in a Response by the finalHandler
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertSame('plain response', $result->getContent());
     }
 }

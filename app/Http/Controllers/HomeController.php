@@ -16,7 +16,7 @@ class HomeController
 {
     #[Route('/', 'GET')]
     #[Middleware([LogMiddleware::class])]
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $users = User::query()->get();
         return Response::json($users);
@@ -24,14 +24,14 @@ class HomeController
 
     #[Route('/about', 'GET')]
     #[Middleware([LogMiddleware::class, AuthMiddleware::class])]
-    public function about()
+    public function about(): string
     {
         return "About us page";
     }
 
     #[Route('/contact', 'POST')]
     #[Middleware([LogMiddleware::class])]
-    public function contact()
+    public function contact(): string
     {
         return "Contact form submitted";
     }

@@ -6,7 +6,9 @@ namespace Core\Router;
 
 use Core\Attributes\Middleware;
 use Core\Attributes\Route;
+use Core\Http\Middleware\MiddlewarePipeline;
 use Core\Http\Request;
+use Core\Http\Response;
 use ReflectionClass;
 use ReflectionMethod;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
@@ -39,26 +41,30 @@ class Router
             $this->apiControllerPrefixes[] = $prefix;
         }
 
+        // Collect class-level middleware — applies to every route in this controller
+        $classMiddlewares = [];
+        foreach ($reflectionClass->getAttributes(Middleware::class) as $attr) {
+            $classMiddlewares = array_merge($classMiddlewares, $attr->newInstance()->middlewares);
+        }
+
         foreach ($methods as $method) {
             // Get all attributes for the method
             $allAttributes = $method->getAttributes();
             $routeAttributes = [];
-            $middlewareAttributes = [];
+            $methodMiddlewares = [];
             foreach ($allAttributes as $attr) {
                 $instance = $attr->newInstance();
                 if ($instance instanceof Route) {
                     $routeAttributes[] = $instance;
                 }
                 if ($instance instanceof Middleware) {
-                    $middlewareAttributes[] = $instance;
+                    $methodMiddlewares = array_merge($methodMiddlewares, $instance->middlewares);
                 }
             }
 
             foreach ($routeAttributes as $route) {
-                $middlewares = [];
-                foreach ($middlewareAttributes as $middlewareInstance) {
-                    $middlewares = array_merge($middlewares, $middlewareInstance->middlewares);
-                }
+                // Class-level middleware runs first (outer), method-level runs second (inner)
+                $middlewares = array_merge($classMiddlewares, $methodMiddlewares);
 
                 $routeName = $controllerClass . '@' . $method->getName();
                 $this->middlewares[$routeName] = $middlewares;
@@ -174,24 +180,17 @@ class Router
         $routeName = $parameters['_route_name'];
         unset($parameters['_controller'], $parameters['_action'], $parameters['_route_name'], $parameters['_route']);
 
-        foreach ($this->middlewares[$routeName] ?? [] as $middleware) {
-            $middlewareInstance = new $middleware();
-            if (method_exists($middlewareInstance, 'handle')) {
-                $result = $middlewareInstance->handle();
-                if ($result === false) {
-                    if ($isApiController) {
-                        return \Core\Http\Response::json(['error' => 'Forbidden'], 403);
-                    }
-                    return "403 - Access Denied";
-                }
-            }
-        }
+        $routeMiddlewares = $this->middlewares[$routeName] ?? [];
+        $controller       = new $controllerClass();
+        $reflection       = new \ReflectionMethod($controller, $action);
 
-        $controller = new $controllerClass();
-        $reflection = new \ReflectionMethod($controller, $action);
-        $args = [];
-        
-        foreach ($reflection->getParameters() as $param) {
+        // Build the final handler: resolve args then invoke the controller method
+        $finalHandler = function (Request $req) use (
+            $controller, $reflection, $parameters, $isApiController
+        ) {
+            $args = [];
+
+            foreach ($reflection->getParameters() as $param) {
             $value = null;
             $handled = false;
             
@@ -207,7 +206,7 @@ class Router
                         $dtoClass = $type->getName();
                         if (is_subclass_of($dtoClass, \Core\Data\DataTransferObject::class)) {
                             try {
-                                $value = $dtoClass::fromRequest($request);
+                                $value = $dtoClass::fromRequest($req);
                             } catch (\Core\Validation\ValidationException $e) {
                                 if ($isApiController) {
                                     return \Core\Http\Response::json(['errors' => $e->errors], 422);
@@ -223,7 +222,7 @@ class Router
                 if ($instance instanceof \Core\Attributes\Query) {
                     $handled = true;
                     $key = $instance->key ?? $param->getName();
-                    $value = $request->query->get($key);
+                    $value = $req->query->get($key);
                     
                     // Type cast if needed
                     $type = $param->getType();
@@ -262,7 +261,7 @@ class Router
                 if ($instance instanceof \Core\Attributes\Headers) {
                     $handled = true;
                     $key = $instance->key ?? $param->getName();
-                    $value = $request->headers->get($key);
+                    $value = $req->headers->get($key);
                     break;
                 }
                 
@@ -270,21 +269,21 @@ class Router
                 if ($instance instanceof \Core\Attributes\UploadedFile) {
                     $handled = true;
                     $key = $instance->key ?? $param->getName();
-                    $value = $request->files->get($key);
+                    $value = $req->files->get($key);
                     break;
                 }
                 
                 // #[UploadedFiles] - Extract all uploaded files
                 if ($instance instanceof \Core\Attributes\UploadedFiles) {
                     $handled = true;
-                    $value = $request->files->all();
+                    $value = $req->files->all();
                     break;
                 }
                 
                 // #[Request] - Inject request object
                 if ($instance instanceof \Core\Attributes\Request) {
                     $handled = true;
-                    $value = $request;
+                    $value = $req;
                     break;
                 }
             }
@@ -295,10 +294,10 @@ class Router
                 if ($type && $type instanceof \ReflectionNamedType) {
                     $typeName = $type->getName();
                     if ($typeName === Request::class) {
-                        $value = $request;
+                        $value = $req;
                     } elseif (is_subclass_of($typeName, \Core\Validation\ValidatedRequest::class)) {
                         try {
-                            $value = $typeName::createFromRequest($request);
+                            $value = $typeName::createFromRequest($req);
                         } catch (\Core\Validation\ValidationException $e) {
                             if ($isApiController) {
                                 return \Core\Http\Response::json(['errors' => $e->errors], 422);
@@ -313,28 +312,30 @@ class Router
                 }
             }
             
-            $args[] = $value;
-        }
-
-        try {
-            $result = $reflection->invokeArgs($controller, $args);
-        } catch (\Throwable $e) {
-            if ($isApiController) {
-                return \Core\Http\Response::json([
-                    'error' => 'Internal Server Error', 
-                    'message' => $e->getMessage(),
-                    'file' => basename($e->getFile()),
-                    'line' => $e->getLine(),
-                    'trace' => explode("\n", $e->getTraceAsString())
-                ], 500);
+                $args[] = $value;
             }
-            return "500 - Internal Server Error: " . $e->getMessage();
+
+            $result = $reflection->invokeArgs($controller, $args);
+
+            // Enforce explicit Response return for ApiController
+            if ($isApiController && !$result instanceof Response) {
+                throw new \RuntimeException(
+                    'ApiController methods must return a Response object. Use Response::json().'
+                );
+            }
+
+            return $result instanceof Response ? $result : new Response((string) $result);
+        };
+
+        // Run route-level middleware through a proper $next pipeline
+        if (!empty($routeMiddlewares)) {
+            $pipeline = MiddlewarePipeline::create();
+            foreach ($routeMiddlewares as $middlewareClass) {
+                $pipeline->add(new $middlewareClass());
+            }
+            return $pipeline->process($request, $finalHandler);
         }
 
-        // Enforce explicit Response return for ApiController
-        if ($isApiController && !$result instanceof \Core\Http\Response) {
-            throw new \RuntimeException('ApiController methods must return a Response object. Use Response::json().');
-        }
-        return $result;
+        return $finalHandler($request);
     }
 }

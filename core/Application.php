@@ -23,10 +23,10 @@ class Application
     {
         // Determine base path (where composer.json is located)
         $this->basePath = $this->findBasePath();
-        
+
         // Load environment variables automatically
         $this->loadEnvironmentVariables();
-        
+
         $this->config = array_merge([
             'environment' => $_ENV['APP_ENV'] ?? 'development',
             'default_middleware' => true,
@@ -34,7 +34,7 @@ class Application
 
         $this->router = new Router();
         $this->pipeline = MiddlewarePipeline::create();
-        
+
         if ($this->config['default_middleware']) {
             $this->setDefaultMiddleware();
         }
@@ -59,19 +59,19 @@ class Application
     private function findBasePath(): string
     {
         $currentDir = __DIR__;
-        
+
         // Walk up directories until we find composer.json
         while (!file_exists($currentDir . '/composer.json')) {
             $parentDir = dirname($currentDir);
-            
+
             // Prevent infinite loop
             if ($parentDir === $currentDir) {
                 return dirname(__DIR__); // Fallback to framework parent dir
             }
-            
+
             $currentDir = $parentDir;
         }
-        
+
         return $currentDir;
     }
 
@@ -121,7 +121,7 @@ class Application
                 return $response;
             });
         } catch (\Throwable $e) {
-            return (new ExceptionHandler($this->isDebug()))->handle($e);
+            return new ExceptionHandler($this->isDebug())->handle($e);
         }
     }
 
@@ -208,7 +208,7 @@ class Application
     public static function development(array $config = []): self
     {
         return new self(array_merge([
-            'environment' => 'development', 
+            'environment' => 'development',
             'default_middleware' => true,
         ], $config));
     }
@@ -258,6 +258,12 @@ class Application
      */
     public function isDebug(): bool
     {
-        return $this->env('APP_DEBUG', false) === 'true';
+        $value = $this->env('APP_DEBUG', false);
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return in_array(strtolower((string) $value), ['true', '1', 'yes'], strict: true);
     }
 }

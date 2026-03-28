@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Core\Http\Middleware;
 
+use Core\Contracts\MiddlewareInterface;
 use Core\Http\Request;
 use Core\Http\Response;
 
-class RateLimitMiddleware
+class RateLimitMiddleware implements MiddlewareInterface
 {
     private array $config;
     private static array $storage = []; // Simple in-memory storage for demo
@@ -23,7 +24,7 @@ class RateLimitMiddleware
         ], $config);
     }
 
-    public function handle(Request $request, ?callable $next = null): Response
+    public function handle(Request $request, callable $next): Response
     {
         $key = $this->generateKey($request);
         $window = $this->getCurrentWindow();

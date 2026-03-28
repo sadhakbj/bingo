@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Core\Http\Middleware;
 
+use Core\Contracts\MiddlewareInterface;
 use Core\Http\Request;
 use Core\Http\Response;
 use JsonException;
 
-class BodyParserMiddleware
+class BodyParserMiddleware implements MiddlewareInterface
 {
     private array $config;
-    
+
     public function __construct(array $config = [])
     {
         $this->config = array_merge([
@@ -37,11 +38,11 @@ class BodyParserMiddleware
         ], $config);
     }
 
-    public function handle(Request $request, ?callable $next = null): Response
+    public function handle(Request $request, callable $next): Response
     {
         try {
             $this->parseBody($request);
-            return $next ? $next($request) : Response::json(['message' => 'OK']);
+            return $next($request);
         } catch (\Exception $e) {
             return Response::json([
                 'error' => 'Body parsing failed',
@@ -50,21 +51,24 @@ class BodyParserMiddleware
         }
     }
 
+    /**
+     * @throws \Exception
+     */
     private function parseBody(Request $request): void
     {
-        $contentType = $request->headers->get('Content-Type', '');
-        $contentLength = $request->headers->get('Content-Length', 0);
-        
+        $contentType   = $request->headers->get('Content-Type', '') ?? '';
+        $contentLength = (int) ($request->headers->get('Content-Length') ?? 0);
+
         // Check content length limits
         $this->validateContentLength($contentLength);
-        
+
         // Get raw body content
         $body = $request->getContent();
-        
+
         if (empty($body)) {
             return; // No body to parse
         }
-        
+
         // Parse based on content type
         if ($this->isJsonRequest($contentType)) {
             $this->parseJsonBody($request, $body);
@@ -84,7 +88,7 @@ class BodyParserMiddleware
     private function validateContentLength(int $contentLength): void
     {
         $maxSize = $this->parseSize($this->config['json']['limit']);
-        
+
         if ($contentLength > $maxSize) {
             throw new \Exception("Request body too large. Maximum size is {$this->config['json']['limit']}");
         }
@@ -98,20 +102,20 @@ class BodyParserMiddleware
 
         try {
             $data = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
-            
+
             if ($this->config['json']['strict'] && !is_array($data)) {
                 throw new JsonException('JSON body must be an object or array');
             }
-            
+
             // Store parsed JSON data in request
             $request->attributes->set('_parsed_body', $data);
             $request->attributes->set('_body_type', 'json');
-            
+
             // Also merge into request data for compatibility
             if (is_array($data)) {
                 $request->request->replace($data);
             }
-            
+
         } catch (JsonException $e) {
             throw new \Exception('Invalid JSON: ' . $e->getMessage());
         }
@@ -120,10 +124,10 @@ class BodyParserMiddleware
     private function parseUrlEncodedBody(Request $request, string $body): void
     {
         parse_str($body, $data);
-        
+
         $request->attributes->set('_parsed_body', $data);
         $request->attributes->set('_body_type', 'urlencoded');
-        
+
         // Merge into request data
         $request->request->replace($data);
     }
@@ -154,13 +158,13 @@ class BodyParserMiddleware
             'application/ld+json',
             'application/vnd.api+json'
         ];
-        
+
         foreach ($jsonTypes as $type) {
             if (stripos($contentType, $type) === 0) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -183,27 +187,27 @@ class BodyParserMiddleware
     {
         $units = ['b' => 1, 'kb' => 1024, 'mb' => 1048576, 'gb' => 1073741824];
         $size = strtolower(trim($size));
-        
+
         if (is_numeric($size)) {
             return (int) $size;
         }
-        
+
         preg_match('/^(\d+(?:\.\d+)?)\s*([a-z]*)?$/', $size, $matches);
-        
+
         if (!$matches) {
             throw new \InvalidArgumentException("Invalid size format: {$size}");
         }
-        
+
         $value = (float) $matches[1];
         $unit = $matches[2] ?? 'b';
-        
+
         if (!isset($units[$unit])) {
             throw new \InvalidArgumentException("Unknown size unit: {$unit}");
         }
-        
+
         return (int) ($value * $units[$unit]);
     }
-    
+
     /**
      * Create body parser middleware with Express.js style configuration
      */
@@ -211,7 +215,7 @@ class BodyParserMiddleware
     {
         return new self($config);
     }
-    
+
     /**
      * JSON body parser only (like express.json())
      */
@@ -224,7 +228,7 @@ class BodyParserMiddleware
             ], $options)
         ]);
     }
-    
+
     /**
      * URL-encoded body parser only (like express.urlencoded())
      */
@@ -237,7 +241,7 @@ class BodyParserMiddleware
             ], $options)
         ]);
     }
-    
+
     /**
      * Production-ready body parser with smaller limits
      */
