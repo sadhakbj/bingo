@@ -4,29 +4,29 @@ declare(strict_types=1);
 
 namespace Core\Database;
 
+use Core\Config\DatabaseConfig;
+use Core\Config\Driver\DatabaseDriver;
 use Illuminate\Database\Capsule\Manager as Capsule;
 
 class Database
 {
-    protected static $instance = null;
+    private static ?Capsule $instance = null;
 
-    public static function setup()
+    public static function setup(DatabaseConfig $config): Capsule
     {
-        if (self::$instance === null) {
-            self::$instance = new Capsule;
-
-            // Configure database connection (using SQLite for simplicity)
-            self::$instance->addConnection([
-                'driver' => 'sqlite',
-                'database' => __DIR__ . '/../../database/database.sqlite',
-            ]);
-
-            // Make this Capsule instance available globally via static methods
-            self::$instance->setAsGlobal();
-
-            // Setup the Eloquent ORM
-            self::$instance->bootEloquent();
+        if (self::$instance !== null) {
+            return self::$instance;
         }
+
+        self::$instance = new Capsule();
+
+        foreach ($config->all() as $name => $connection) {
+            self::$instance->addConnection($connection->toArray(), $name);
+        }
+
+        self::$instance->getDatabaseManager()->setDefaultConnection($config->defaultName());
+        self::$instance->setAsGlobal();
+        self::$instance->bootEloquent();
 
         return self::$instance;
     }

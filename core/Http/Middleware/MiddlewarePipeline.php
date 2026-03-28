@@ -63,22 +63,16 @@ class MiddlewarePipeline
             return $this->executeMiddleware($middlewareStack, $index + 1, $req, $finalHandler);
         };
 
-        // Execute current middleware
-        try {
-            if (is_callable($middleware)) {
-                return $middleware($request, $next);
-            } elseif (is_object($middleware) && method_exists($middleware, 'handle')) {
-                return $middleware->handle($request, $next);
-            } else {
-                throw new \InvalidArgumentException('Middleware must be callable or have a handle method');
-            }
-        } catch (\Exception $e) {
-            // Convert exceptions to error responses
-            return Response::json([
-                'error' => 'Middleware error',
-                'message' => $e->getMessage()
-            ], 500);
+        // Execute current middleware — let exceptions propagate to Application::handle()
+        if (is_callable($middleware)) {
+            return $middleware($request, $next);
         }
+
+        if (is_object($middleware) && method_exists($middleware, 'handle')) {
+            return $middleware->handle($request, $next);
+        }
+
+        throw new \InvalidArgumentException('Middleware must be callable or have a handle method');
     }
 
     /**

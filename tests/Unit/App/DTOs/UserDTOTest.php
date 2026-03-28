@@ -11,7 +11,7 @@ class UserDTOTest extends TestCase
 {
     private function makeDTO(array $overrides = []): UserDTO
     {
-        return UserDTO::from(array_merge([
+        $defaults = [
             'id'         => 1,
             'email'      => 'bijaya@example.com',
             'name'       => 'Bijaya Kuikel',
@@ -20,7 +20,20 @@ class UserDTOTest extends TestCase
             'created_at' => '2024-01-01T00:00:00+00:00',
             'updated_at' => '2024-01-01T00:00:00+00:00',
             'posts'      => [],
-        ], $overrides));
+        ];
+
+        $data = array_merge($defaults, $overrides);
+
+        return new UserDTO(
+            id:         $data['id'],
+            email:      $data['email'],
+            name:       $data['name'],
+            age:        $data['age'],
+            bio:        $data['bio'],
+            created_at: $data['created_at'],
+            updated_at: $data['updated_at'],
+            posts:      $data['posts'],
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -49,9 +62,7 @@ class UserDTOTest extends TestCase
 
     public function test_get_display_name_returns_name(): void
     {
-        $dto = $this->makeDTO(['name' => 'Bijaya Kuikel']);
-
-        $this->assertSame('Bijaya Kuikel', $dto->getDisplayName());
+        $this->assertSame('Bijaya Kuikel', $this->makeDTO(['name' => 'Bijaya Kuikel'])->getDisplayName());
     }
 
     // -------------------------------------------------------------------------
@@ -76,23 +87,17 @@ class UserDTOTest extends TestCase
 
     public function test_get_metadata_profile_complete_when_all_fields_set(): void
     {
-        $metadata = $this->makeDTO()->getMetadata();
-
-        $this->assertTrue($metadata['profile_complete']);
+        $this->assertTrue($this->makeDTO()->getMetadata()['profile_complete']);
     }
 
     public function test_get_metadata_profile_incomplete_when_bio_missing(): void
     {
-        $metadata = $this->makeDTO(['bio' => null])->getMetadata();
-
-        $this->assertFalse($metadata['profile_complete']);
+        $this->assertFalse($this->makeDTO(['bio' => null])->getMetadata()['profile_complete']);
     }
 
     public function test_get_metadata_profile_incomplete_when_age_missing(): void
     {
-        $metadata = $this->makeDTO(['age' => null])->getMetadata();
-
-        $this->assertFalse($metadata['profile_complete']);
+        $this->assertFalse($this->makeDTO(['age' => null])->getMetadata()['profile_complete']);
     }
 
     // -------------------------------------------------------------------------

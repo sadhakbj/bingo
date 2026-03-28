@@ -194,16 +194,21 @@ class MiddlewarePipelineTest extends TestCase
     // Exception handling
     // -------------------------------------------------------------------------
 
-    public function test_exception_in_middleware_returns_500_response(): void
+    public function test_exception_in_middleware_propagates_to_caller(): void
     {
+        // The pipeline does NOT swallow exceptions — it lets them bubble up so
+        // that Application::handle()'s ExceptionHandler can process them properly
+        // (correct status codes, debug traces, etc.). Catching here would produce
+        // a generic "Middleware error" label regardless of what actually failed.
         $pipeline = MiddlewarePipeline::create();
 
         $pipeline->addGlobal(function (Request $req, callable $next) {
             throw new \RuntimeException('Something broke');
         });
 
-        $response = $pipeline->process($this->makeRequest(), fn() => Response::json([]));
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Something broke');
 
-        $this->assertSame(500, $response->getStatusCode());
+        $pipeline->process($this->makeRequest(), fn() => Response::json([]));
     }
 }

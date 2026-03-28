@@ -1,386 +1,310 @@
-
 # Bingo
 
-A high-performance PHP 8.5+ framework designed for **API-first development** and **microservices**. Features clean attribute-based routing, powerful middleware system, and zero-configuration setup using the best Symfony packages.
-
-<div align="center">
-
-[![PHP Version](https://img.shields.io/badge/php-%5E8.5-8892BF.svg)]()
-[![API First](https://img.shields.io/badge/design-API%20First-blue.svg)]()
-[![Microservices](https://img.shields.io/badge/optimized%20for-Microservices-green.svg)]()
-[![Modern PHP](https://img.shields.io/badge/modern-PHP%208.5+-purple.svg)]()
-[![ORM](https://img.shields.io/badge/ORM-Eloquent-ff2d20.svg)]()
-
-</div>
-
-## 🚀 Why This Framework?
-
-**Built for developers who want:**
-- 🏷️ **Clean Attribute-Based Routing** - No configuration files needed
-- 🔗 **Powerful Middleware System** with intuitive `app.use()` API  
-- 🏗️ **Clean Architecture** with organized separation of concerns
-- ⚡ **Zero Configuration** - works out of the box
-- 🌐 **API-First Design** - optimized for microservices
-- 🎯 **Modern PHP 8.5+** with strict typing and performance
-
-```php
-// Clean attribute-based routing
-#[ApiController('/users')]
-class UsersController {
-  #[Get('/{id}')]
-  public function findOne(#[Param('id')] int $id, #[Query('include')] ?string $include = null): Response {
-    return Response::json($this->usersService->findOne($id, $include));
-  }
-  
-  #[Post('/')]
-  public function create(CreateUserRequest $request): Response {
-    $user = $this->userService->create($request->toDTO());
-    return Response::json($user, 201);
-  }
-}
-```
+A PHP 8.5+ framework for API-first development. Attribute-driven routing, typed config, constructor injection, and Eloquent ORM — with zero boilerplate.
 
 ---
 
-## 🏁 Quick Start
-
-### Prerequisites
-- PHP 8.5+
-- Composer
-
-### Installation
+## Quick Start
 
 ```bash
 git clone https://github.com/sadhakbj/bingo.git
 cd bingo
 composer install
-cp .env.example .env  # Configure your environment
+cp .env.example .env
+php -S localhost:8000 -t public
 ```
 
-### Bootstrap Your Application
+`public/index.php` is the entry point. `bootstrap/app.php` is where you wire everything:
 
-Create your `.env` file:
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=your_database
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-
-APP_ENV=local
-APP_DEBUG=true
-```
-
-The framework uses **Laravel-style bootstrap architecture**:
-
-**`public/index.php`** (Entry Point):
 ```php
 <?php
 
-require_once __DIR__ . '/../bootstrap/app.php';
-```
-
-**`bootstrap/app.php`** (Configuration):
-```php
-<?php
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use Core\Application;
-use Core\Database\Database;
 
-// Create application with Express.js-style API
 $app = Application::create();
 
-// Setup database (uses .env automatically)
-Database::setup();
-
-// Express.js-style middleware
-$app->use(\Core\Http\Middleware\CorsMiddleware::class)
-    ->use(\Core\Http\Middleware\BodyParserMiddleware::class)
-    ->use(\Core\Http\Middleware\SecurityHeadersMiddleware::class);
-
-// Manual controller registration (no auto-discovery overhead)
 $app->controllers([
-    \App\Http\Controllers\HomeController::class,
     \App\Http\Controllers\UsersController::class,
-    // Add your controllers here
 ]);
 
 return $app;
 ```
 
-### Run Development Server
-
-```bash
-php -S localhost:8000 -t public
-```
-
-### Your First Controller
-
-Create `app/Http/Controllers/PostsController.php`:
-
-```php
-<?php
-
-namespace App\Http\Controllers;
-
-use Core\Attributes\ApiController;
-use Core\Attributes\Get;
-use Core\Attributes\Post;
-use Core\Attributes\Body;
-use Core\Attributes\Query;
-use Core\Http\Response;
-use App\DTOs\CreatePostDTO;
-
-#[ApiController('/posts')]
-class PostsController
-{
-    #[Get('')]
-    public function index(
-        #[Query('page')] int $page = 1,
-        #[Query('limit')] int $limit = 10
-    ): Response {
-        return Response::json([
-            'posts' => [],
-            'pagination' => compact('page', 'limit')
-        ]);
-    }
-
-    #[Post('')]
-    public function create(#[Body] CreatePostDTO $dto): Response {
-        // DTO automatically validated and typed
-        return Response::json([
-            'message' => 'Post created',
-            'data' => $dto->toArray()
-        ], 201);
-    }
-}
-```
-
-Register in `bootstrap/app.php`:
-```php
-$app->controllers([
-    \App\Http\Controllers\PostsController::class,
-]);
-```
-
-**That's it!** Your API is ready at:
-- `GET http://localhost:8000/posts?page=1&limit=5`
-- `POST http://localhost:8000/posts` (with JSON body)
+`Application::create()` automatically loads `.env`, bootstraps typed config, boots Eloquent, and sets up the middleware pipeline.
 
 ---
 
-## 🎯 Core Features
+## Configuration
 
-### 🌐 Powerful Middleware System
-Intuitive HTTP middleware pipeline with chainable APIs:
+Config classes live in `config/` and are wired to environment variables via `#[Env]` attributes. No arrays. No magic strings. Just typed properties.
 
-```php
-// In bootstrap/app.php
-$app->use(\Core\Http\Middleware\CorsMiddleware::class, [
-        'allow_origins' => ['http://localhost:3000', 'https://yourdomain.com'],
-        'allow_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
-        'allow_headers' => ['Content-Type', 'Authorization'],
-        'allow_credentials' => true,
-    ])
-    ->use(\Core\Http\Middleware\BodyParserMiddleware::class)
-    ->use(\Core\Http\Middleware\CompressionMiddleware::class)
-    ->use(\Core\Http\Middleware\SecurityHeadersMiddleware::class)
-    ->use(\Core\Http\Middleware\RequestIdMiddleware::class)
-    ->use(\Core\Http\Middleware\RateLimitMiddleware::class, [
-        'requests_per_minute' => 60,
-        'burst_limit' => 10
-    ]);
-```
+### App Config
 
-**Built-in Middleware:**
-
-| Middleware | Purpose | Configuration |
-|------------|---------|---------------|
-| `CorsMiddleware` | CORS headers + preflight | origins, methods, headers, credentials |
-| `BodyParserMiddleware` | JSON/form parsing | max_size, allowed_types |
-| `CompressionMiddleware` | Gzip/deflate responses | level, min_length |
-| `SecurityHeadersMiddleware` | OWASP security headers | CSP, HSTS, frame options |
-| `RequestIdMiddleware` | Unique request tracking | header_name, uuid_version |
-| `RateLimitMiddleware` | Request limiting | requests_per_minute, burst_limit |
-
-### 🔧 Laravel-Style Architecture
-Clean separation of concerns with familiar Laravel patterns:
-
-```
-├── app/
-│   └── Http/                  # Laravel-style HTTP layer
-│       ├── Controllers/       # Route handlers
-│       ├── Middleware/        # Custom middleware
-│       └── Requests/          # Form requests
-│   ├── DTOs/                  # Data Transfer Objects
-│   ├── Models/                # Eloquent models
-│   └── Services/              # Business logic
-├── bootstrap/
-│   └── app.php               # Application configuration
-├── core/                     # Framework internals
-├── public/
-│   └── index.php            # Simple entry point
-└── .env                     # Environment configuration
-```
-
-### 🌍 Automatic Environment Loading
-Framework-level `.env` support (like Laravel):
+`config/AppConfig.php`:
 
 ```php
-// .env file automatically loaded in Application constructor
-// No manual dotenv setup required
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-APP_DEBUG=true
-CACHE_DRIVER=file
-
-// Access anywhere with $_ENV or getenv()
-$debug = $_ENV['APP_DEBUG'] ?? false;
-```
-
-### 🏷️ Attribute-Based Routing
-Define routes directly on methods using PHP 8 attributes:
-
-```php
-#[ApiController('/api/v1/users')]
-class UsersController {
-    #[Get('')]                     // GET /api/v1/users
-    #[Get('/{id}')]               // GET /api/v1/users/123  
-    #[Post('')]                   // POST /api/v1/users
-    #[Put('/{id}')]              // PUT /api/v1/users/123
-    #[Delete('/{id}')]           // DELETE /api/v1/users/123
-    #[Patch('/{id}/status')]     // PATCH /api/v1/users/123/status
-}
-```
-
-### 🎪 Smart Parameter Binding
-Extract request data with clean attribute decorators:
-
-```php
-public function createUser(
-    #[Body] CreateUserDTO $userData,           // Request body → DTO
-    #[Query('notify')] bool $notify = true,    // Query params with type casting
-    #[Headers('x-api-version')] string $version, // Headers
-    #[Param('id')] int $userId,               // Route parameters  
-    #[UploadedFile('avatar')] $file = null    // File uploads
-): Response {
-    // All parameters automatically extracted, validated, and typed
-}
-```
-
-**Available Parameter Attributes:**
-| Attribute | Purpose | Example |
-|-----------|---------|----------|
-| `#[Body]` | Request body → DTO | `#[Body] CreateUserDTO $dto` |
-| `#[Query('key')]` | Query parameters | `#[Query('limit')] int $limit = 10` |
-| `#[Param('key')]` | Route parameters | `#[Param('id')] int $id` |
-| `#[Headers('key')]` | HTTP headers | `#[Headers('authorization')] string $auth` |
-| `#[Request]` | Full request object | `#[Request] Request $request` |
-| `#[UploadedFile('key')]` | Single file upload | `#[UploadedFile('avatar')] $file` |
-| `#[UploadedFiles]` | All uploaded files | `#[UploadedFiles] array $files` |
-
-### 📋 DTOs & Validation
-Type-safe data transfer objects with automatic validation:
-
-```php
-namespace App\DTOs;
-
-use Core\Data\DataTransferObject;
-use Symfony\Component\Validator\Constraints as Assert;
-
-class CreateUserDTO extends DataTransferObject
+final readonly class AppConfig
 {
-    #[Assert\NotBlank]
-    #[Assert\Email]
-    public readonly string $email;
-    
-    #[Assert\NotBlank]
-    #[Assert\Length(min: 2, max: 100)]
-    public readonly string $name;
-    
-    #[Assert\Positive]
-    #[Assert\Range(min: 13, max: 120)]
-    public readonly ?int $age;
+    public function __construct(
+        #[Env('APP_NAME',  default: 'Bingo')]            public string $name,
+        #[Env('APP_ENV',   default: 'development')]      public string $env,
+        #[Env('APP_DEBUG', default: false)]              public bool   $debug,
+        #[Env('APP_URL',   default: 'http://localhost')] public string $url,
+    ) {}
 }
 ```
 
-Usage in controllers:
+Inject it anywhere via the container:
+
 ```php
-#[Post('/users')]
-public function create(#[Body] CreateUserDTO $dto): Response {
-    // $dto is automatically:
-    // 1. Populated from request JSON
-    // 2. Validated using Symfony Validator
-    // 3. Type-cast to correct types
-    // 4. Throws 422 with errors if validation fails
-    
-    return Response::json($dto->toArray(), 201);
+public function __construct(private readonly AppConfig $config) {}
+```
+
+### Database Config
+
+`config/DbConfig.php` declares which connections your app uses:
+
+```php
+final class DbConfig
+{
+    #[Env('DB_CONNECTION', default: 'sqlite')]
+    public string $default = 'sqlite';
+
+    public array $connections = [
+        'sqlite' => SQLiteConfig::class,
+        // 'mysql' => MySqlConfig::class,
+        // 'pgsql' => PgSqlConfig::class,
+    ];
 }
 ```
 
-### 🛡️ Advanced Middleware System
-Apply middleware globally or per-controller/route:
+Each driver class (`config/MySqlConfig.php`, `config/SQLiteConfig.php`, `config/PgSqlConfig.php`) extends the framework base and inherits all `#[Env]` wiring. Customize by overriding there.
 
-**Global Middleware:**
+**Read replica** — set `DB_READ_HOST` in `.env`. Eloquent's `read`/`write` split is built in:
+
+```env
+DB_HOST=10.0.0.1
+DB_READ_HOST=10.0.0.2
+DB_STICKY=true
+```
+
+For multiple read hosts, override `toArray()` in `config/MySqlConfig.php`:
+
 ```php
-// In bootstrap/app.php
+public function toArray(): array {
+    $config = parent::toArray();
+    $config['read']['host'] = [
+        env('DB_READ_HOST_1', '192.168.1.1'),
+        env('DB_READ_HOST_2', '192.168.1.2'),
+    ];
+    return $config;
+}
+```
+
+### Full `.env` reference
+
+```env
+APP_NAME=Bingo
+APP_ENV=development
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=sqlite
+DB_DATABASE=database/database.sqlite
+
+# MySQL / PostgreSQL
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=myapp
+DB_USERNAME=root
+DB_PASSWORD=secret
+DB_READ_HOST=      # optional read replica
+DB_STICKY=false
+```
+
+---
+
+## Routing
+
+Define routes directly on controller methods with attributes. No route files.
+
+```php
+#[ApiController('/users')]
+class UsersController
+{
+    #[Get('/')]
+    public function index(): Response {}
+
+    #[Get('/{id}')]
+    public function show(#[Param('id')] int $id): Response {}
+
+    #[Post('/')]
+    public function create(#[Body] CreateUserDTO $dto): Response {}
+
+    #[Put('/{id}')]
+    public function update(#[Param('id')] int $id, #[Body] UpdateUserDTO $dto): Response {}
+
+    #[Delete('/{id}')]
+    public function destroy(#[Param('id')] int $id): Response {}
+}
+```
+
+Register controllers in `bootstrap/app.php`:
+
+```php
+$app->controllers([
+    UsersController::class,
+    PostsController::class,
+]);
+```
+
+> Specific routes (`/search`, `/upload`) must be declared **before** wildcard routes (`/{id}`) in the class to prevent the wildcard from matching first.
+
+**Available route attributes:** `#[Get]` `#[Post]` `#[Put]` `#[Patch]` `#[Delete]` `#[Head]` `#[Options]`
+
+---
+
+## Parameter Binding
+
+Extract request data using parameter attributes:
+
+```php
+public function handle(
+    #[Body]                              CreateUserDTO $dto,      // JSON body → DTO
+    #[Param('id')]                       int $id,                 // route segment
+    #[Query('page')]                     int $page = 1,           // ?page=
+    #[Headers('x-api-version')]          ?string $version = null, // request header
+    #[Request]                           Request $request,        // full request object
+    #[UploadedFile('avatar')]            ?UploadedFile $avatar = null, // single file
+    #[UploadedFiles]                     array $files = [],       // all uploaded files
+): Response
+```
+
+Query and param values are automatically cast to the declared PHP type (`int`, `bool`, `float`, `string`).
+
+---
+
+## Middleware
+
+### Global middleware
+
+```php
 $app->use(\Core\Http\Middleware\CorsMiddleware::class)
     ->use(\Core\Http\Middleware\BodyParserMiddleware::class)
+    ->use(\Core\Http\Middleware\SecurityHeadersMiddleware::class)
     ->use(\App\Http\Middleware\AuthMiddleware::class);
-
-// Applied to ALL requests
 ```
 
-**Controller/Route Middleware:**
-```php
-use App\Http\Middleware\AuthMiddleware;
-use App\Http\Middleware\LogMiddleware;
+### Per-controller or per-route
 
+```php
 #[ApiController('/admin')]
-#[Middleware([AuthMiddleware::class, LogMiddleware::class])]
-class AdminController {
-    // All methods protected by auth + logging
-}
-
-// Or per-method:
-class UsersController {
-    #[Get('/public')]
-    public function publicRoute() {} // No middleware
-    
-    #[Get('/private')]
-    #[Middleware([AuthMiddleware::class])]
-    public function privateRoute() {} // Auth required
+#[Middleware([AuthMiddleware::class])]
+class AdminController
+{
+    #[Get('/stats')]
+    #[Middleware([LogMiddleware::class])]
+    public function stats(): Response {}
 }
 ```
 
-**Custom Middleware:**
+### Built-in middleware
+
+| Class | Purpose |
+|-------|---------|
+| `CorsMiddleware` | CORS headers and preflight handling |
+| `BodyParserMiddleware` | Parses JSON and form-encoded request bodies |
+| `SecurityHeadersMiddleware` | OWASP security headers (CSP, HSTS, etc.) |
+| `CompressionMiddleware` | Gzip/deflate response compression |
+| `RequestIdMiddleware` | Attaches a unique `X-Request-ID` to every request |
+| `RateLimitMiddleware` | Per-IP request rate limiting |
+
+### Custom middleware
+
 ```php
-namespace App\Http\Middleware;
-
-use Core\Http\Request;
-use Core\Http\Response;
-
 class AuthMiddleware
 {
     public function handle(Request $request, callable $next): Response
     {
-        $token = $request->headers->get('Authorization');
-        
-        if (!$token) {
+        if (!$request->headers->get('Authorization')) {
             return Response::json(['error' => 'Unauthorized'], 401);
         }
-        
-        // Validate token...
-        
+
         return $next($request);
     }
 }
 ```
 
-### 🗄️ Eloquent ORM Integration
-Full Laravel Eloquent support for elegant database operations:
+The `$next($request)` call must be **outside** any try/catch that catches general exceptions — only catch errors that belong to the middleware itself.
+
+---
+
+## DTOs & Validation
+
+DTOs extend `DataTransferObject` and declare properties with Symfony Validator constraints. The framework populates and validates them automatically when you use `#[Body]`.
+
+```php
+class CreateUserDTO extends DataTransferObject
+{
+    #[Assert\NotBlank]
+    #[Assert\Email]
+    public readonly string $email;
+
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 50)]
+    public readonly string $name;
+
+    #[Assert\Range(min: 18, max: 120)]
+    public readonly ?int $age;
+}
+```
+
+Validation failure returns `422` automatically:
+
+```json
+{
+  "errors": {
+    "email": "This value should not be blank.",
+    "age": "This value should be between 18 and 120."
+  }
+}
+```
+
+---
+
+## Dependency Injection
+
+Constructor dependencies are resolved automatically. Register explicit bindings in `bootstrap/app.php` before `return $app`:
+
+```php
+// Interface → concrete
+$app->singleton(\App\Contracts\MailerInterface::class, \App\Services\SmtpMailer::class);
+
+// Transient (new instance per resolution)
+$app->bind(\App\Services\ReportBuilder::class);
+
+// Pre-built instance
+$app->instance(\App\Config\PaymentConfig::class, new PaymentConfig(key: env('STRIPE_KEY')));
+```
+
+Concrete classes with typed constructors resolve automatically — no registration needed:
+
+```php
+class UsersController
+{
+    public function __construct(private readonly UserService $userService) {}
+}
+```
+
+`AppConfig` and `DatabaseConfig` are pre-registered by the framework and injectable everywhere.
+
+---
+
+## Eloquent ORM
+
+Standard Laravel Eloquent models work out of the box:
 
 ```php
 namespace App\Models;
@@ -389,413 +313,53 @@ use Illuminate\Database\Eloquent\Model;
 
 class User extends Model
 {
-    protected $fillable = ['name', 'email', 'age'];
-    
-    public function posts()
-    {
-        return $this->hasMany(Post::class);
-    }
-}
-
-// Usage in controllers
-#[Get('/users/{id}/posts')]
-public function getUserPosts(#[Param('id')] int $userId): Response {
-    $posts = User::findOrFail($userId)->posts()->with('comments')->get();
-    return Response::json($posts);
+    protected $fillable = ['name', 'email'];
 }
 ```
+
+Migrations live in `database/migrations/` and run with the standard Eloquent migration tooling.
 
 ---
 
-## 📚 Advanced Features
-
-### 🔄 Smart Route Handling
-Framework automatically handles trailing slashes Laravel-style:
-
-```php
-#[Get('/users')]       // Matches both /users AND /users/
-#[Get('/users/{id}')]  // Matches /users/123, /users/123/
-```
-
-### 🎯 Type System Integration
-Automatic type casting based on PHP type hints:
-
-```php
-public function search(
-    #[Query('limit')] int $limit,     // "10" → 10
-    #[Query('active')] bool $active,  // "true" → true  
-    #[Query('price')] float $price    // "19.99" → 19.99
-): Response {
-    // All types automatically converted
-}
-```
-
-### 🚨 Error Handling
-Consistent JSON error responses for API controllers:
-
-```http
-HTTP/1.1 422 Unprocessable Entity
-{
-  "errors": {
-    "email": "This field is required",
-    "age": "Must be at least 13"
-  }
-}
-
-HTTP/1.1 404 Not Found  
-{
-  "error": "Not Found"
-}
-```
-
-### 📁 Clean Architecture
-Organized, scalable project structure:
+## Directory Structure
 
 ```
 ├── app/
-│   └── Http/                   # HTTP layer organization
-│       ├── Controllers/        # Route handlers 
-│       ├── Middleware/         # Custom request/response middleware
-│       └── Requests/           # Form/validation requests
-│   ├── DTOs/                   # Data Transfer Objects
-│   ├── Models/                 # Eloquent models
-│   └── Services/               # Business logic
-├── bootstrap/
-│   └── app.php                 # Application configuration
-├── core/                       # Framework internals
-│   ├── Attributes/             # Route & parameter attributes  
+│   ├── DTOs/               # Data transfer objects
 │   ├── Http/
-│   │   ├── Middleware/         # Built-in middleware
-│   │   ├── Request.php         # Request handling
-│   │   └── Response.php        # Response handling
-│   ├── Router/                 # Route matching & dispatching
-│   └── Data/                   # DTO base classes
+│   │   ├── Controllers/    # Route handlers
+│   │   ├── Middleware/     # Custom middleware
+│   │   └── Requests/       # (optional) typed request classes
+│   ├── Models/             # Eloquent models
+│   └── Services/           # Business logic
+├── bootstrap/
+│   └── app.php             # Application entry point
+├── config/
+│   ├── AppConfig.php       # Typed app config (#[Env])
+│   ├── DbConfig.php        # Database connections
+│   ├── MySqlConfig.php     # MySQL driver (customize here)
+│   ├── PgSqlConfig.php     # PostgreSQL driver
+│   └── SQLiteConfig.php    # SQLite driver
+├── core/                   # Framework internals (don't modify)
 ├── database/
-│   └── migrations/             # Database migrations
+│   └── migrations/
 ├── public/
-│   └── index.php              # Simple application entry point
-└── .env                       # Environment configuration
+│   └── index.php           # Web entry point
+└── .env
 ```
 
 ---
 
-## 🧠 Design Philosophy
+## Testing
 
-### **API-First Architecture**
-Purpose-built for modern microservices and APIs:
-
-- **Zero overhead** → Manual controller registration, no filesystem scanning
-- **Type safety** → End-to-end typing from request to response  
-- **Performance** → Minimal abstraction, maximum speed
-- **Developer Experience** → Clean, intuitive APIs and patterns
-
-### **Modern PHP Standards**
-- PHP 8.5+ features (attributes, readonly properties, union types, strict typing)
-- PSR-compliant autoloading and structure
-- Symfony components for reliability and performance
-- Best practices from Laravel ecosystem
-
----
-
-## 🔧 Application API
-
-Bingo provides an intuitive API with clean architecture:
-
-### Application Setup
-```php
-use Core\Application;
-
-// Create application (automatically loads .env)
-$app = Application::create();
-
-// Express.js-style middleware chain
-$app->use(\Core\Http\Middleware\CorsMiddleware::class)
-    ->use(\Core\Http\Middleware\BodyParserMiddleware::class)
-    ->use(\Core\Http\Middleware\SecurityHeadersMiddleware::class);
-
-// Manual controller registration (performance-focused)
-$app->controllers([
-    \App\Http\Controllers\HomeController::class,
-    \App\Http\Controllers\UsersController::class,
-    \App\Http\Controllers\PostsController::class,
-]);
-
-// Start handling requests
-$app->run();
-```
-
-### Environment Configuration
-```php
-// .env automatically loaded in Application constructor  
-// No manual setup required (Laravel-style)
-
-// In .env file:
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=myapp
-DB_USERNAME=root
-DB_PASSWORD=secret
-
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://api.myapp.com
-
-// Access in your code:
-$debug = $_ENV['APP_DEBUG'] ?? false;
-$dbHost = getenv('DB_HOST');
-```
-
-### Middleware Configuration
-```php
-// Built-in middleware with options
-$app->use(\Core\Http\Middleware\CorsMiddleware::class, [
-    'allow_origins' => ['https://myapp.com'],
-    'allow_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
-    'allow_headers' => ['Content-Type', 'Authorization'],
-    'allow_credentials' => true,
-]);
-
-$app->use(\Core\Http\Middleware\RateLimitMiddleware::class, [
-    'requests_per_minute' => 100,
-    'burst_limit' => 20
-]);
-
-// Custom middleware
-$app->use(\App\Http\Middleware\CustomAuthMiddleware::class);
-```
-
----
-
-## 📖 Complete API Reference
-
-### Application Methods
-```php
-Application::create()                           // Create new application instance
-$app->use($middleware, $options = [])          // Add global middleware (Express.js-style)  
-$app->controllers($controllers)                // Register controller classes
-$app->run()                                   // Start request handling
-```
-
-### Built-in Middleware Classes
-```php
-\Core\Http\Middleware\CorsMiddleware::class           // CORS headers + preflight
-\Core\Http\Middleware\BodyParserMiddleware::class     // JSON/form parsing
-\Core\Http\Middleware\CompressionMiddleware::class    // Gzip/deflate compression
-\Core\Http\Middleware\SecurityHeadersMiddleware::class // OWASP security headers
-\Core\Http\Middleware\RequestIdMiddleware::class      // Request ID tracking
-\Core\Http\Middleware\RateLimitMiddleware::class      // Request rate limiting
-```
-
-### Middleware Options
-```php
-// CorsMiddleware options
-'allow_origins' => ['*'] | ['https://domain.com'],
-'allow_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
-'allow_headers' => ['Content-Type', 'Authorization'],
-'allow_credentials' => true | false,
-'max_age' => 86400
-
-// BodyParserMiddleware options  
-'max_size' => 1024 * 1024,  // 1MB default
-'allowed_types' => ['application/json', 'application/x-www-form-urlencoded']
-
-// CompressionMiddleware options
-'level' => 6,         // Compression level 1-9
-'min_length' => 1024, // Minimum response size to compress
-
-// SecurityHeadersMiddleware options
-'content_security_policy' => "default-src 'self'",
-'strict_transport_security' => 'max-age=31536000; includeSubDomains',
-'x_frame_options' => 'DENY',
-'x_content_type_options' => 'nosniff'
-
-// RateLimitMiddleware options
-'requests_per_minute' => 60,
-'burst_limit' => 10,
-'identifier' => 'ip'  // 'ip' or callable```
-
-### Environment Configuration
-Framework automatically loads `.env` file (Laravel-style):
-
-```env
-# Database Configuration
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=myapp
-DB_USERNAME=root
-DB_PASSWORD=secret
-
-# Application Configuration  
-APP_ENV=local|production
-APP_DEBUG=true|false
-APP_URL=https://api.myapp.com
-
-# Custom Configuration
-CACHE_DRIVER=file
-QUEUE_CONNECTION=sync
-```
-
-**Access in code:**
-```php
-// Using $_ENV (recommended)
-$debug = $_ENV['APP_DEBUG'] ?? false;
-$dbHost = $_ENV['DB_HOST'] ?? 'localhost';
-
-// Using getenv()
-$dbName = getenv('DB_DATABASE');```
-
-### Route Attributes
-```php
-#[Get('/path')]           // GET request
-#[Post('/path')]          // POST request  
-#[Put('/path')]           // PUT request
-#[Patch('/path')]         // PATCH request
-#[Delete('/path')]        // DELETE request
-#[Options('/path')]       // OPTIONS request
-#[Head('/path')]          // HEAD request
-#[Route('/path', 'ANY')]  // Custom HTTP method
-```
-
-### Controller Attributes
-```php
-#[ApiController('/prefix')]              // API controller with prefix
-#[Middleware([AuthMiddleware::class])]   // Apply middleware
-```
-
-### Parameter Attributes
-```php
-#[Body]                              // Parse request body to DTO
-#[Query('key')]                      // Extract query parameter
-#[Param('key')]                      // Extract route parameter  
-#[Headers('key')]                    // Extract header value
-#[Request]                           // Inject full request object
-#[UploadedFile('key')]              // Single file upload
-#[UploadedFiles]                     // All uploaded files
-```
-
-### Response Methods
-```php
-Response::json($data, $status = 200)     // JSON response
-Response::html($content, $status = 200)  // HTML response  
-Response::redirect($url, $status = 302)  // Redirect response
-```
-
----
-
-## 🎯 Bingo Framework Features
-
-| Feature | Description | Status |
-|---------|-------------|--------|
-| Route Attributes | Clean `#[Get]`, `#[Post]` method decorators | ✅ |
-| Parameter Binding | Auto-extract `#[Body]`, `#[Query]`, `#[Param]` | ✅ |
-| Middleware Pipeline | Chainable `app.use()` middleware system | ✅ |
-| DTOs Built-in | Type-safe data transfer objects | ✅ |
-| Eloquent ORM | Laravel's powerful database ORM | ✅ |
-| Type Safety | End-to-end PHP 8.5+ type checking | ✅ |
-| Environment Loading | Automatic `.env` configuration | ✅ |
-| API-First Design | Optimized for microservices and APIs | ✅ |
-| Zero Configuration | Works out of the box | ✅ |
-
-**Modern advantage**: Combines attribute-based routing, powerful middleware, and mature PHP ecosystem.
-
----
-
-## 🔬 Microservices & API-First Features
-
-### Performance-Optimized Registration
-Manual controller registration with zero filesystem scanning:
-
-```php
-// No auto-discovery overhead
-$app->controllers([
-    \App\Http\Controllers\UsersController::class,
-    \App\Http\Controllers\PostsController::class,
-]);
-
-// Framework does NOT scan directories on each request
-// Perfect for high-performance microservices
-```
-
-### Production-Ready Middleware
-Complete HTTP layer for microservices:
-
-```php
-// CORS for cross-origin requests
-$app->use(\Core\Http\Middleware\CorsMiddleware::class, [
-    'allow_origins' => ['https://frontend.myapp.com'],
-    'allow_credentials' => true
-]);
-
-// Rate limiting for API protection  
-$app->use(\Core\Http\Middleware\RateLimitMiddleware::class, [
-    'requests_per_minute' => 100
-]);
-
-// Security headers (OWASP compliant)
-$app->use(\Core\Http\Middleware\SecurityHeadersMiddleware::class);
-
-// Request compression for bandwidth efficiency  
-$app->use(\Core\Http\Middleware\CompressionMiddleware::class);
-```
-
-### Health Check Example
-```php
-#[ApiController('/health')]
-class HealthController {
-    #[Get('')]
-    public function check(): Response {
-        return Response::json([
-            'status' => 'healthy',
-            'timestamp' => time(),
-            'service' => 'user-api',
-            'version' => '1.0.0'
-        ]);
-    }
-}
-```
-
-### Docker-Ready Structure
-```dockerfile
-FROM php:8.5-fpm
-COPY . /var/www/html
-RUN composer install --no-dev --optimize-autoloader
-EXPOSE 9000
-CMD ["php-fpm"]
-```
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-```bash
-git clone https://github.com/sadhakbj/bingo.git
-cd bingo
-composer install
-php -S localhost:8000 -t public
-```
-
-### Running Tests
 ```bash
 composer test
 ```
 
----
-
-## 📜 License
-
-MIT License. See [LICENSE](LICENSE) for details.
+Tests live in `tests/` mirroring the `app/` and `core/` structure.
 
 ---
 
-<div align="center">
+## License
 
-**Made with ❤️ for developers who love clean, modern PHP**
-
-[Documentation](docs/) • [Examples](examples/) • [Contributing](CONTRIBUTING.md)
-
-</div>
+MIT

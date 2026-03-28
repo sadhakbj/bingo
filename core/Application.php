@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace Core;
 
+use Config\AppConfig;
+use Config\DbConfig;
+use Core\Config\ConfigLoader;
+use Core\Config\DatabaseConfig;
 use Core\Container\Container;
+use Core\Database\Database;
 use Core\Exceptions\ExceptionHandler;
 use Core\Http\Middleware\MiddlewarePipeline;
 use Core\Http\Request;
@@ -21,6 +26,9 @@ class Application
     private array $config = [];
     private string $basePath;
 
+    private AppConfig $appConfig;
+    private DatabaseConfig $dbConfig;
+
     public function __construct(array $config = [])
     {
         // Determine base path (where composer.json is located)
@@ -30,22 +38,49 @@ class Application
         $this->loadEnvironmentVariables();
 
         $this->config = array_merge([
-            'environment' => $_ENV['APP_ENV'] ?? 'development',
             'default_middleware' => true,
         ], $config);
+
+        // Build typed config objects — #[Env] attributes drive the wiring
+        $this->appConfig = ConfigLoader::load(AppConfig::class);
+        $this->dbConfig  = $this->bootDatabase();
 
         $this->container = new Container();
         $this->router    = new Router($this->container);
         $this->pipeline  = MiddlewarePipeline::create($this->container);
+
+        // Register config instances so they are injectable everywhere
+        $this->container->instance(AppConfig::class, $this->appConfig);
+        $this->container->instance(DatabaseConfig::class, $this->dbConfig);
+
+        // Boot Eloquent with typed database config
+        Database::setup($this->dbConfig);
 
         if ($this->config['default_middleware']) {
             $this->setDefaultMiddleware();
         }
     }
 
-    /**
-     * Load environment variables from .env file
-     */
+    private function bootDatabase(): DatabaseConfig
+    {
+        /** @var DbConfig $dbConfig */
+        $dbConfig    = ConfigLoader::load(DbConfig::class);
+        $defaultName = $dbConfig->default;
+
+        $connections = [];
+        foreach ($dbConfig->connections as $name => $driverClass) {
+            $connections[$name] = ConfigLoader::load($driverClass);
+        }
+
+        if (!isset($connections[$defaultName])) {
+            throw new \InvalidArgumentException(
+                "DB_CONNECTION is set to '{$defaultName}' but it is not listed in DbConfig::\$connections."
+            );
+        }
+
+        return new DatabaseConfig($defaultName, $connections);
+    }
+
     private function loadEnvironmentVariables(): void
     {
         try {
@@ -144,7 +179,7 @@ class Application
      */
     private function setDefaultMiddleware(): void
     {
-        if ($this->config['environment'] === 'production') {
+        if ($this->appConfig->env === 'production') {
             $this->pipeline = MiddlewarePipeline::productionApi([
                 'allowed_origins' => $this->config['cors']['allowed_origins'] ?? []
             ]);
@@ -304,7 +339,7 @@ class Application
      */
     public function environment(): string
     {
-        return $this->config['environment'];
+        return $this->appConfig->env;
     }
 
     /**
@@ -312,12 +347,15 @@ class Application
      */
     public function isDebug(): bool
     {
-        $value = $this->env('APP_DEBUG', false);
-
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        return in_array(strtolower((string) $value), ['true', '1', 'yes'], strict: true);
+        return $this->appConfig->debug;
     }
+
+    /**
+     * Get the typed application config.
+     */
+    public function getAppConfig(): AppConfig
+    {
+        return $this->appConfig;
+    }
+
 }

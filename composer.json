@@ -6,8 +6,12 @@
     "autoload": {
         "psr-4": {
             "Core\\": "core/",
-            "App\\": "app/"
-        }
+            "App\\": "app/",
+            "Config\\": "config/"
+        },
+        "files": [
+            "core/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

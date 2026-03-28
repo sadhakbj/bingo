@@ -42,13 +42,14 @@ class BodyParserMiddleware implements MiddlewareInterface
     {
         try {
             $this->parseBody($request);
-            return $next($request);
         } catch (\Exception $e) {
             return Response::json([
                 'error' => 'Body parsing failed',
                 'message' => $e->getMessage()
             ], 400);
         }
+
+        return $next($request);
     }
 
     /**

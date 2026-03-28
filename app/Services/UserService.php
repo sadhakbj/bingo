@@ -19,7 +19,7 @@ class UserService
 
             $user = $this->persistUser($dto);
 
-            $userDTO = UserDTO::fromModel($user->load('posts'));
+            $userDTO = UserDTO::fromModel($user->loadMissing('posts'));
 
             return ApiResponse::success(
                 data: $userDTO,
