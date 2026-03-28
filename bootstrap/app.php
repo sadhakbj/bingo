@@ -41,6 +41,24 @@ if ($app->getConfig()['database']) {
 
 /*
 |--------------------------------------------------------------------------
+| Register Services (Dependency Injection)
+|--------------------------------------------------------------------------
+|
+| Only needed for:
+|   - Interface → concrete bindings  ($app->singleton(CacheInterface::class, RedisCache::class))
+|   - Pre-built config/scalar objects ($app->instance(Config::class, new Config([...])))
+|
+| Concrete classes with typed constructor deps are auto-resolved — no registration needed.
+| PostService, UserService, OrderService etc. just work via type-hinting.
+|
+*/
+
+// $app->singleton(\App\Services\UserService::class);
+// $app->singleton(\App\Contracts\CacheInterface::class, \App\Services\RedisCache::class);
+// $app->instance(\App\Config::class, new \App\Config(['key' => 'value']));
+
+/*
+|--------------------------------------------------------------------------
 | Register Controllers
 |--------------------------------------------------------------------------
 |

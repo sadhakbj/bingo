@@ -13,6 +13,7 @@ use Core\Attributes\Route\Request as RequestAttr;
 use Core\Attributes\Route\Route;
 use Core\Attributes\Route\UploadedFile;
 use Core\Attributes\Route\UploadedFiles;
+use Core\Container\Container;
 use Core\Http\Middleware\MiddlewarePipeline;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -29,8 +30,9 @@ class Router
     private array $middlewares = [];
     private array $apiControllerPrefixes = [];
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly ?Container $container = null
+    ) {
         $this->routes = new RouteCollection();
     }
 
@@ -188,7 +190,9 @@ class Router
         unset($parameters['_controller'], $parameters['_action'], $parameters['_route_name'], $parameters['_route']);
 
         $routeMiddlewares = $this->middlewares[$routeName] ?? [];
-        $controller       = new $controllerClass();
+        $controller = $this->container !== null
+            ? $this->container->make($controllerClass)
+            : new $controllerClass();
         $reflection       = new \ReflectionMethod($controller, $action);
 
         // Build the final handler: resolve args then invoke the controller method
@@ -336,9 +340,9 @@ class Router
 
         // Run route-level middleware through a proper $next pipeline
         if (!empty($routeMiddlewares)) {
-            $pipeline = MiddlewarePipeline::create();
+            $pipeline = MiddlewarePipeline::create($this->container);
             foreach ($routeMiddlewares as $middlewareClass) {
-                $pipeline->add(new $middlewareClass());
+                $pipeline->add($middlewareClass);
             }
             return $pipeline->process($request, $finalHandler);
         }

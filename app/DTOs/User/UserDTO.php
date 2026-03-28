@@ -17,6 +17,12 @@ class UserDTO extends DataTransferObject
     public readonly string $updated_at;
     public readonly array $posts;
 
+    public function __construct(array $data = [])
+    {
+        parent::__construct($data);
+        $this->age = null;
+    }
+
     public function getDisplayName(): string
     {
         return $this->name;
@@ -26,7 +32,7 @@ class UserDTO extends DataTransferObject
     {
         return $this->age && $this->age >= 18;
     }
-    
+
     public function getMetadata(): array
     {
         return [
@@ -35,12 +41,12 @@ class UserDTO extends DataTransferObject
             'profile_complete' => $this->isProfileComplete()
         ];
     }
-    
+
     private function isProfileComplete(): bool
     {
-        return !empty($this->email) && 
-               !empty($this->name) && 
-               !is_null($this->age) && 
+        return !empty($this->email) &&
+               !empty($this->name) &&
+               !is_null($this->age) &&
                !empty($this->bio);
     }
 }

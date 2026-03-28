@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Core;
 
+use Core\Container\Container;
 use Core\Exceptions\ExceptionHandler;
 use Core\Http\Middleware\MiddlewarePipeline;
 use Core\Http\Request;
@@ -13,6 +14,7 @@ use Dotenv\Dotenv;
 
 class Application
 {
+    private Container $container;
     private Router $router;
     private MiddlewarePipeline $pipeline;
     private array $controllers = [];
@@ -32,8 +34,9 @@ class Application
             'default_middleware' => true,
         ], $config);
 
-        $this->router = new Router();
-        $this->pipeline = MiddlewarePipeline::create();
+        $this->container = new Container();
+        $this->router    = new Router($this->container);
+        $this->pipeline  = MiddlewarePipeline::create($this->container);
 
         if ($this->config['default_middleware']) {
             $this->setDefaultMiddleware();
@@ -130,7 +133,8 @@ class Application
      */
     public function run(): void
     {
-        $request = Request::createFromGlobals();
+        $this->container->compile();
+        $request  = Request::createFromGlobals();
         $response = $this->handle($request);
         $response->send();
     }
@@ -147,6 +151,56 @@ class Application
         } else {
             $this->pipeline = MiddlewarePipeline::defaultApi();
         }
+
+        // Static factories use `new self()` internally — re-inject the container
+        $this->pipeline->setContainer($this->container);
+    }
+
+    /**
+     * Get the container instance
+     */
+    public function getContainer(): Container
+    {
+        return $this->container;
+    }
+
+    /**
+     * Register a singleton — one shared instance for the entire lifecycle.
+     * $app->singleton(UserService::class);
+     * $app->singleton(CacheInterface::class, RedisCache::class);
+     */
+    public function singleton(string $abstract, ?string $concrete = null): self
+    {
+        $this->container->singleton($abstract, $concrete);
+        return $this;
+    }
+
+    /**
+     * Register a transient binding — new instance per resolution.
+     * $app->bind(MailerInterface::class, SmtpMailer::class);
+     */
+    public function bind(string $abstract, ?string $concrete = null): self
+    {
+        $this->container->bind($abstract, $concrete);
+        return $this;
+    }
+
+    /**
+     * Register a pre-built object instance.
+     * $app->instance(Config::class, new Config([...]));
+     */
+    public function instance(string $abstract, object $instance): self
+    {
+        $this->container->instance($abstract, $instance);
+        return $this;
+    }
+
+    /**
+     * Resolve a class from the container.
+     */
+    public function make(string $abstract): mixed
+    {
+        return $this->container->make($abstract);
     }
 
     /**

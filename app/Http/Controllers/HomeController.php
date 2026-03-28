@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\LogMiddleware;
 use App\Models\User;
+use App\Services\UserService;
 use Core\Attributes\Middleware;
 use Core\Attributes\Route\Route;
 use Core\Http\Request;

@@ -76,8 +76,6 @@ abstract class DataTransferObject
                 }
 
                 $property->setValue($this, $value);
-            } elseif ($property->hasType() && $property->getType()->allowsNull()) {
-                $property->setValue($this, null);
             }
         }
     }

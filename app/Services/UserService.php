@@ -68,13 +68,8 @@ class UserService
             return ApiResponse::notFound('User not found');
         }
 
-        $userDTO = UserDTO::fromModel($user);
-
         return ApiResponse::success(
-            data: $userDTO,
-            meta: [
-                'user_metadata' => $userDTO->getMetadata()
-            ]
+            data: $user->toArray(),
         );
     }
 }

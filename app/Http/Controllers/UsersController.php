@@ -27,6 +27,10 @@ use Symfony\Component\HttpFoundation\File\UploadedFile as File;
 #[Middleware([LogMiddleware::class])]
 class UsersController
 {
+    public function __construct(private readonly UserService $userService)
+    {
+    }
+
     #[Get('/')]
     public function index(): Response
     {
@@ -66,8 +70,7 @@ class UsersController
     #[Get('/{id}')]
     public function show(#[Param('id')] int $id): Response
     {
-        $userService = new UserService();
-        $response    = $userService->getUserById($id);
+        $response    = $this->userService->getUserById($id);
 
         return Response::json($response->toArray(), $response->status_code);
     }

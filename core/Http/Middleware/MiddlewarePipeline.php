@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Core\Http\Middleware;
 
+use Core\Container\Container;
 use Core\Http\Request;
 use Core\Http\Response;
 
@@ -11,6 +12,7 @@ class MiddlewarePipeline
 {
     private array $middleware = [];
     private array $globalMiddleware = [];
+    private ?Container $container = null;
 
     /**
      * Add global middleware that runs on all requests
@@ -85,7 +87,9 @@ class MiddlewarePipeline
     private function resolveMiddleware($middleware): callable|object
     {
         if (is_string($middleware) && class_exists($middleware)) {
-            return new $middleware();
+            return $this->container !== null
+                ? $this->container->make($middleware)
+                : new $middleware();
         }
 
         if (is_callable($middleware)) {
@@ -102,9 +106,17 @@ class MiddlewarePipeline
     /**
      * Create a new middleware pipeline
      */
-    public static function create(): self
+    public static function create(?Container $container = null): self
     {
-        return new self();
+        $instance = new self();
+        $instance->container = $container;
+        return $instance;
+    }
+
+    public function setContainer(?Container $container): self
+    {
+        $this->container = $container;
+        return $this;
     }
 
     /**
