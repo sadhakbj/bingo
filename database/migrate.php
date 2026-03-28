@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Framework\Database\Database;
+use Core\Database\Database;
 
 // Initialize Eloquent
 Database::setup();

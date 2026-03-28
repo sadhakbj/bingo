@@ -1,473 +1,494 @@
-# NestJS-Inspired PHP Framework Development Plan
-
-## 🎯 Project Overview
-
-Building a modern PHP 8.5+ framework inspired by NestJS architecture, leveraging the best Symfony packages and modern PHP features. This framework aims to bring NestJS's elegant abstractions and patterns to the PHP ecosystem.
-
-## 📊 Current State Analysis
-
-### ✅ What We Have
-- **Attributes/Decorators**: Basic routing attributes (`@Get`, `@Post`, etc.)
-- **Parameter Injection**: Parameter attributes (`@Body`, `@Param`, `@Query`, `@Headers`)
-- **Basic Router**: Symfony routing with attribute discovery
-- **DTOs**: Data Transfer Objects with validation
-- **Controllers**: Basic controller structure with API controllers
-- **Middleware**: Basic middleware system
-- **Database**: Eloquent ORM integration
-- **Console**: Basic CLI with route listing
-
-### ❌ Missing Core Features (vs NestJS)
-- Dependency Injection Container
-- Modular Architecture (Modules)
-- Guards (Authentication/Authorization)
-- Interceptors (Cross-cutting concerns)
-- Pipes (Validation/Transformation)
-- Exception Filters
-- Providers/Services System
-- Configuration Management
-- Event System
-- Advanced CLI/Code Generation
-- Testing Infrastructure
-- And much more...
-
-## 🚀 Development Roadmap
-*API-First, Microservices-Ready PHP Framework*
-
-## Phase 1: HTTP Layer Foundation (Weeks 1-3)
-*Building robust HTTP/API layer for microservices*
-
-### 1.1 Enhanced HTTP Middleware Stack 🌐
-**Priority: CRITICAL**
-```
-📦 Packages: symfony/http-foundation, psr/http-message
-🎯 Goal: Production-ready HTTP middleware pipeline
-```
-
-**Features:**
-- **CORS Middleware**: Configurable cross-origin resource sharing
-- **Body Parser Middleware**: JSON/XML/Form parsing with size limits
-- **Compression Middleware**: Gzip/Brotli response compression  
-- **Security Headers**: HSTS, CSP, X-Frame-Options, etc.
-- **Request ID Middleware**: Correlation IDs for distributed tracing
-- **Content Negotiation**: Accept headers, API versioning
-- **Rate Limiting**: Per-IP, per-user, per-endpoint limits
-- **Request Logging**: Structured HTTP request/response logging
-
-**Implementation:**
-```php
-Core\Http\Middleware\CorsMiddleware
-Core\Http\Middleware\BodyParserMiddleware  
-Core\Http\Middleware\CompressionMiddleware
-Core\Http\Middleware\SecurityHeadersMiddleware
-Core\Http\Middleware\RequestIdMiddleware
-Core\Http\Middleware\RateLimitMiddleware
-```
-
-### 1.2 API Response Standards 📋
-**Priority: CRITICAL** 
-```
-🎯 Goal: Consistent API responses for microservices communication
-```
-
-**Features:**
-- **Standardized Response Format**: Success/error response schemas
-- **HTTP Status Code Management**: Proper status codes for all scenarios
-- **Error Response Standardization**: RFC7807 Problem Details format
-- **Pagination Support**: Cursor and offset-based pagination
-- **Response Transformation**: Data serialization and formatting
-- **API Versioning**: Header/URL-based versioning strategies
-- **Content-Type Negotiation**: JSON/XML/MessagePack support
-
-**Implementation:**
-```php
-Core\Http\ApiResponse           // Standardized response wrapper
-Core\Http\ErrorResponse         // RFC7807 problem details
-Core\Http\PaginatedResponse     // Pagination wrapper
-Core\Http\ResponseTransformer   // Data transformation
-Core\Http\ContentNegotiator     // Accept header handling 
-```
-
-### 1.3 Microservices HTTP Features 🔄
-**Priority: HIGH**
-```
-📦 Package: guzzlehttp/guzzle
-🎯 Goal: Service-to-service communication primitives
-```
-
-**Features:**
-- **HTTP Client Factory**: Configured HTTP clients for service calls
-- **Service Discovery Integration**: Dynamic endpoint resolution  
-- **Client-Side Load Balancing**: Round-robin, random, least-connections
-- **Circuit Breaker Pattern**: Fail-fast for unhealthy services
-- **Retry Logic with Backoff**: Configurable retry strategies
-- **Timeout Management**: Per-request and global timeouts
-- **Request/Response Interceptors**: Logging, auth, transformation
-
-**Implementation:**
-```php
-Core\Http\Client\HttpClientFactory
-Core\Http\Client\ServiceClient
-Core\Http\Client\LoadBalancer
-Core\Http\Client\CircuitBreaker
-Core\Http\Client\RetryMiddleware
-```
-
-## Phase 2: Microservices Infrastructure (Weeks 4-6)
-*Core microservices patterns and observability*
-
-### 2.1 Health Checks & Monitoring 💚
-**Priority: CRITICAL**
-```
-📦 Package: symfony/http-foundation
-🎯 Goal: Production-ready health monitoring
-```
-
-**Features:**
-- **Readiness Probes**: Service dependency checks
-- **Liveness Probes**: Application health indicators
-- **Health Check Endpoints**: `/health`, `/health/ready`, `/health/live`
-- **Custom Health Indicators**: Database, cache, external services
-- **Metrics Collection**: Request count, response time, error rates
-- **Graceful Shutdown**: Proper cleanup on termination signals
-
-**Implementation:**
-```php
-Core\Health\HealthController
-Core\Health\HealthIndicator
-Core\Health\DatabaseHealthIndicator
-Core\Health\MemoryHealthIndicator
-Core\Metrics\MetricsCollector
-```
-
-### 2.2 Configuration Management ⚙️
-**Priority: HIGH** 
-```
-📦 Package: symfony/config
-🎯 Goal: 12-factor app configuration for microservices
-```
-
-**Features:**
-- **Environment Variables**: `.env` file support with validation
-- **Configuration Hierarchy**: Default → Environment → Runtime
-- **Type-Safe Configuration**: Validated configuration objects
-- **Hot Reloading**: Development-time config updates
-- **Secrets Management**: Integration with secret providers
-- **Feature Flags**: Runtime feature toggles
-
-**Implementation:**
-```php
-Core\Config\ConfigService
-Core\Config\EnvironmentLoader
-Core\Config\ConfigSchema
-Core\Attributes\ConfigProperty
-```
-
-### 2.3 Logging & Tracing 📝
-**Priority: HIGH**
-```
-📦 Package: monolog/monolog
-🎯 Goal: Distributed tracing and structured logging
-```
-
-**Features:**
-- **Structured Logging**: JSON formatting for log aggregation
-- **Correlation IDs**: Request tracing across services
-- **Log Levels & Channels**: Configurable logging destinations
-- **Performance Logging**: Request duration, memory usage
-- **Error Context**: Stack traces, request details, user context
-- **Log Sampling**: Reduce log volume in high-traffic scenarios
-
-**Implementation:**
-```php
-Core\Logging\Logger
-Core\Logging\CorrelationIdMiddleware
-Core\Logging\PerformanceLogger
-Core\Attributes\Log
-```
-
-## Phase 3: API Developer Experience (Weeks 7-9)
-*Making the framework easy to use and document*
-
-### 3.1 OpenAPI/Swagger Integration 📖
-**Priority: HIGH**
-```
-📦 Package: cebe/openapi
-🎯 Goal: Auto-generated API documentation
-```
-
-**Features:**
-- **Attribute-Based Documentation**: `@ApiOperation`, `@ApiResponse`
-- **DTO to Schema Mapping**: Automatic schema generation
-- **Authentication Documentation**: Security scheme definitions
-- **Example Generation**: Request/response examples
-- **Interactive Documentation**: Swagger UI integration
-- **API Versioning Support**: Multiple API versions
-
-### 3.2 Enhanced CLI & Code Generation 🛠️
-**Priority: MEDIUM**
-```
-📦 Package: symfony/console
-🎯 Goal: Rapid microservice development
-```
-
-**Features:**
-- **Service Generation**: Complete CRUD microservice scaffolding
-- **API Client Generation**: Generate clients for other services
-- **Docker Integration**: Generate Dockerfile and compose files
-- **Migration Tools**: Database schema management
-- **Development Server**: Built-in development server with hot reload
-
-### 3.3 Validation & Transformation Pipeline 🔧
-**Priority: HIGH**
-```
-📦 Package: symfony/validator
-🎯 Goal: Robust data validation for APIs
-```
-
-**Features:**
-- **DTO Validation**: Attribute-based validation rules
-- **Request Validation**: Automatic request validation
-- **Response Validation**: Ensure response schema compliance  
-- **Custom Validators**: Domain-specific validation logic
-- **Error Formatting**: Consistent validation error responses
-
-## Phase 4: Advanced Microservices Features (Weeks 10-12)
-
-### 4.1 Event-Driven Architecture 📡
-**Priority: MEDIUM**
-```
-📦 Package: symfony/messenger
-🎯 Goal: Async communication between services
-```
-
-**Features:**
-- **Event Publishing**: Domain events and integration events
-- **Event Handlers**: Async event processing
-- **Message Queue Integration**: RabbitMQ, Redis, SQS support
-- **Event Sourcing**: Optional event sourcing capabilities
-- **Saga Pattern**: Distributed transaction management
-
-### 4.2 Caching & Performance 💾
-**Priority: MEDIUM**
-```
-📦 Package: symfony/cache
-🎯 Goal: High-performance caching strategies
-```
-
-**Features:**
-- **HTTP Response Caching**: ETag, Last-Modified headers
-- **API Response Caching**: Redis-based response caching
-- **Method Result Caching**: Attribute-based method caching
-- **Distributed Caching**: Multi-node cache invalidation
-- **Cache Warming**: Preload frequently accessed data
-
-### 4.3 Security & Authentication 🔒
-**Priority: HIGH**
-```
-📦 Package: firebase/php-jwt
-🎯 Goal: Microservice authentication/authorization
-```
-
-**Features:**
-- **JWT Authentication**: Stateless authentication
-- **API Key Management**: Service-to-service authentication  
-- **OAuth2 Integration**: Third-party authentication
-- **Role-Based Access Control**: Granular permissions
-- **Rate Limiting**: Protection against abuse
-- **CORS Configuration**: Cross-origin security
-
-## Phase 5: Scaling & Operations (Weeks 13-15)
-
-### 5.1 Service Mesh Integration 🕸️
-**Priority: LOW**
-```
-🎯 Goal: Production-ready service mesh support
-```
-
-**Features:**
-- **Envoy Proxy Integration**: Sidecar proxy configuration
-- **Service Discovery**: Consul, etcd integration
-- **Traffic Management**: Load balancing, circuit breaking
-- **Observability**: Distributed tracing, metrics collection
-- **Security**: mTLS, service-to-service authorization
-
-### 5.2 Container & Orchestration 🐳
-**Priority: MEDIUM**
-```
-🎯 Goal: Cloud-native deployment support
-```
-
-**Features:**
-- **Docker Optimization**: Multi-stage builds, minimal images  
-- **Kubernetes Manifests**: Deployment, service, ingress templates
-- **Helm Charts**: Parameterized deployment packages
-- **Resource Management**: CPU/memory limits and requests
-- **Auto-scaling**: HPA and VPA configurations
-
-### 5.3 Testing Infrastructure 🧪
-**Priority: MEDIUM**
-```
-📦 Package: phpunit/phpunit
-🎯 Goal: Comprehensive testing for microservices
-```
-
-**Features:**
-- **API Testing**: HTTP endpoint testing utilities
-- **Integration Tests**: Multi-service testing scenarios
-- **Contract Testing**: API contract validation
-- **Mock Services**: Service virtualization for testing
-- **Load Testing**: Performance testing integration
-
-## Phase 6: Advanced Features (Weeks 16-18)
-
-### 6.1 Dependency Injection & Modules 🏗️
-**Priority: MEDIUM**
-```
-📦 Package: symfony/dependency-injection
-🎯 Goal: Advanced DI container for complex applications
-```
-
-**Features:**
-- Auto-wiring based on type hints
-- Service registration and resolution  
-- Module system for organization
-- Factory services and decorators
-- Service tags and collections
-
-### 6.2 Real-time Features 🔌
-**Priority: LOW**
-```
-📦 Package: ratchet/pawl
-🎯 Goal: Real-time communication for modern APIs
-```
-
-**Features:**
-- **WebSocket Support**: Real-time bidirectional communication
-- **Server-Sent Events**: Push notifications
-- **Event Broadcasting**: Multi-service event propagation
-- **Connection Management**: Scale WebSocket connections
-
-### 6.3 Message Queues & Workers 🏃
-**Priority: MEDIUM**
-```
-📦 Package: symfony/messenger
-🎯 Goal: Background job processing
-```
-
-**Features:**
-- **Async Job Processing**: Background task execution
-- **Queue Management**: Redis, RabbitMQ, SQS support
-- **Worker Scaling**: Auto-scaling based on queue depth
-- **Job Scheduling**: Cron-like scheduled tasks
-- **Dead Letter Queues**: Failed job handling
-
-## 📋 Implementation Guidelines
-
-### Code Standards
-- **PHP 8.5+** features (readonly classes, intersection types, etc.)
-- **PSR-12** coding standards
-- **PHPStan** level 8 static analysis
-- **Attributes** over annotations everywhere
-- **Type safety** with strict modes
-- **Immutable** data structures where possible
-
-### Architecture Principles
-- **Dependency Inversion**: Depend on abstractions
-- **Single Responsibility**: One concern per class
-- **Open/Closed**: Extensible without modification
-- **Composition over Inheritance**: Favor composition
-- **Fail Fast**: Validate early, fail clearly
-- **Convention over Configuration**: Sensible defaults
-
-### Package Selection Criteria
-- **Symfony** ecosystem preferred for HTTP/DI/Console
-- **PSR** compliance required
-- **Active maintenance** and security updates
-- **Performance** considerations for hot paths
-- **Memory efficiency** for long-running processes
-- **Backwards compatibility** commitments
-
-## 🎯 Success Metrics
-
-### API Performance
-- **< 5ms** middleware overhead per request
-- **< 1MB** memory footprint for basic API
-- **10,000+ req/s** throughput on modern hardware
-- **Sub-100ms** P99 response times
-
-### Microservices Readiness
-- **< 30 seconds** service cold start time
-- **Zero downtime** deployments with health checks
-- **< 50MB** Docker image sizes
-- **Auto-discovery** of service dependencies
-
-### Developer Experience
-- **< 5 minutes** from install to first API endpoint
-- **One command** CRUD API generation
-- **Zero configuration** CORS and compression
-- **Auto-generated** OpenAPI documentation
-
-### Production Features
-- **Built-in** health checks and metrics
-- **Distributed tracing** correlation IDs
-- **Circuit breaker** patterns for resilience
-- **Rate limiting** and security headers
-
-## 📝 Next Steps
-
-### Week 1 Priorities
-1. **Implement CORS middleware** with configurable origins
-2. **Add body parser middleware** with size limits and validation
-3. **Create compression middleware** with content-type detection
-4. **Build security headers middleware** for OWASP compliance
-5. **Add request ID middleware** for correlation tracing
-
-### Immediate Implementation
+# Bingo Framework — Development Roadmap
+
+> **Author's note:** This is an opinionated, honest roadmap. Not a wishlist. Every phase is sequenced by what actually unlocks the next thing. Features are only added when they pull their weight.
+
+---
+
+## What Bingo Is
+
+A PHP 8.3+ API-first microservice framework. Not Laravel (too heavy). Not Slim (too bare). Not a port of NestJS — PHP has its own idioms.
+
+**The core bet:** PHP 8 attributes + automatic OpenAPI generation + small footprint = the framework PHP microservices have been missing.
+
+**Target audience:** Developers building JSON APIs and microservices who want structure without Laravel's weight.
+
+---
+
+## Current State (as of initial build — ~2 hours in)
+
+### ✅ Actually Done
+
+- PHP 8 attribute-based routing (`#[Get]`, `#[Post]`, `#[ApiController]`, etc.)
+- Parameter injection via attributes (`#[Body]`, `#[Query]`, `#[Param]`, `#[Headers]`, `#[UploadedFile]`)
+- Global middleware pipeline (CORS, BodyParser, Compression, SecurityHeaders, RequestId, RateLimit)
+- DTO system with Symfony Validator integration (`readonly`, `fromRequest()`, auto-422 on failure)
+- `ApiResponse` envelope DTO
+- `DTOCollection` (iterable, filterable)
+- Laravel Eloquent ORM integration (SQLite)
+- Symfony Console CLI (`php bin/framework show:routes`)
+- Development vs Production app factory (`Application::development()`, `::production()`)
+- `Request` / `Response` wrappers extending Symfony HttpFoundation
+
+### ❌ Known Bugs (fix before building new things)
+
+- `database/migrate.php` references wrong namespace: `Framework\Database\Database` → should be `Core\Database\Database`
+- `UserService::emailExists()` and `persistUser()` are hardcoded stubs — not wired to the database
+- `app/Http/Middleware/AuthMiddleware.php` and `LogMiddleware.php` return `true` and do nothing
+- Route-level `#[Middleware]` runs `handle()` without `$next` — cannot modify responses
+- `RateLimitMiddleware` uses PHP static memory — resets per process, effectively useless in FPM
+
+### 🔶 Structural Weaknesses
+
+- No Dependency Injection container — everything is manually `new`'d
+- No test suite — `tests/` contains demo scripts, not PHPUnit tests
+- No global exception handler — PHP's default error output bleeds through on uncaught exceptions
+- Controllers must be manually registered in `bootstrap/app.php` — no auto-discovery
+
+---
+
+## Phase 0: Stabilize (Do This First)
+
+> **Goal:** Make what exists actually work. No new features until the foundation is solid.
+
+**Not negotiable. A framework with silent bugs and no tests is a liability.**
+
+### 0.1 Fix Existing Bugs
+
+- [ ] Fix `database/migrate.php` namespace (`Core\Database\Database`)
+- [ ] Wire up `UserService::emailExists()` and `persistUser()` to actual Eloquent calls
+- [ ] Delete or implement `AuthMiddleware` and `LogMiddleware` — stubs that return `true` are dangerous
+- [ ] Fix route-level middleware: either wire it through `$next` pipeline or document that it's pre-response only
+
+### 0.2 Testing Infrastructure
+
+Install PHPUnit. Write tests for the parts that exist. A framework without tests can't be refactored safely.
+
 ```bash
-# Focus areas for Phase 1
-composer require symfony/rate-limiter
-composer require league/cors
-composer require php-http/message
-
-# Create middleware classes
-mkdir -p core/Http/Middleware
-touch core/Http/Middleware/CorsMiddleware.php
-touch core/Http/Middleware/BodyParserMiddleware.php
-touch core/Http/Middleware/CompressionMiddleware.php
-touch core/Http/Middleware/SecurityHeadersMiddleware.php
-touch core/Http/Middleware/RequestIdMiddleware.php
+composer require --dev phpunit/phpunit
 ```
 
-### Development Environment Setup
-- **Docker Compose**: Multi-service development environment
-- **Nginx/PHP-FPM**: Production-like HTTP setup
-- **Redis**: For caching and session storage
-- **PostgreSQL**: Primary database for APIs
-- **Prometheus/Grafana**: Metrics and monitoring
+**Tests to write (priority order):**
+1. Router — attribute discovery, route matching, param injection
+2. DTO — `fill()`, `validate()`, `fromRequest()`, `toArray()`
+3. Middleware pipeline — correct ordering, `$next` chaining, short-circuit on early return
+4. `ApiResponse` — all factory methods (`success`, `error`, `notFound`, etc.)
+5. `Request` helpers — `all()`, `input()`, `only()`, `except()`
 
-## 🏗️ API-First Architecture Principles
+### 0.3 Global Exception Handler
 
-### HTTP Layer Design
-- **Stateless**: No server-side sessions, JWT-based auth
-- **RESTful**: Consistent REST API patterns and conventions
-- **Content Negotiation**: Support JSON, XML, MessagePack
-- **Versioning**: Header and URL-based API versioning
-- **Caching**: ETags, Last-Modified, Cache-Control headers
+Right now if a controller throws an uncaught exception, PHP dumps HTML. Every API response must be JSON.
 
-### Microservices Patterns  
-- **Service Discovery**: Dynamic service registration and discovery
-- **Circuit Breaker**: Prevent cascade failures in service mesh
-- **Bulkhead Pattern**: Isolate critical resources
-- **Saga Pattern**: Distributed transaction management
-- **Event Sourcing**: Optional event-driven architecture
+```php
+// core/Exceptions/ExceptionHandler.php
+// Catches Throwable, returns ApiResponse::error() with stack trace in dev, clean message in prod
+```
 
-### Observability Stack
-- **Structured Logging**: JSON logs with correlation IDs
-- **Distributed Tracing**: OpenTelemetry integration
-- **Metrics Collection**: Prometheus-compatible metrics
-- **Health Checks**: Kubernetes-ready liveness/readiness probes
-- **Error Tracking**: Centralized error reporting
+**Exception types to handle:**
+- `ValidationException` → 422 with field errors (already partially done)
+- `NotFoundException` → 404 JSON
+- `UnauthorizedException` → 401 JSON
+- `ForbiddenException` → 403 JSON
+- `Throwable` (catch-all) → 500 JSON (with trace in dev, generic in prod)
 
-This revised plan prioritizes the HTTP layer and microservices capabilities that will make PHP a viable option for modern API and microservices architectures!
+---
 
-This plan provides a comprehensive roadmap to build a production-ready, NestJS-inspired PHP framework that leverages the best of the PHP ecosystem while providing an excellent developer experience.
+## Phase 1: Dependency Injection Container
+
+> **Goal:** Make the framework actually usable for real applications. Everything else depends on this.
+
+**This is the load-bearing wall.** Without DI, you cannot: write testable services, swap implementations, manage lifecycles, or build a module system.
+
+### Why not just use Symfony's container?
+
+You can use `symfony/dependency-injection` to bootstrap fast, but wrap it behind your own interface. This way Bingo controls the API and can swap internals later.
+
+```bash
+composer require symfony/dependency-injection
+```
+
+### What to build
+
+```php
+// core/Container/Container.php  — wraps Symfony DIC
+// core/Container/ContainerInterface.php  — your own interface
+
+// Usage:
+$container->bind(UserService::class);
+$container->bind(MailerInterface::class, SmtpMailer::class);
+$container->singleton(Database::class);
+```
+
+**Auto-wiring** based on constructor type hints — no manual binding for concrete classes.
+
+### Controller resolution via container
+
+Right now: `new UsersController()`
+After DI: `$container->make(UsersController::class)` — dependencies injected automatically.
+
+This also fixes the "register everything in bootstrap" problem — controllers can declare their dependencies and the container wires them.
+
+### Providers (service registration)
+
+```php
+#[Provider]
+class DatabaseServiceProvider
+{
+    public function register(Container $container): void
+    {
+        $container->singleton(Database::class, fn() => Database::setup());
+    }
+}
+```
+
+Auto-discovered from `app/Providers/` — no manual registration.
+
+---
+
+## Phase 2: OpenAPI Auto-Generation (The Killer Feature)
+
+> **Goal:** Zero-config API documentation from existing attributes. This is Bingo's unique selling point.
+
+**The insight:** You already have everything needed. `#[Get('/users/{id}')]` knows the path and method. `#[Body] CreateUserDTO` knows the request body schema (Symfony Validator constraints are on the properties). `#[Param('id')]` knows there's an integer path param. The framework just needs to read what's already there and emit OpenAPI 3.1 JSON.
+
+**Inspiration:** .NET's Swagger integration — you wrote it, you know how good it feels when it just works.
+
+```bash
+composer require cebe/php-openapi
+```
+
+### What gets auto-generated
+
+| Source | OpenAPI output |
+|---|---|
+| `#[ApiController('/users')]` | `tags: [users]`, path prefix |
+| `#[Get('/users/{id}')]` | `GET /users/{id}` operation |
+| `#[Param('id')] int $id` | `parameters: [{in: path, name: id, schema: {type: integer}}]` |
+| `#[Query('page')] int $page = 1` | `parameters: [{in: query, name: page, required: false}]` |
+| `#[Body] CreateUserDTO $dto` | `requestBody` with full JSON schema from DTO properties |
+| Symfony `#[Assert\NotBlank]`, `#[Assert\Email]` | `required`, `format: email` in schema |
+| `#[Assert\Range(min: 18)]` | `minimum: 18` in schema |
+| `ApiResponse::success($data)` return | `responses: {200: ...}` |
+
+### New attributes to add
+
+```php
+#[ApiSummary('Get user by ID')]         // operation summary
+#[ApiDescription('Returns a single user')]  // operation description
+#[ApiTag('Users')]                       // override auto-detected tag
+#[ApiResponse(200, 'User found', UserDTO::class)]  // explicit response docs
+#[Deprecated]                            // marks endpoint deprecated
+```
+
+### Built-in endpoints (zero config)
+
+```
+GET /openapi.json     → raw OpenAPI 3.1 spec
+GET /docs             → Swagger UI (served from CDN, no build step)
+GET /docs/redoc       → ReDoc UI alternative
+```
+
+Disable in production via `.env`:
+```
+OPENAPI_ENABLED=false
+```
+
+### DTO → JSON Schema mapping
+
+`DataTransferObject::toJsonSchema()` — reads property types + Symfony constraints via reflection, outputs JSON Schema. This feeds directly into OpenAPI's `components/schemas`.
+
+---
+
+## Phase 3: Security Layer
+
+> **Goal:** Make auth a first-class citizen, not an afterthought stub.
+
+### 3.1 JWT Authentication (stateless — required for microservices)
+
+```bash
+composer require firebase/php-jwt
+```
+
+```php
+// core/Auth/JwtGuard.php
+// core/Attributes/Guard.php   — #[Guard(JwtGuard::class)]
+
+#[Get('/users/me')]
+#[Guard(JwtGuard::class)]
+public function me(#[AuthUser] User $user): Response { ... }
+```
+
+`#[Guard]` runs before the controller, throws `UnauthorizedException` (→ 401) if not authenticated.
+`#[AuthUser]` injects the authenticated user — resolved by the guard.
+
+### 3.2 Guards (NestJS-style)
+
+Guards run through the middleware pipeline properly (with `$next`). They can:
+- Short-circuit and return a response
+- Attach data to the request (e.g., authenticated user)
+- Pass through to the controller
+
+```php
+interface GuardInterface
+{
+    public function canActivate(Request $request): bool;
+}
+```
+
+### 3.3 API Key Auth (service-to-service)
+
+```php
+#[Guard(ApiKeyGuard::class)]
+```
+
+Reads `X-API-Key` header, validates against configured keys. Useful for internal service calls.
+
+### 3.4 Role-Based Access Control
+
+```php
+#[Guard(JwtGuard::class)]
+#[Roles('admin', 'moderator')]
+public function deleteUser(#[Param('id')] int $id): Response { ... }
+```
+
+---
+
+## Phase 4: Developer Experience
+
+> **Goal:** Make building with Bingo fast and obvious.
+
+### 4.1 Code Generation CLI
+
+```bash
+php bin/bingo make:controller UserController
+php bin/bingo make:service UserService
+php bin/bingo make:dto CreateUserDTO
+php bin/bingo make:model User --migration
+php bin/bingo make:resource User  # generates controller + service + DTO + model together
+```
+
+Generates boilerplate with the right attributes, namespace, and file location. Eliminates copy-paste.
+
+### 4.2 Typed Configuration System
+
+Replace raw `$_ENV` access with typed config objects.
+
+```php
+// config/app.php
+return new AppConfig(
+    env: AppEnv::from($_ENV['APP_ENV']),
+    debug: (bool) $_ENV['APP_DEBUG'],
+    corsOrigins: explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? ''),
+);
+
+// Usage anywhere via DI:
+public function __construct(private AppConfig $config) {}
+```
+
+No more `getenv('APP_DEBUG')` scattered across the codebase.
+
+### 4.3 Improve Route-Level Middleware
+
+Wire `#[Middleware]` through the `$next` pipeline so middleware can modify the response. Right now it can only short-circuit.
+
+### 4.4 Auto-Discovery of Controllers
+
+Scan `app/Http/Controllers/` automatically. Remove manual registration from `bootstrap/app.php`.
+
+```php
+// bootstrap/app.php — should become:
+$app = Application::development();
+// that's it. controllers are auto-discovered.
+```
+
+### 4.5 Response Macros / Resource Classes
+
+For complex output transformation:
+
+```php
+class UserResource extends JsonResource
+{
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'is_adult' => $this->age >= 18,
+        ];
+    }
+}
+
+// In controller:
+return UserResource::collection($users)->toResponse();
+```
+
+---
+
+## Phase 5: Observability & Production Readiness
+
+> **Goal:** Make Bingo deployable with confidence.
+
+### 5.1 Structured Logging
+
+```bash
+composer require monolog/monolog
+```
+
+- JSON log format (plays well with Datadog, CloudWatch, Loki)
+- Automatic request context: method, path, status, duration, `X-Request-ID`
+- Log levels: DEBUG, INFO, WARNING, ERROR
+- Log channels: `app`, `http`, `database`, `security`
+
+```php
+// injected via DI:
+public function __construct(private LoggerInterface $logger) {}
+
+$this->logger->info('User created', ['user_id' => $user->id]);
+```
+
+### 5.2 Health Check Endpoints (Built-in)
+
+```
+GET /health          → overall status
+GET /health/live     → liveness (is the process running?)
+GET /health/ready    → readiness (are dependencies up?)
+```
+
+Auto-registered by the framework. No controller needed.
+
+```php
+// Extensible with custom indicators:
+class DatabaseHealthIndicator implements HealthIndicator
+{
+    public function check(): HealthStatus { ... }
+}
+```
+
+### 5.3 Real Rate Limiting
+
+Replace in-memory rate limiter with APCu (single server) or Redis (distributed).
+
+```bash
+composer require symfony/rate-limiter
+```
+
+Pluggable backend:
+```
+RATE_LIMIT_STORE=apcu    # default
+RATE_LIMIT_STORE=redis
+RATE_LIMIT_STORE=memory  # dev only
+```
+
+### 5.4 Metrics (Optional but valuable)
+
+Prometheus-compatible `/metrics` endpoint. Track:
+- Request count by route and status code
+- Response time histograms
+- Active connections
+- PHP memory and CPU
+
+---
+
+## Phase 6: Async & Events (When You Need It)
+
+> **Add this when building something that actually needs it. Don't build it speculatively.**
+
+### 6.1 Domain Events
+
+```php
+// Dispatch in service:
+$this->events->dispatch(new UserCreatedEvent($user));
+
+// Handle anywhere:
+#[EventHandler]
+public function onUserCreated(UserCreatedEvent $event): void
+{
+    $this->mailer->sendWelcomeEmail($event->user);
+}
+```
+
+Synchronous by default. Async when configured with a queue backend.
+
+### 6.2 Queue / Background Jobs
+
+```bash
+composer require symfony/messenger
+```
+
+Backends: Redis, RabbitMQ, database.
+
+```php
+$this->queue->dispatch(new SendWelcomeEmailJob($user));
+
+// Worker:
+php bin/bingo queue:work
+```
+
+### 6.3 Scheduled Tasks
+
+```php
+#[Schedule('0 9 * * *')]
+public function sendDailyDigest(): void { ... }
+
+// Run:
+php bin/bingo schedule:run  # call from cron every minute
+```
+
+---
+
+## What We're NOT Building (and Why)
+
+| Feature | Why not |
+|---|---|
+| WebSockets | PHP-FPM is a bad runtime for persistent connections. Use Swoole/ReactPHP as a separate service. |
+| Service Mesh (Envoy, Consul) | Infrastructure concern. Not a framework responsibility. |
+| Helm Charts / Kubernetes manifests | Out of scope. Provide Docker guides in docs instead. |
+| XML / MessagePack response formats | JSON is the standard for APIs in 2024+. Add if there's real demand. |
+| Event Sourcing / Saga Pattern | Premature. Add if a real use case appears. |
+| Built-in OAuth2 server | Use a dedicated auth service (Keycloak, Auth0, etc.) |
+
+---
+
+## Architecture Principles (Non-Negotiable)
+
+1. **PHP 8.3+ only** — no compatibility hacks for older versions
+2. **Attributes over configuration** — no YAML, no XML, no config arrays for routing/validation
+3. **Small footprint** — every dependency must justify its presence. Vendor size matters for microservices.
+4. **Fail fast, fail loud** — validation errors are 422, not silent. Missing config throws at boot.
+5. **JSON everywhere** — all errors, all responses, all docs are JSON-first
+6. **Testable by design** — DI container means every class can be tested in isolation
+7. **Convention over configuration** — sensible defaults, override when needed
+
+---
+
+## Code Standards
+
+- **PHPStan level 8** — strict static analysis
+- **PSR-12** code style
+- **`readonly`** for all DTOs and value objects
+- **`strict_types=1`** in every file
+- **No `mixed` types** — be explicit
+
+---
+
+## Success Metrics
+
+| Metric | Target |
+|---|---|
+| Middleware overhead per request | < 5ms |
+| Vendor size (no dev deps) | < 15MB |
+| Time from `composer create-project` to first endpoint | < 5 minutes |
+| OpenAPI spec generation time | < 50ms |
+| PHPStan level | 8 (max) |
+| Test coverage of `core/` | > 90% |
+
+---
+
+## Immediate Next Steps (What to Actually Do Now)
+
+1. **Fix the migrate.php namespace bug** — 5 minutes
+2. **Install PHPUnit, write 10 tests for the router** — validates the core works
+3. **Build the global exception handler** — makes the framework usable
+4. **Start the DI container** — everything else unlocks after this
+5. **Then: OpenAPI generation** — this is what makes people choose Bingo
+
+The DI container and OpenAPI generator are the two features that take this from "cool experiment" to "framework worth using."

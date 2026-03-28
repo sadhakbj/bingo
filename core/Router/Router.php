@@ -16,6 +16,7 @@ class Router
 {
     private RouteCollection $routes;
     private array $middlewares = [];
+    private array $apiControllerPrefixes = [];
 
     public function __construct()
     {
@@ -33,6 +34,7 @@ class Router
         if ($apiControllerAttr) {
             $apiController = $apiControllerAttr[0]->newInstance();
             $prefix = rtrim($apiController->prefix ?? '', '/');
+            $this->apiControllerPrefixes[] = $prefix;
         }
 
         foreach ($methods as $method) {
@@ -92,6 +94,16 @@ class Router
         return $this->middlewares[$routeName] ?? [];
     }
 
+    private function isApiPath(string $path): bool
+    {
+        foreach ($this->apiControllerPrefixes as $prefix) {
+            if ($prefix === '' || str_starts_with($path, $prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function dispatch(Request $request)
     {
         $context = new RequestContext();
@@ -128,26 +140,24 @@ class Router
                         $isApiController = !empty($reflectionClass->getAttributes(\Core\Attributes\ApiController::class));
                     }
                 } catch (\Symfony\Component\Routing\Exception\ResourceNotFoundException $e2) {
-                    // Neither path matched
-                    if ($isApiController) {
+                    if ($this->isApiPath($normalizedPath)) {
                         return \Core\Http\Response::json(['error' => 'Not Found'], 404);
                     }
                     return "404 - Not Found";
                 } catch (\Symfony\Component\Routing\Exception\MethodNotAllowedException $e2) {
-                    if ($isApiController) {
+                    if ($this->isApiPath($normalizedPath)) {
                         return \Core\Http\Response::json(['error' => 'Method Not Allowed'], 405);
                     }
                     return "405 - Method Not Allowed";
                 }
             } else {
-                // Only one path attempted, it didn't match
-                if ($isApiController) {
+                if ($this->isApiPath($normalizedPath)) {
                     return \Core\Http\Response::json(['error' => 'Not Found'], 404);
                 }
                 return "404 - Not Found";
             }
         } catch (\Symfony\Component\Routing\Exception\MethodNotAllowedException $e) {
-            if ($isApiController) {
+            if ($this->isApiPath($normalizedPath)) {
                 return \Core\Http\Response::json(['error' => 'Method Not Allowed'], 405);
             }
             return "405 - Method Not Allowed";

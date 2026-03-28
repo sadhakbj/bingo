@@ -1,12 +1,17 @@
 {
     "name": "sadhakbj/bingo",
-    "description": "Bingo - A high-performance PHP 8.5+ framework for API-first development with attribute-based routing and powerful middleware",
+    "description": "Bingo - A PHP 8.3+ API-first microservice framework with attribute-based routing",
     "type": "project",
     "license": "MIT",
     "autoload": {
         "psr-4": {
             "Core\\": "core/",
             "App\\": "app/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
         }
     },
     "authors": [
@@ -25,6 +30,11 @@
         "vlucas/phpdotenv": "^5.5"
     },
     "require-dev": {
-        "symfony/var-dumper": "^8.0"
+        "symfony/var-dumper": "^8.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-text"
     }
 }
