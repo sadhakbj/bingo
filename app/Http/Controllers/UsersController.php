@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile as File;
 #[Middleware([LogMiddleware::class])]
 class UsersController
 {
-    #[Get('')] 
+    #[Get('')]
     public function index(): Response
     {
         return Response::json([
@@ -83,16 +83,16 @@ class UsersController
         // MOVED TO END: Wildcard routes must come after specific routes!
         $userService = new UserService();
         $response = $userService->getUserById($id);
-        
+
         return Response::json($response->toArray(), $response->status_code);
     }
 
     #[Post('/')]
-    public function create(#[Body] CreateUserDTO $dto): Response 
+    public function create(#[Body] CreateUserDTO $dto): Response
     {
         $userService = new UserService();
         $response = $userService->createUser($dto);
-        
+
         return Response::json($response->toArray(), $response->status_code);
     }
 
@@ -131,7 +131,7 @@ class UsersController
     ): Response {
         // Handle multiple file uploads
         $fileInfos = [];
-        /** @var UploadedFile $file */
+        /** @var File $file */
         foreach ($files as $key => $file) {
             if ($file && $file->isValid()) {
                 $fileInfos[$key] = [
@@ -143,7 +143,7 @@ class UsersController
                 ];
             }
         }
-        
+
         return Response::json([
             'user_data' => $dto->toArray(),
             'api_version' => $apiVersion,
