@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | Create The Application
@@ -13,6 +15,8 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UsersController;
 use Core\Application;
 use Core\Database\Database;
 
@@ -45,8 +49,8 @@ if ($app->getConfig()['database']) {
 */
 
 $app->controllers([
-    \App\Http\Controllers\HomeController::class,
-    \App\Http\Controllers\UsersController::class,
+    HomeController::class,
+    UsersController::class,
 ]);
 
 /*

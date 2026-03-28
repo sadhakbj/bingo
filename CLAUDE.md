@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Bingo** is a custom PHP 8.3+ API framework built from scratch by Bijaya Prasad Kuikel (`sadhakbj`).
+**Bingo** is a custom PHP 8.5+ API framework built from scratch by Bijaya Prasad Kuikel (`sadhakbj`).
 Inspired by NestJS (attribute-based routing, DTOs, controllers) and Laravel (Eloquent ORM, `.env`, bootstrap pattern).
 Wraps Symfony HTTP/Routing components — does NOT use Laravel or Symfony's full framework.
 
@@ -118,7 +118,7 @@ Access via `$_ENV['KEY']` or `getenv('KEY')`. `.env` is optional (uses `safeLoad
 
 ## Dependencies (composer.json)
 
-**Runtime:** `php ^8.3`, `illuminate/database ^13`, `symfony/http-foundation ^8`, `symfony/routing ^8`, `symfony/console ^8`, `symfony/validator ^8`, `vlucas/phpdotenv ^5.5`
+**Runtime:** `php ^8.5`, `illuminate/database ^13`, `symfony/http-foundation ^8`, `symfony/routing ^8`, `symfony/console ^8`, `symfony/validator ^8`, `vlucas/phpdotenv ^5.5`
 
 **Dev:** `symfony/var-dumper`
 
@@ -151,7 +151,7 @@ composer install
 
 ## Code Conventions
 
-- PHP 8.3+ features expected (readonly, named args, attributes, match, enums welcome)
+- PHP 8.5+ features expected (readonly, named args, attributes, match, enums welcome)
 - All framework core code lives in `core/` under `Core\` namespace
 - All app code lives in `app/` under `App\` namespace
 - API controllers return `Response` objects (enforced by `#[ApiController]`)

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core;
 
+use Core\Exceptions\ExceptionHandler;
 use Core\Http\Middleware\MiddlewarePipeline;
 use Core\Http\Request;
 use Core\Http\Response;
@@ -107,18 +110,19 @@ class Application
      */
     public function handle(Request $request): Response
     {
-        // Process request through middleware pipeline
-        return $this->pipeline->process($request, function(Request $req) {
-            // Final handler - dispatch through router
-            $response = $this->router->dispatch($req);
-            
-            // Ensure we have a proper Response object
-            if (!$response instanceof Response) {
-                $response = new Response($response);
-            }
-            
-            return $response;
-        });
+        try {
+            return $this->pipeline->process($request, function (Request $req) {
+                $response = $this->router->dispatch($req);
+
+                if (!$response instanceof Response) {
+                    $response = new Response($response);
+                }
+
+                return $response;
+            });
+        } catch (\Throwable $e) {
+            return (new ExceptionHandler($this->isDebug()))->handle($e);
+        }
     }
 
     /**

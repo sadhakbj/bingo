@@ -5,7 +5,7 @@ A high-performance PHP 8.5+ framework designed for **API-first development** and
 
 <div align="center">
 
-[![PHP Version](https://img.shields.io/badge/php-%5E8.3-8892BF.svg)]()
+[![PHP Version](https://img.shields.io/badge/php-%5E8.5-8892BF.svg)]()
 [![API First](https://img.shields.io/badge/design-API%20First-blue.svg)]()
 [![Microservices](https://img.shields.io/badge/optimized%20for-Microservices-green.svg)]()
 [![Modern PHP](https://img.shields.io/badge/modern-PHP%208.5+-purple.svg)]()
@@ -45,7 +45,7 @@ class UsersController {
 ## 🏁 Quick Start
 
 ### Prerequisites
-- PHP 8.3+
+- PHP 8.5+
 - Composer
 
 ### Installation
@@ -758,7 +758,7 @@ class HealthController {
 
 ### Docker-Ready Structure
 ```dockerfile
-FROM php:8.3-fpm
+FROM php:8.5-fpm
 COPY . /var/www/html
 RUN composer install --no-dev --optimize-autoloader
 EXPOSE 9000

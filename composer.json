@@ -1,6 +1,6 @@
 {
     "name": "sadhakbj/bingo",
-    "description": "Bingo - A PHP 8.3+ API-first microservice framework with attribute-based routing",
+    "description": "Bingo - A PHP 8.5+ API-first microservice framework with attribute-based routing",
     "type": "project",
     "license": "MIT",
     "autoload": {
@@ -21,7 +21,7 @@
         }
     ],
     "require": {
-        "php": "^8.3",
+        "php": "^8.5",
         "illuminate/database": "^13.2.0",
         "symfony/http-foundation": "^8.0",
         "symfony/routing": "^8.0",

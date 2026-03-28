@@ -6,7 +6,7 @@
 
 ## What Bingo Is
 
-A PHP 8.3+ API-first microservice framework. Not Laravel (too heavy). Not Slim (too bare). Not a port of NestJS — PHP has its own idioms.
+A PHP 8.5+ API-first microservice framework. Not Laravel (too heavy). Not Slim (too bare). Not a port of NestJS — PHP has its own idioms.
 
 **The core bet:** PHP 8 attributes + automatic OpenAPI generation + small footprint = the framework PHP microservices have been missing.
 
@@ -450,7 +450,7 @@ php bin/bingo schedule:run  # call from cron every minute
 
 ## Architecture Principles (Non-Negotiable)
 
-1. **PHP 8.3+ only** — no compatibility hacks for older versions
+1. **PHP 8.5+ only** — no compatibility hacks for older versions
 2. **Attributes over configuration** — no YAML, no XML, no config arrays for routing/validation
 3. **Small footprint** — every dependency must justify its presence. Vendor size matters for microservices.
 4. **Fail fast, fail loud** — validation errors are 422, not silent. Missing config throws at boot.

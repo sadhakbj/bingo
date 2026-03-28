@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | Register The Auto Loader & Bootstrap
@@ -12,7 +14,7 @@
 |
 */
 
-$app = require_once __DIR__.'/../bootstrap/app.php';
+$app = require __DIR__.'/../bootstrap/app.php';
 
 /*
 |--------------------------------------------------------------------------

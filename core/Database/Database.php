@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Core\Database;
 
 use Illuminate\Database\Capsule\Manager as Capsule;
