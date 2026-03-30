@@ -19,9 +19,12 @@ use Bingo\Exceptions\Http\NotFoundException;
 use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
+use Bingo\Http\StreamedResponse as BingoStreamedResponse;
 use Bingo\Validation\ValidationException;
 use ReflectionClass;
 use ReflectionMethod;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\Route as SymfonyRoute;
@@ -44,7 +47,7 @@ class Router
         $methods = $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
 
         // Check for ApiController attribute and get prefix if present
-        $apiControllerAttr = $reflectionClass->getAttributes(\Bingo\Attributes\ApiController::class);
+        $apiControllerAttr = $reflectionClass->getAttributes(\Bingo\Attributes\Route\ApiController::class);
         $prefix = '';
         if ($apiControllerAttr) {
             $apiController = $apiControllerAttr[0]->newInstance();
@@ -142,7 +145,7 @@ class Router
             $controllerClass = $parameters['_controller'] ?? null;
             if ($controllerClass) {
                 $reflectionClass = new ReflectionClass($controllerClass);
-                $isApiController = !empty($reflectionClass->getAttributes(\Bingo\Attributes\ApiController::class));
+                $isApiController = !empty($reflectionClass->getAttributes(\Bingo\Attributes\Route\ApiController::class));
             }
         } catch (\Symfony\Component\Routing\Exception\ResourceNotFoundException $e) {
             // If normalized path didn't match and it's different from original, try original path
@@ -152,7 +155,7 @@ class Router
                     $controllerClass = $parameters['_controller'] ?? null;
                     if ($controllerClass) {
                         $reflectionClass = new ReflectionClass($controllerClass);
-                        $isApiController = !empty($reflectionClass->getAttributes(\Bingo\Attributes\ApiController::class));
+                        $isApiController = !empty($reflectionClass->getAttributes(\Bingo\Attributes\Route\ApiController::class));
                     }
                 } catch (\Symfony\Component\Routing\Exception\ResourceNotFoundException) {
                     throw new NotFoundException();
@@ -313,14 +316,22 @@ class Router
 
             $result = $reflection->invokeArgs($controller, $args);
 
-            // Enforce explicit Response return for ApiController
-            if ($isApiController && !$result instanceof Response) {
-                throw new \RuntimeException(
-                    'ApiController methods must return a Response object. Use Response::json().'
+            if ($result instanceof SymfonyStreamedResponse && !$result instanceof BingoStreamedResponse) {
+                $result = new BingoStreamedResponse(
+                    $result->getCallback(),
+                    $result->getStatusCode(),
+                    $result->headers->all(),
                 );
             }
 
-            return $result instanceof Response ? $result : new Response((string) $result);
+            // Enforce explicit Symfony HTTP response for ApiController (includes StreamedResponse)
+            if ($isApiController && !$result instanceof SymfonyResponse) {
+                throw new \RuntimeException(
+                    'ApiController methods must return a Symfony HTTP response. Use Response::json(), Response::eventStream(), or Response::stream().'
+                );
+            }
+
+            return $result instanceof SymfonyResponse ? $result : new Response((string) $result);
         };
 
         // Run route-level middleware through a proper $next pipeline

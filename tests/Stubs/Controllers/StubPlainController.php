@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\Controllers;
 
-use Bingo\Attributes\Get;
-use Bingo\Attributes\Post;
+use Bingo\Attributes\Route\Get;
+use Bingo\Attributes\Route\Post;
 
 class StubPlainController
 {

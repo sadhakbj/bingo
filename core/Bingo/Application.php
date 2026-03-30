@@ -12,13 +12,17 @@ use Bingo\Config\ConfigLoader;
 use Bingo\Config\DatabaseConfig;
 use Bingo\Container\Container;
 use Bingo\Contracts\ExceptionHandlerInterface;
+use Bingo\Contracts\HttpResponse;
 use Bingo\Database\Database;
 use Bingo\Exceptions\ExceptionHandler;
 use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
+use Bingo\Http\StreamedResponse as BingoStreamedResponse;
 use Dotenv\Dotenv;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
 
 class Application
 {
@@ -151,14 +155,29 @@ class Application
     /**
      * Handle HTTP request
      */
-    public function handle(Request $request): Response
+    public function handle(Request $request): HttpResponse
     {
         try {
             return $this->pipeline->process($request, function (Request $req) {
                 $response = $this->router->dispatch($req);
 
-                if (!$response instanceof Response) {
-                    $response = new Response($response);
+                if (!$response instanceof SymfonyResponse) {
+                    $response = new Response((string) $response);
+                }
+
+                if (!$response instanceof HttpResponse) {
+                    if ($response instanceof SymfonyStreamedResponse) {
+                        $response = new BingoStreamedResponse(
+                            $response->getCallback(),
+                            $response->getStatusCode(),
+                            $response->headers->all(),
+                        );
+                    } else {
+                        $content = $response->getContent();
+                        $wrapped = new Response($content === false ? '' : $content, $response->getStatusCode());
+                        $wrapped->headers->replace($response->headers->all());
+                        $response = $wrapped;
+                    }
                 }
 
                 return $response;

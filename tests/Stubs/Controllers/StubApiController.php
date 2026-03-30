@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\Controllers;
 
-use Bingo\Attributes\ApiController;
-use Bingo\Attributes\Get;
-use Bingo\Attributes\Post;
+use Bingo\Attributes\Route\ApiController;
+use Bingo\Attributes\Route\Get;
 use Bingo\Attributes\Route\Param;
+use Bingo\Attributes\Route\Post;
 use Bingo\Attributes\Route\Query;
 use Bingo\Http\Response;
 

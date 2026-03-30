@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Exceptions\Http\UnauthorizedException;
 use Bingo\Http\Request;
-use Bingo\Http\Response;
 
 class AuthMiddleware implements MiddlewareInterface
 {
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
         $authorization = $request->headers->get('Authorization');
 

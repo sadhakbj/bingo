@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Bingo\Http\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Http\Request;
-use Bingo\Http\Response;
+use Bingo\Http\Response as BingoResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class CorsMiddleware implements MiddlewareInterface
 {
@@ -24,7 +26,7 @@ class CorsMiddleware implements MiddlewareInterface
         ], $config);
     }
 
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
         $origin = $request->headers->get('Origin');
 
@@ -34,25 +36,25 @@ class CorsMiddleware implements MiddlewareInterface
         }
 
         // Process the request normally
-        $response = $next ? $next($request) : Response::json(['message' => 'OK']);
+        $response = $next ? $next($request) : BingoResponse::json(['message' => 'OK']);
 
         // Add CORS headers to the response
         return $this->addCorsHeaders($response, $origin);
     }
 
-    private function handlePreflight(Request $request, ?string $origin): Response
+    private function handlePreflight(Request $request, ?string $origin): HttpResponse
     {
-        $response = new Response('', 204);
+        $response = new BingoResponse('', 204);
 
         // Check if origin is allowed
         if (!$this->isOriginAllowed($origin)) {
-            return new Response('', 403);
+            return new BingoResponse('', 403);
         }
 
         // Check if method is allowed
         $requestMethod = $request->headers->get('Access-Control-Request-Method');
         if ($requestMethod && !in_array($requestMethod, $this->config['allowed_methods'])) {
-            return new Response('', 403);
+            return new BingoResponse('', 403);
         }
 
         // Check if headers are allowed
@@ -61,7 +63,7 @@ class CorsMiddleware implements MiddlewareInterface
             $requestedHeaders = array_map('trim', explode(',', $requestHeaders));
             foreach ($requestedHeaders as $header) {
                 if (!in_array($header, $this->config['allowed_headers'])) {
-                    return new Response('', 403);
+                    return new BingoResponse('', 403);
                 }
             }
         }
@@ -79,7 +81,7 @@ class CorsMiddleware implements MiddlewareInterface
         return $response;
     }
 
-    private function addCorsHeaders(Response $response, ?string $origin): Response
+    private function addCorsHeaders(SymfonyResponse $response, ?string $origin): HttpResponse
     {
         if ($this->isOriginAllowed($origin)) {
             $response->headers->set('Access-Control-Allow-Origin', $origin ?: '*');

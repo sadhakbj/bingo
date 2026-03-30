@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\Controllers;
 
-use Bingo\Attributes\ApiController;
-use Bingo\Attributes\Get;
 use Bingo\Attributes\Middleware;
+use Bingo\Attributes\Route\ApiController;
+use Bingo\Attributes\Route\Get;
 use Bingo\Http\Response;
 use Tests\Stubs\Middleware\BlockingMiddlewareStub;
 use Tests\Stubs\Middleware\TrackingMiddlewareStub;

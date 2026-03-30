@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Bingo\Http\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Http\Request;
-use Bingo\Http\Response;
+use Bingo\Http\Response as BingoResponse;
 
 class SecurityHeadersMiddleware implements MiddlewareInterface
 {
@@ -29,9 +30,9 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
         ], $config);
     }
 
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
-        $response = $next ? $next($request) : Response::json(['message' => 'OK']);
+        $response = $next ? $next($request) : BingoResponse::json(['message' => 'OK']);
 
         // HSTS (HTTP Strict Transport Security)
         if ($request->isSecure() && $this->config['hsts']) {

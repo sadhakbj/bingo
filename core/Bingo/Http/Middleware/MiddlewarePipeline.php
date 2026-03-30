@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bingo\Http\Middleware;
 
 use Bingo\Container\Container;
+use Bingo\Contracts\HttpResponse;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 
@@ -35,7 +36,7 @@ class MiddlewarePipeline
     /**
      * Process request through middleware pipeline
      */
-    public function process(Request $request, ?callable $finalHandler = null): Response
+    public function process(Request $request, ?callable $finalHandler = null): HttpResponse
     {
         $middlewareStack = array_merge($this->globalMiddleware, $this->middleware);
 
@@ -49,7 +50,7 @@ class MiddlewarePipeline
     /**
      * Execute middleware recursively
      */
-    private function executeMiddleware(array $middlewareStack, int $index, Request $request, ?callable $finalHandler): Response
+    private function executeMiddleware(array $middlewareStack, int $index, Request $request, ?callable $finalHandler): HttpResponse
     {
         // If we've reached the end of middleware stack, call the final handler
         if ($index >= count($middlewareStack)) {

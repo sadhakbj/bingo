@@ -58,11 +58,13 @@ class GenerateMiddlewareCommand extends Command
 
         namespace App\Http\Middleware;
 
-        use Bingo\Http\Request;use Bingo\Http\Response;
+        use Bingo\Contracts\HttpResponse;
+        use Bingo\Contracts\MiddlewareInterface;
+        use Bingo\Http\Request;
 
         class {$className} implements MiddlewareInterface
         {
-            public function handle(Request \$request, callable \$next): Response
+            public function handle(Request \$request, callable \$next): HttpResponse
             {
                 return \$next(\$request);
             }

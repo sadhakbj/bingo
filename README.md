@@ -18,6 +18,7 @@ Inspired by the structure of NestJS and the ergonomics of Laravel, but built fro
 - [Request Lifecycle](#request-lifecycle)
 - [Routing](#routing)
 - [Parameter Binding](#parameter-binding)
+- [Server-Sent Events (SSE)](#server-sent-events-sse)
 - [Middleware](#middleware)
   - [Global Middleware](#global-middleware)
   - [Controller and Route Middleware](#controller-and-route-middleware)
@@ -244,7 +245,7 @@ public/index.php
 Routes are declared directly on controller methods using PHP attributes. There are no route files.
 
 ```php
-use Bingo\Attributes\ApiController;use Bingo\Attributes\Delete;use Bingo\Attributes\Get;use Bingo\Attributes\Post;use Bingo\Attributes\Put;
+use Bingo\Attributes\Route\ApiController;use Bingo\Attributes\Route\Delete;use Bingo\Attributes\Route\Get;use Bingo\Attributes\Route\Post;use Bingo\Attributes\Route\Put;
 
 #[ApiController('/users')]
 class UsersController
@@ -307,6 +308,34 @@ public function handle(
 ```
 
 `#[Param]` and `#[Query]` values are automatically cast to the declared PHP type (`int`, `float`, `bool`, `string`). A missing non-nullable query param resolves to its default value.
+
+---
+
+## Server-Sent Events (SSE)
+
+**Server-Sent Events** let the **server push** text to the browser over a single HTTP response (`Content-Type: text/event-stream`). The client uses **`EventSource`** (GET, automatic reconnect). Use it for one-way updates (feeds, progress, streamed LLM output); use **WebSockets** when you need a full duplex channel.
+
+In Bingo, **`Response::eventStream()`** takes a callable that returns a **generator** (or any iterable). Each **`yield`** emits one event. Use **`StreamedEvent`** for a named `event:` line; a plain **`yield $array`** uses the default `message` event. When the generator finishes, Bingo sends a final **`</stream>`**-style frame on `message` so you can **`close()`** the `EventSource` (override with the second argument to `eventStream()` if you want). For a raw chunked body without SSE framing, use **`Response::stream()`**. Controllers return **`Bingo\Http\StreamedResponse`**.
+
+```php
+use Bingo\Http\Response;use Bingo\Http\Sse\StreamedEvent;use Bingo\Http\StreamedResponse;
+
+#[Get('/notifications/stream')]
+public function stream(): StreamedResponse
+{
+    return Response::eventStream(function (): \Generator {
+        yield new StreamedEvent('update', ['status' => 'ok']);
+    });
+}
+```
+
+```javascript
+const es = new EventSource('/notifications/stream');
+es.addEventListener('update', (e) => console.log(JSON.parse(e.data)));
+es.onmessage = (e) => { if (e.data === '</stream>') es.close(); };
+```
+
+`EventSource` does not send custom headers; sort **CORS** and auth (cookies / query) like any GET. Behind **nginx**, you may need **`proxy_buffering off`** on that location; Bingo sets **`X-Accel-Buffering: no`**.
 
 ---
 
@@ -379,7 +408,7 @@ The framework registers these automatically in development and production:
 |---|---|
 | `CorsMiddleware` | Sets CORS headers; handles `OPTIONS` preflight. Wildcard in development, restricted to `CORS_ALLOWED_ORIGINS` in production. |
 | `BodyParserMiddleware` | Parses JSON, form-encoded, and multipart request bodies. 10 MB limit in development, 1 MB in production. |
-| `CompressionMiddleware` | Gzip-compresses responses larger than 1 KB when the client supports it. |
+| `CompressionMiddleware` | Gzip-compresses responses larger than 1 KB when the client supports it. Skips streamed bodies (`Bingo\Http\StreamedResponse` / SSE) and `text/event-stream` so chunks are not buffered or gzipped. |
 | `SecurityHeadersMiddleware` | Adds HSTS, CSP, `X-Frame-Options`, `X-Content-Type-Options`, and `X-XSS-Protection`. |
 | `RequestIdMiddleware` | Generates a UUID v4 `X-Request-ID` for every request and echoes it in the response. |
 | `RateLimitMiddleware` | Per-IP rate limiting (100 req/hour by default). Active in production only. |
