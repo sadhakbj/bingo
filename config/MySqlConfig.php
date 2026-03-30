@@ -22,4 +22,4 @@ namespace Config;
  *       return $config;
  *   }
  */
-class MySqlConfig extends \Core\Config\Driver\MySqlConfig {}
+class MySqlConfig extends \Bingo\Config\Driver\MySqlConfig {}

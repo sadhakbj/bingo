@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Config;
 
-use Core\Attributes\Config\Env;
+use Bingo\Attributes\Config\Env;
 
 final readonly class AppConfig
 {

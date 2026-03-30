@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
-use Core\Contracts\ExceptionHandlerInterface;
-use Core\Exceptions\ExceptionHandler as CoreExceptionHandler;
-use Core\Http\Response;
+use Bingo\Contracts\ExceptionHandlerInterface;
+use Bingo\Exceptions\ExceptionHandler as CoreExceptionHandler;
+use Bingo\Exceptions\Http\NotFoundException;
+use Bingo\Http\Response;
 
 /**
  * Application-owned exception → HTTP response mapping.
@@ -22,7 +23,8 @@ final class Handler implements ExceptionHandlerInterface
 {
     public function __construct(
         private readonly bool $debug = false,
-    ) {}
+    ) {
+    }
 
     public function handle(\Throwable $e): Response
     {
@@ -38,7 +40,7 @@ final class Handler implements ExceptionHandlerInterface
          *
          * 2) RFC 7807 Problem+JSON for one case, default for the rest:
          *
-         *    if ($e instanceof \Core\Exceptions\HttpException) {
+         *    if ($e instanceof \Bingo\Exceptions\Http\HttpException) {
          *        return Response::json([
          *            'type'   => 'about:blank',
          *            'title'  => $e->getMessage(),

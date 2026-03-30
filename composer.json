@@ -5,7 +5,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Core\\": "core/",
+            "Bingo\\": "core/Bingo/",
             "App\\": "app/",
             "Config\\": "config/"
         },
@@ -25,7 +25,7 @@
         }
     ],
     "require": {
-        "php": "^8.5",
+        "php": "^8.4",
         "illuminate/database": "^13.2.0",
         "symfony/http-foundation": "^8.0",
         "symfony/routing": "^8.0",

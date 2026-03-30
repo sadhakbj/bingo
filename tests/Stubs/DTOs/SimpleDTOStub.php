@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\DTOs;
 
-use Core\Data\DataTransferObject;
+use Bingo\Data\DataTransferObject;
 
 /**
  * Minimal concrete DTO for unit testing DataTransferObject internals.

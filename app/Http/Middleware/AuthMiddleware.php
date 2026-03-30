@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use Core\Contracts\MiddlewareInterface;
-use Core\Exceptions\UnauthorizedException;
-use Core\Http\Request;
-use Core\Http\Response;
+use Bingo\Contracts\MiddlewareInterface;
+use Bingo\Exceptions\Http\UnauthorizedException;
+use Bingo\Http\Request;
+use Bingo\Http\Response;
 
 class AuthMiddleware implements MiddlewareInterface
 {

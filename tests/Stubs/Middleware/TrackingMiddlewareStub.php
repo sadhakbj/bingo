@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\Middleware;
 
-use Core\Contracts\MiddlewareInterface;
-use Core\Http\Request;
-use Core\Http\Response;
+use Bingo\Contracts\MiddlewareInterface;
+use Bingo\Http\Request;
+use Bingo\Http\Response;
 
 /**
  * Passes through but sets X-Tracked header on the response.

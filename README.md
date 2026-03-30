@@ -88,7 +88,9 @@ The application is now available at `http://127.0.0.1:8000`.
 │   ├── MySqlConfig.php       # MySQL driver (customize here)
 │   ├── PgSqlConfig.php       # PostgreSQL driver
 │   └── SQLiteConfig.php      # SQLite driver
-├── core/                     # Framework internals
+├── core/
+│   ├── Bingo/                # Framework code (`Bingo\*` namespaces)
+│   └── helpers.php           # `base_path()`, `env()`, …
 ├── database/
 │   └── migrations/           # Migration files
 ├── public/
@@ -242,11 +244,7 @@ public/index.php
 Routes are declared directly on controller methods using PHP attributes. There are no route files.
 
 ```php
-use Core\Attributes\ApiController;
-use Core\Attributes\Get;
-use Core\Attributes\Post;
-use Core\Attributes\Put;
-use Core\Attributes\Delete;
+use Bingo\Attributes\ApiController;use Bingo\Attributes\Delete;use Bingo\Attributes\Get;use Bingo\Attributes\Post;use Bingo\Attributes\Put;
 
 #[ApiController('/users')]
 class UsersController
@@ -349,12 +347,10 @@ class AdminController
 
 ### Writing Custom Middleware
 
-Implement `Core\Contracts\MiddlewareInterface`:
+Implement `Bingo\Contracts\MiddlewareInterface`:
 
 ```php
-use Core\Contracts\MiddlewareInterface;
-use Core\Http\Request;
-use Core\Http\Response;
+use Bingo\Contracts\MiddlewareInterface;use Bingo\Http\Request;use Bingo\Http\Response;
 
 class AuthMiddleware implements MiddlewareInterface
 {
@@ -392,11 +388,10 @@ The framework registers these automatically in development and production:
 
 ## DTOs and Validation
 
-Input DTOs extend `Core\Data\DataTransferObject` and declare validation constraints using Symfony Validator attributes. When a parameter is annotated with `#[Body]`, the framework fills the DTO from the request body and validates it automatically. Any failure returns **422** before your controller method is ever called.
+Input DTOs extend `Bingo\Data\DataTransferObject` and declare validation constraints using Symfony Validator attributes. When a parameter is annotated with `#[Body]`, the framework fills the DTO from the request body and validates it automatically. Any failure returns **422** before your controller method is ever called.
 
 ```php
-use Core\Data\DataTransferObject;
-use Symfony\Component\Validator\Constraints as Assert;
+use Bingo\Data\DataTransferObject;use Symfony\Component\Validator\Constraints as Assert;
 
 class CreateUserDTO extends DataTransferObject
 {
@@ -517,11 +512,10 @@ Throw HTTP exceptions anywhere in your service or controller — uncaught throwa
 
 ### HTTP status codes (Symfony)
 
-**Symfony HttpFoundation** already defines status codes on `Response` as `public const` (e.g. `Response::HTTP_NOT_FOUND`). `Core\Http\Response` extends Symfony’s `Response`, so use:
+**Symfony HttpFoundation** already defines status codes on `Response` as `public const` (e.g. `Response::HTTP_NOT_FOUND`). `Bingo\Http\Response` extends Symfony’s `Response`, so use:
 
 ```php
-use Core\Exceptions\HttpException;
-use Core\Http\Response;
+use Bingo\Exceptions\Http\HttpException;use Bingo\Http\Response;
 
 throw new HttpException(Response::HTTP_FORBIDDEN, 'You cannot do that');
 ```
@@ -530,7 +524,7 @@ throw new HttpException(Response::HTTP_FORBIDDEN, 'You cannot do that');
 
 ### Built-in HTTP exception classes
 
-These are thin subclasses of `HttpException` with the correct status preset (similar to common framework kits). Optional **third constructor argument** `?string $description` overrides the JSON **`error`** field when you want a custom short label.
+These live under `Bingo\Exceptions\Http\` (folder `core/Bingo/Exceptions/Http/`). They are thin subclasses of `HttpException` with the correct status preset. Optional **third constructor argument** `?string $description` overrides the JSON **`error`** field when you want a custom short label.
 
 | Class | Status |
 |-------|--------|
@@ -559,11 +553,7 @@ These are thin subclasses of `HttpException` with the correct status preset (sim
 DTO validation failures still use **`ValidationException`** → **422** with `message` as a field map (see below).
 
 ```php
-use Core\Exceptions\NotFoundException;
-use Core\Exceptions\UnauthorizedException;
-use Core\Exceptions\ConflictException;
-use Core\Exceptions\ForbiddenException;
-use Core\Exceptions\BadRequestException;
+use Bingo\Exceptions\Http\BadRequestException;use Bingo\Exceptions\Http\ConflictException;use Bingo\Exceptions\Http\ForbiddenException;use Bingo\Exceptions\Http\NotFoundException;use Bingo\Exceptions\Http\UnauthorizedException;
 
 throw new NotFoundException('User not found');          // 404
 throw new UnauthorizedException();                      // 401
@@ -603,7 +593,7 @@ In **debug mode** (`APP_DEBUG=true`), uncaught non-HTTP exceptions use `message`
 
 ### Custom exception handler
 
-**Where to put your code:** When `core/` is installed as a separate Composer package, you still **never** edit vendor/core. Implement `Core\Contracts\ExceptionHandlerInterface` under your application — for example [`app/Exceptions/Handler.php`](app/Exceptions/Handler.php) — and **register** it from [`bootstrap/app.php`](bootstrap/app.php). The template `Handler` delegates to the framework default until you change its `handle()` method.
+**Where to put your code:** When `core/` is installed as a separate Composer package, you still **never** edit vendor/core. Implement `Bingo\Contracts\ExceptionHandlerInterface` under your application — for example [`app/Exceptions/Handler.php`](app/Exceptions/Handler.php) — and **register** it from [`bootstrap/app.php`](bootstrap/app.php). The template `Handler` delegates to the framework default until you change its `handle()` method.
 
 **Option A — app class instance (highest priority):**
 
@@ -615,8 +605,7 @@ $app->exceptionHandler(new \App\Exceptions\Handler($app->isDebug()));
 **Option B — anonymous / one-off:**
 
 ```php
-use Core\Contracts\ExceptionHandlerInterface;
-use Core\Http\Response;
+use Bingo\Contracts\ExceptionHandlerInterface;use Bingo\Http\Response;
 
 $app->exceptionHandler(new class implements ExceptionHandlerInterface {
     public function handle(\Throwable $e): Response
@@ -629,12 +618,12 @@ $app->exceptionHandler(new class implements ExceptionHandlerInterface {
 **Option C — container binding** (resolved after `compile()`; use when your handler needs injected services — skipped if you also call `$app->exceptionHandler(...)` with an instance):
 
 ```php
-$app->singleton(\Core\Contracts\ExceptionHandlerInterface::class, \App\Exceptions\Handler::class);
+$app->singleton(\Bingo\Contracts\ExceptionHandlerInterface::class, \App\Exceptions\Handler::class);
 ```
 
 If you bind the class name only, ensure `App\Exceptions\Handler` has a constructor the container can satisfy (e.g. inject `Config\AppConfig` for debug instead of a raw bool), or register a factory with `$app->instance(...)`.
 
-Priority: **`$app->exceptionHandler($instance)`** → **container binding** for `ExceptionHandlerInterface` → **built-in** `Core\Exceptions\ExceptionHandler`.
+Priority: **`$app->exceptionHandler($instance)`** → **container binding** for `ExceptionHandlerInterface` → **built-in** `Bingo\Exceptions\ExceptionHandler`.
 
 ---
 
@@ -818,8 +807,9 @@ Tests mirror the application structure:
 ```
 tests/
 ├── Unit/
-│   ├── Core/
+│   ├── Bingo/
 │   │   ├── Container/
+│   │   ├── Http/
 │   │   ├── Router/
 │   │   └── ...
 │   └── App/

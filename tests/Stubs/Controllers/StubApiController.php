@@ -4,16 +4,22 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\Controllers;
 
-use Core\Attributes\ApiController;
-use Core\Attributes\Get;
-use Core\Attributes\Post;
-use Core\Attributes\Route\Param;
-use Core\Attributes\Route\Query;
-use Core\Http\Response;
+use Bingo\Attributes\ApiController;
+use Bingo\Attributes\Get;
+use Bingo\Attributes\Post;
+use Bingo\Attributes\Route\Param;
+use Bingo\Attributes\Route\Query;
+use Bingo\Http\Response;
 
 #[ApiController('/stub')]
 class StubApiController
 {
+    #[Get('/')]
+    public function index(): Response
+    {
+        return Response::json(['index' => true]);
+    }
+
     #[Get('/hello')]
     public function hello(): Response
     {

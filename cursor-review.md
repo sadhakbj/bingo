@@ -10,7 +10,7 @@
 
 You are **not** doing something wrong by combining Symfony primitives with Eloquent and attribute routing. That is a coherent product shape: **Symfony as the engine, Nest-style DX on top, Laravel where the PHP ecosystem is strongest (ORM)**. The repo already shows several decisions that match what serious API frameworks need: a real middleware pipeline, a container with autowiring, typed config, PHPUnit coverage, and a single HTTP exception path.
 
-The main work ahead is **consistency** (one JSON envelope and error contract everywhere), **edge-case correctness** (routing and `isApiPath`), and **honest limits** for production (rate limiting, multi-process behavior). None of that invalidates the direction.
+The main work ahead is **consistency** (one JSON envelope and error contract everywhere), **edge-case correctness** (routing), and **honest limits** for production (rate limiting, multi-process behavior). None of that invalidates the direction.
 
 ---
 
@@ -22,7 +22,7 @@ The **README** is unusually good for a young framework: lifecycle diagram, param
 
 ### 2. Symfony as foundation (this is a feature, not “cheating”)
 
-Using **HttpFoundation**, **Routing**, **Validator**, and **Console** is standard practice. Wrapping them behind `Core\Http\Request`, `Router`, and `DataTransferObject` is exactly how you avoid rebuilding low-value infrastructure. **Symfony DependencyInjection** behind your `Core\Container\Container` is a solid choice: you get compilation, autowiring for registered services, and room to grow without writing a second-rate container from scratch.
+Using **HttpFoundation**, **Routing**, **Validator**, and **Console** is standard practice. Wrapping them behind `Bingo\Http\Request`, `Router`, and `DataTransferObject` is exactly how you avoid rebuilding low-value infrastructure. **Symfony DependencyInjection** behind your `Bingo\Container\Container` is a solid choice: you get compilation, autowiring for registered services, and room to grow without writing a second-rate container from scratch.
 
 ### 3. NestJS-like developer experience where it matters
 
@@ -44,7 +44,7 @@ Using **HttpFoundation**, **Routing**, **Validator**, and **Console** is standar
 
 ### 7. Real tests
 
-`composer test` runs **179 tests** with broad coverage of container, router, middleware, DTOs, config, and exceptions. For a framework at this stage, that is a major credibility signal and safety net.
+`composer test` runs a growing PHPUnit suite with broad coverage of container, router, middleware, DTOs, config, and exceptions. For a framework at this stage, that is a major credibility signal and safety net.
 
 ### 8. Application code quality in the demo path
 
@@ -77,39 +77,33 @@ Today, some paths return **`ApiResponse`-shaped JSON** (via `ExceptionHandler`),
 
 **Recommendation:** Route *all* framework-generated JSON through small helpers (e.g. `Response::apiError(...)`, `Response::apiValidation(...)`) that always serialize `ApiResponse` (or a single interface). Clients should see one contract.
 
-### P1 — `Router::isApiPath()` and empty `#[ApiController]` prefixes
+### P1 — `Router::isApiPath()` and empty `#[ApiController]` prefixes — **Done (superseded)**
 
-`isApiPath()` treats an **empty prefix** as “matches everything” because of `if ($prefix === '' || str_starts_with(...))`. Any controller registered as `#[ApiController]` **without** a path segment produces an empty prefix (`null` → `''` after `rtrim`), which can force **JSON 404/405 for every unknown URL**, including non-API `HomeController` routes.
+**Status:** `isApiPath()` was **removed**. Unknown paths always throw framework HTTP exceptions and are handled by `ExceptionHandler` (same JSON envelope for all misses). The empty-prefix / “everything is API” bug no longer applies.
 
-**Recommendation:** Skip empty prefixes when recording API prefixes, or treat “root API” as `'/'` explicitly and compare with stricter rules. Document that bare `#[ApiController]` is invalid unless that behavior is intentional.
+_Original note:_ `isApiPath()` treated an empty prefix as matching everything; bare `#[ApiController]` could force JSON 404/405 for every unknown URL.
 
-### P2 — Error leakage in `Router` catch-all
+---
 
-The broad `catch (\Throwable)` branch can return **exception messages in JSON** for API controllers. That bypasses `ExceptionHandler` and can expose internals in production if triggered.
+### P2 — Error leakage in `Router` catch-all — **Done**
 
-**Recommendation:** Re-throw or delegate to `ExceptionHandler` so debug vs production behavior stays centralized.
+**Status:** The outer `catch (\Throwable)` **rethrows** (`throw $e;`). Nothing in that branch returns ad-hoc JSON with exception messages; `Application::handle()` keeps using the centralized exception handler.
 
-### P2 — Rate limiting and multi-process deployments
+_Original note:_ Broad catch could return exception text for API controllers and bypass `ExceptionHandler`.
 
-`RateLimitMiddleware` uses **static in-memory storage**. Under PHP-FPM or multiple workers, limits are **per process**, not global—fine for demos, misleading for “production middleware” claims.
+---
 
-**Recommendation:** Document as explicitly in-memory / dev-oriented until backed by Redis, APCu, or an external gateway (API gateway, service mesh, nginx).
+### P2 — Rate limiting and multi-process deployments — **Done (documented; behavior unchanged)**
 
-### P3 — Route registration order footgun
+**Status:** Storage is still **static in-memory** (by design for now). **CLAUDE.md** and known-limitations call out **per-process / not distributed** limits. A Redis/APCu-backed implementation is still future work.
 
-Symfony `UrlMatcher` order + greedy `/{id}` remains a **classic trap** (e.g. `GET /users/search` vs `/{id}`). You already document this for `/search`; the same applies to any new static segment added after `/{id}`.
+**Recommendation (remaining):** If you add production claims in marketing, repeat the same caveat or ship a pluggable store.
 
-**Recommendation:** Long-term, consider **explicit route priority** or a **path-then-placeholder** sorting pass during registration. Short-term, keep documenting and add a `show:routes` warning in dev when static paths are registered after `{param}` routes.
+---
 
-### P3 — PHP version drift
+### P3 — Route registration order footgun — **Open**
 
-`composer.json` requires **`php ^8.5`**; local CI/agent run showed **PHPUnit on PHP 8.4**. Ensure Dockerfile / CI / README agree on the minimum version so contributors are not surprised.
-
-### P3 — Stale internal documentation
-
-`CLAUDE.md`, `docs/framework-development-plan.md`, and `docs/di-container-plan.md` were **refreshed** to match the current codebase (DI, migrations via `php bin/bingo db:migrate`, route middleware pipeline, real services). If you add features, update those files alongside README so they do not drift again.
-
-**Recommendation:** Archive or refresh those docs so they do not contradict the README—stale planning docs erode trust faster than missing docs.
+**Status:** No automatic route sorting or `show:routes` dev warnings yet. Symfony `UrlMatcher` registration order + greedy `/{id}` is still a manual discipline (e.g. `/users/search` before `/{id}`).
 
 ---
 
@@ -135,13 +129,13 @@ Symfony `UrlMatcher` order + greedy `/{id}` remains a **classic trap** (e.g. `GE
 | DX / Nest alignment | **Strong** | Attributes and DI match stated goals. |
 | API consistency | **Needs work** | Unify error/validation envelopes. |
 | Production hardening | **Early** | Rate limit storage, error paths, observability. |
-| Documentation | **Strong public / weak internal** | README excellent; sync `docs/` with reality. |
+| Documentation | **Strong** | **README** + **CLAUDE.md**; redundant `docs/*.md` files were removed. |
 | Test discipline | **Strong** | PHPUnit coverage is a major asset. |
 
 ---
 
 ## Closing
 
-For **day four of a beta**, this is an impressive skeleton: it already behaves like a small framework rather than a tutorial router. The “Laravel smell” is mostly **Eloquent and familiar folders**—that is a strategic choice, not an accident to be ashamed of. The highest-leverage next steps are **one JSON contract everywhere**, **tightening router edge cases**, and **aligning secondary docs with the code** so newcomers (and future you) are not misled.
+For **day four of a beta**, this is an impressive skeleton: it already behaves like a small framework rather than a tutorial router. The “Laravel smell” is mostly **Eloquent and familiar folders**—that is a strategic choice, not an accident to be ashamed of. The highest-leverage next steps are **one JSON contract everywhere** and **tightening router edge cases**.
 
-This file was generated as a one-off architectural review (`cursor-review.md`); fold any lasting decisions into README or `docs/` as you prefer.
+This file is a one-off review (`cursor-review.md`); fold any lasting decisions into **README** or **CLAUDE.md**.

@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-/** @var \Core\Console\Kernel $kernel */
+/** @var \Bingo\Console\Kernel $kernel */
 $kernel = require __DIR__ . '/../bootstrap/console.php';
 
 $kernel->run();

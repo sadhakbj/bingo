@@ -11,13 +11,13 @@ Concise context for AI assistants working in this repo. Authoritative user docs:
 | Layer | Detail |
 |--------|--------|
 | **HTTP entry** | `public/index.php` → `bootstrap/app.php` → `Application::run()` |
-| **Namespaces** | `Core\` → `core/`, `App\` → `app/`, `Config\` → `config/` (PSR-4) |
+| **Namespaces** | `Bingo\` → `core/Bingo/`, `App\` → `app/`, `Config\` → `config/` (PSR-4) |
 | **ORM** | Illuminate Database / Eloquent (`illuminate/database ^13`); default SQLite path `database/database.sqlite` |
-| **HTTP** | Symfony HttpFoundation via `Core\Http\Request` / `Response`; use `Response::HTTP_*` constants for status codes |
+| **HTTP** | Symfony HttpFoundation via `Bingo\Http\Request` / `Response`; use `Response::HTTP_*` constants for status codes |
 | **Routing** | Symfony `RouteCollection` + `UrlMatcher`; routes registered by **reflection** on controllers at bootstrap |
 | **Validation** | Symfony Validator on DTO properties |
-| **DI** | `Core\Container\Container` wraps **Symfony ContainerBuilder** + reflection fallback autowiring |
-| **Config** | Typed classes in `config/` wired by `Core\Config\ConfigLoader` + `#[Env]` |
+| **DI** | `Bingo\Container\Container` wraps **Symfony ContainerBuilder** + reflection fallback autowiring |
+| **Config** | Typed classes in `config/` wired by `Bingo\Config\ConfigLoader` + `#[Env]` |
 | **CLI** | Symfony Console via `php bin/bingo` (`bootstrap/console.php`) |
 
 ## Request lifecycle
@@ -37,7 +37,7 @@ public/index.php
   → Response::send()
 ```
 
-Uncaught throwables in `Application::handle()` become JSON via `Core\Contracts\ExceptionHandlerInterface` (default: `Core\Exceptions\ExceptionHandler`, Nest-style). **Application-owned** overrides live under `app/` (e.g. `App\Exceptions\Handler`) and are registered in `bootstrap/app.php` — do not edit `core/` when it is a Composer package.
+Uncaught throwables in `Application::handle()` become JSON via `Bingo\Contracts\ExceptionHandlerInterface` (default: `Bingo\Exceptions\ExceptionHandler`, Nest-style). **Application-owned** overrides live under `app/` (e.g. `App\Exceptions\Handler`) and are registered in `bootstrap/app.php` — do not edit `core/` when it is a Composer package.
 
 ## Important files
 
@@ -46,17 +46,17 @@ Uncaught throwables in `Application::handle()` become JSON via `Core\Contracts\E
 | `public/index.php` | Web front controller |
 | `bootstrap/app.php` | HTTP app instance, controllers, optional `singleton` / `bind` / `instance` |
 | `bootstrap/console.php` | CLI kernel; `require`s same `app.php` (no `run()`) |
-| `core/Application.php` | Env, config, DB boot, pipeline, container proxies |
-| `core/Container/Container.php` | PSR-11 + `singleton` / `bind` / `instance` / `compile()` |
-| `core/Router/Router.php` | Attribute discovery, dispatch, param binding, route middleware |
-| `core/Http/Middleware/MiddlewarePipeline.php` | Global + per-route `$next` chain |
-| `core/Config/ConfigLoader.php` | `#[Env]` → constructor or properties |
-| `core/Contracts/ExceptionHandlerInterface.php` | Pluggable Throwable → `Response` |
-| `core/Exceptions/ExceptionHandler.php` | Default JSON errors (`statusCode`, `message`, `error`; phrases from Symfony `Response::$statusTexts`) |
-| `core/Exceptions/*Exception.php` | Built-in HTTP exception subclasses |
-| `core/Data/DataTransferObject.php` | Input DTO base (`fromRequest`, validate, `toArray`) |
-| `core/DTOs/Http/ApiResponse.php` | JSON envelope helpers |
-| `core/Database/Database.php` | Eloquent Capsule setup from `DatabaseConfig` |
+| `core/Bingo/Application.php` | Env, config, DB boot, pipeline, container proxies |
+| `core/Bingo/Container/Container.php` | PSR-11 + `singleton` / `bind` / `instance` / `compile()` |
+| `core/Bingo/Http/Router/Router.php` | Attribute discovery, dispatch, param binding, route middleware |
+| `core/Bingo/Http/Middleware/MiddlewarePipeline.php` | Global + per-route `$next` chain |
+| `core/Bingo/Config/ConfigLoader.php` | `#[Env]` → constructor or properties |
+| `core/Bingo/Contracts/ExceptionHandlerInterface.php` | Pluggable Throwable → `Response` |
+| `core/Bingo/Exceptions/ExceptionHandler.php` | Default JSON errors (`statusCode`, `message`, `error`; phrases from Symfony `Response::$statusTexts`) |
+| `core/Bingo/Exceptions/Http/*Exception.php` | Built-in HTTP exception subclasses (`Bingo\Exceptions\Http\`) |
+| `core/Bingo/Data/DataTransferObject.php` | Input DTO base (`fromRequest`, validate, `toArray`) |
+| `core/Bingo/DTOs/Http/ApiResponse.php` | JSON envelope helpers |
+| `core/Bingo/Database/Database.php` | Eloquent Capsule setup from `DatabaseConfig` |
 | `app/Exceptions/Handler.php` | Optional `ExceptionHandlerInterface`; customize error JSON here |
 | `app/Http/Controllers/UsersController.php` | `#[ApiController]` demo |
 | `app/Services/UserService.php` | Service layer (Eloquent-backed) |
@@ -101,8 +101,8 @@ See **README.md** for full `.env` reference. `Dotenv::safeLoad()` — missing `.
 - **No controller auto-discovery** — register classes in `bootstrap/app.php` (`$app->controllers([...])`).
 - **Rate limit** — memory-only unless you replace middleware or add an external gateway.
 - **Success vs error JSON** — errors use the default `ExceptionHandler` shape; successes may still use `ApiResponse` or raw arrays.
-- **`#[ApiController]` with empty prefix** — can make `Router::isApiPath()` treat all paths as API for 404/405 formatting; prefer an explicit prefix (e.g. `/api`).
-- **Roadmap features** not built yet: OpenAPI generation, formal modules/guards, queues, etc. See `docs/framework-development-plan.md`.
+- **Unknown routes / wrong method** — `Router` throws `NotFoundException` / `MethodNotAllowedException`; `Application` maps them through `ExceptionHandler` (JSON envelope). Use an explicit `#[ApiController('/api')]` prefix to keep API routes grouped; empty prefix is still fine for route paths.
+- **Roadmap features** not built yet: OpenAPI generation, formal modules/guards, queues, etc.
 
 ## Development commands
 
@@ -118,6 +118,6 @@ composer test                    # PHPUnit
 ## Conventions
 
 - `declare(strict_types=1);` in PHP files.
-- `Core\` = framework; `App\` = application.
+- `Bingo\` = framework; `App\` = application.
 - API controller methods return `Response`; use `ApiResponse` for envelopes where possible.
 - Controller → Service → Model for non-trivial logic.

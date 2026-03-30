@@ -10,4 +10,4 @@ namespace Config;
  * All env vars are wired in the parent class — this file exists so you
  * can override behaviour without touching the framework.
  */
-class SQLiteConfig extends \Core\Config\Driver\SQLiteConfig {}
+class SQLiteConfig extends \Bingo\Config\Driver\SQLiteConfig {}
