@@ -9,6 +9,7 @@ use App\Http\Middleware\LogMiddleware;
 use App\Models\User;
 use App\Services\UserService;
 use Core\Attributes\ApiController;
+use Core\DTOs\Http\ApiResponse;
 use Core\Attributes\Get;
 use Core\Attributes\Middleware;
 use Core\Attributes\Post;
@@ -61,18 +62,24 @@ class UsersController
     #[Post('/')]
     public function create(#[Body] CreateUserDTO $dto): Response
     {
-        $userService = new UserService();
-        $response    = $userService->createUser($dto);
+        $userDTO  = $this->userService->createUser($dto);
+        $response = ApiResponse::success(
+            data:       $userDTO,
+            message:    'User created successfully',
+            statusCode: 201,
+            meta:       ['user_metadata' => $userDTO->getMetadata()],
+        );
 
-        return Response::json($response->toArray(), $response->status_code);
+        return Response::json($response->toArray(), 201);
     }
 
     #[Get('/{id}')]
     public function show(#[Param('id')] int $id): Response
     {
-        $response    = $this->userService->getUserById($id);
+        $userDTO  = $this->userService->getUserById($id);
+        $response = ApiResponse::success(data: $userDTO->toArray());
 
-        return Response::json($response->toArray(), $response->status_code);
+        return Response::json($response->toArray());
     }
 
     #[Post('/upload')]

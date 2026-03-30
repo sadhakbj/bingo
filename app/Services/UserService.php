@@ -7,69 +7,35 @@ namespace App\Services;
 use App\DTOs\CreateUserDTO;
 use App\DTOs\User\UserDTO;
 use App\Models\User;
-use Core\DTOs\Http\ApiResponse;
-use Exception;
+use Core\Exceptions\ConflictException;
+use Core\Exceptions\NotFoundException;
 
 class UserService
 {
-    public function createUser(CreateUserDTO $dto): ApiResponse
+    public function createUser(CreateUserDTO $dto): UserDTO
     {
-        try {
-            $this->validateBusinessRules($dto);
-
-            $user = $this->persistUser($dto);
-
-            $userDTO = UserDTO::fromModel($user->loadMissing('posts'));
-
-            return ApiResponse::success(
-                data: $userDTO,
-                message: 'User created successfully',
-                statusCode: 201,
-                meta: [
-                    'user_metadata' => $userDTO->getMetadata()
-                ]
-            );
-
-        } catch (Exception $e) {
-            return ApiResponse::error(
-                message: 'Failed to create user: ' . $e->getMessage(),
-                statusCode: 500
-            );
+        if (User::where('email', $dto->email)->exists()) {
+            throw new ConflictException('Email already exists');
         }
-    }
 
-    private function validateBusinessRules(CreateUserDTO $dto): void
-    {
-        if ($this->emailExists($dto->email)) {
-            throw new Exception('Email already exists');
-        }
-    }
-
-    private function emailExists(string $email): bool
-    {
-        return User::where('email', $email)->exists();
-    }
-
-    private function persistUser(CreateUserDTO $dto): User
-    {
-        return User::create([
+        $user = User::create([
             'name'  => $dto->name,
             'email' => $dto->email,
             'age'   => $dto->age ?? null,
             'bio'   => $dto->bio ?? null,
         ]);
+
+        return UserDTO::fromModel($user->loadMissing('posts'));
     }
 
-    public function getUserById(int $id): ApiResponse
+    public function getUserById(int $id): UserDTO
     {
         $user = User::with('posts')->find($id);
 
         if (!$user) {
-            return ApiResponse::notFound('User not found');
+            throw new NotFoundException('User not found');
         }
 
-        return ApiResponse::success(
-            data: $user->toArray(),
-        );
+        return UserDTO::fromModel($user);
     }
 }
