@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Core\Http\Middleware;
 
 use Core\Contracts\MiddlewareInterface;
+use Core\Exceptions\BadRequestException;
 use Core\Http\Request;
 use Core\Http\Response;
 use JsonException;
@@ -43,10 +44,8 @@ class BodyParserMiddleware implements MiddlewareInterface
         try {
             $this->parseBody($request);
         } catch (\Exception $e) {
-            return Response::json([
-                'error' => 'Body parsing failed',
-                'message' => $e->getMessage()
-            ], 400);
+            $detail = $e->getMessage() !== '' ? ': ' . $e->getMessage() : '';
+            throw new BadRequestException('Body parsing failed' . $detail, $e);
         }
 
         return $next($request);

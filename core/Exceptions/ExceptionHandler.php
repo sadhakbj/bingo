@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Core\Exceptions;
 
-use Core\DTOs\Http\ApiResponse;
+use Core\Contracts\ExceptionHandlerInterface;
 use Core\Http\Response;
 use Core\Validation\ValidationException;
 
-class ExceptionHandler
+/**
+ * Default NestJS-style JSON errors: statusCode, message, error (+ optional details in debug).
+ */
+class ExceptionHandler implements ExceptionHandlerInterface
 {
     public function __construct(private readonly bool $debug = false) {}
 
@@ -23,30 +26,81 @@ class ExceptionHandler
 
     private function handleValidation(ValidationException $e): Response
     {
-        $response = ApiResponse::validation($e->errors);
-
-        return Response::json($response->toArray(), 422);
+        return $this->nestResponse(
+            422,
+            $e->errors,
+            'Unprocessable Entity',
+        );
     }
 
     private function handleHttp(HttpException $e): Response
     {
-        $response = ApiResponse::error($e->getMessage(), statusCode: $e->getStatusCode());
+        $status = $e->getStatusCode();
+        $response = $this->nestResponse(
+            $status,
+            $e->getMessage(),
+            HttpException::phraseForStatusCode($status),
+        );
 
-        return Response::json($response->toArray(), $e->getStatusCode());
+        if ($e instanceof TooManyRequestsException) {
+            $this->applyRateLimitHeaders($response, $e);
+        }
+
+        return $response;
     }
 
     private function handleGeneric(\Throwable $e): Response
     {
-        $data = $this->debug ? [
-            'exception' => $e::class,
-            'file'      => $e->getFile(),
-            'line'      => $e->getLine(),
-            'trace'     => explode("\n", $e->getTraceAsString()),
-        ] : null;
+        if ($this->debug) {
+            return $this->nestResponse(
+                500,
+                $e->getMessage(),
+                'Internal Server Error',
+                [
+                    'exception' => $e::class,
+                    'file'      => $e->getFile(),
+                    'line'      => $e->getLine(),
+                    'trace'     => explode("\n", $e->getTraceAsString()),
+                ],
+            );
+        }
 
-        $message = $this->debug ? $e->getMessage() : 'Internal Server Error';
-        $response = ApiResponse::error($message, null, 500, $data);
+        return $this->nestResponse(
+            500,
+            'Internal Server Error',
+            'Internal Server Error',
+        );
+    }
 
-        return Response::json($response->toArray(), 500);
+    /**
+     * @param string|array<string, string> $message String or field map (validation)
+     * @param array<string, mixed>|null    $details Only when debug / extended payloads
+     */
+    private function nestResponse(int $statusCode, string|array $message, string $error, ?array $details = null): Response
+    {
+        $body = [
+            'statusCode' => $statusCode,
+            'message'    => $message,
+            'error'      => $error,
+        ];
+
+        if ($details !== null) {
+            $body['details'] = $details;
+        }
+
+        return Response::json($body, $statusCode);
+    }
+
+    private function applyRateLimitHeaders(Response $response, TooManyRequestsException $e): void
+    {
+        if ($e->getRateLimitLimit() !== null) {
+            $response->headers->set('X-RateLimit-Limit', (string) $e->getRateLimitLimit());
+        }
+        if ($e->getRateLimitRemaining() !== null) {
+            $response->headers->set('X-RateLimit-Remaining', (string) $e->getRateLimitRemaining());
+        }
+        if ($e->getRateLimitReset() !== null) {
+            $response->headers->set('X-RateLimit-Reset', (string) $e->getRateLimitReset());
+        }
     }
 }

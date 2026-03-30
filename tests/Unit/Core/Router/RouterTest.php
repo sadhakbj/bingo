@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core\Router;
 
+use Core\Exceptions\MethodNotAllowedException;
+use Core\Exceptions\NotFoundException;
 use Core\Http\Request;
 use Core\Http\Response;
 use Core\Router\Router;
@@ -106,26 +108,24 @@ class RouterTest extends TestCase
     // 404 / 405
     // -------------------------------------------------------------------------
 
-    public function test_dispatch_returns_404_for_unknown_route(): void
+    public function test_dispatch_throws_not_found_for_unknown_api_route(): void
     {
         $this->router->registerController(StubApiController::class);
         $request = $this->makeRequest('/stub/nonexistent', 'GET');
 
-        $response = $this->router->dispatch($request);
+        $this->expectException(NotFoundException::class);
 
-        $this->assertInstanceOf(Response::class, $response);
-        $this->assertSame(404, $response->getStatusCode());
+        $this->router->dispatch($request);
     }
 
-    public function test_dispatch_returns_405_for_wrong_method(): void
+    public function test_dispatch_throws_method_not_allowed_for_wrong_verb_on_api_route(): void
     {
         $this->router->registerController(StubApiController::class);
         $request = $this->makeRequest('/stub/hello', 'DELETE'); // only GET registered
 
-        $response = $this->router->dispatch($request);
+        $this->expectException(MethodNotAllowedException::class);
 
-        $this->assertInstanceOf(Response::class, $response);
-        $this->assertSame(405, $response->getStatusCode());
+        $this->router->dispatch($request);
     }
 
     // -------------------------------------------------------------------------

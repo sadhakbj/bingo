@@ -7,6 +7,7 @@ namespace Core\Console;
 use Core\Application;
 use Core\Console\Command\GenerateCommandCommand;
 use Core\Console\Command\GenerateControllerCommand;
+use Core\Console\Command\GenerateExceptionCommand;
 use Core\Console\Command\GenerateMigrationCommand;
 use Core\Console\Command\GenerateMiddlewareCommand;
 use Core\Console\Command\GenerateModelCommand;
@@ -56,6 +57,7 @@ class Kernel
             new GenerateControllerCommand($basePath),
             new GenerateServiceCommand($basePath),
             new GenerateMiddlewareCommand($basePath),
+            new GenerateExceptionCommand($basePath),
             new GenerateModelCommand($basePath),
             new GenerateMigrationCommand($basePath),
             new GenerateCommandCommand($basePath),

@@ -41,6 +41,19 @@ $app = Application::create();
 
 /*
 |--------------------------------------------------------------------------
+| Exception handling (application layer — not in core)
+|--------------------------------------------------------------------------
+|
+| The package default lives in Core\Exceptions\ExceptionHandler. To own the
+| format (Problem+JSON, JSend, ApiResponse errors, etc.), register your app
+| handler — see App\Exceptions\Handler (template) and README.
+|
+*/
+
+// $app->exceptionHandler(new \App\Exceptions\Handler($app->isDebug()));
+
+/*
+|--------------------------------------------------------------------------
 | Register Controllers
 |--------------------------------------------------------------------------
 */

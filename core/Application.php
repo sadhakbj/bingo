@@ -9,6 +9,7 @@ use Config\DbConfig;
 use Core\Config\ConfigLoader;
 use Core\Config\DatabaseConfig;
 use Core\Container\Container;
+use Core\Contracts\ExceptionHandlerInterface;
 use Core\Database\Database;
 use Core\Exceptions\ExceptionHandler;
 use Core\Http\Middleware\MiddlewarePipeline;
@@ -28,6 +29,8 @@ class Application
 
     private AppConfig $appConfig;
     private DatabaseConfig $dbConfig;
+
+    private ?ExceptionHandlerInterface $customExceptionHandler = null;
 
     public function __construct(array $config = [])
     {
@@ -159,8 +162,32 @@ class Application
                 return $response;
             });
         } catch (\Throwable $e) {
-            return new ExceptionHandler($this->isDebug())->handle($e);
+            return $this->resolveExceptionHandler()->handle($e);
         }
+    }
+
+    /**
+     * Override the default exception → JSON mapping (highest priority).
+     * Also accepts container binding: singleton(ExceptionHandlerInterface::class, ...).
+     */
+    public function exceptionHandler(ExceptionHandlerInterface $handler): self
+    {
+        $this->customExceptionHandler = $handler;
+
+        return $this;
+    }
+
+    private function resolveExceptionHandler(): ExceptionHandlerInterface
+    {
+        if ($this->customExceptionHandler !== null) {
+            return $this->customExceptionHandler;
+        }
+
+        if ($this->container->has(ExceptionHandlerInterface::class)) {
+            return $this->container->make(ExceptionHandlerInterface::class);
+        }
+
+        return new ExceptionHandler($this->isDebug());
     }
 
     /**

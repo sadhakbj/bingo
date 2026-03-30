@@ -69,6 +69,8 @@ The application is now available at `http://127.0.0.1:8000`.
 ├── app/
 │   ├── Console/
 │   │   └── Commands/         # Custom CLI commands
+│   ├── Exceptions/
+│   │   └── Handler.php       # Optional: your ExceptionHandlerInterface (error JSON shape)
 │   ├── DTOs/                 # Data transfer objects (input + output)
 │   ├── Http/
 │   │   ├── Controllers/      # Route controllers
@@ -411,16 +413,16 @@ class CreateUserDTO extends DataTransferObject
 }
 ```
 
-Validation failure response:
+Validation failure response (same shape as in [Exception Handling](#exception-handling)):
 
 ```json
 {
-  "success": false,
-  "message": "Validation failed",
-  "errors": {
+  "statusCode": 422,
+  "message": {
     "email": "This value is not a valid email address.",
     "age": "This value should be between 18 and 120."
-  }
+  },
+  "error": "Unprocessable Entity"
 }
 ```
 
@@ -511,7 +513,7 @@ $app->instance(PaymentConfig::class, new PaymentConfig(key: env('STRIPE_KEY')));
 
 ## Exception Handling
 
-Throw HTTP exceptions anywhere in your service or controller — the framework catches them and returns the correct JSON response automatically.
+Throw HTTP exceptions anywhere in your service or controller — uncaught throwables are converted to a JSON response by the **exception handler** (same idea as NestJS exception filters or Laravel’s `render`).
 
 ```php
 use Core\Exceptions\NotFoundException;
@@ -527,18 +529,66 @@ throw new ForbiddenException('Insufficient scope');     // 403
 throw new BadRequestException('Invalid payload');       // 400
 ```
 
-All HTTP exceptions produce a consistent JSON envelope:
+### Default JSON shape (NestJS-style)
+
+HTTP errors use a small, flat body: `statusCode`, `message`, and `error` (short reason phrase). The HTTP status line matches `statusCode`.
 
 ```json
 {
-  "success": false,
+  "statusCode": 404,
   "message": "User not found",
-  "data": null,
-  "errors": null
+  "error": "Not Found"
 }
 ```
 
-In **debug mode** (`APP_DEBUG=true`), uncaught generic exceptions also expose the exception class, file, line, and stack trace in the `data` field to help during development. In production this information is hidden and a generic `"Internal Server Error"` message is returned.
+Validation failures on `#[Body]` DTOs return **422** with `message` as a **field → message** object:
+
+```json
+{
+  "statusCode": 422,
+  "message": {
+    "email": "This value is not a valid email address."
+  },
+  "error": "Unprocessable Entity"
+}
+```
+
+In **debug mode** (`APP_DEBUG=true`), uncaught non-HTTP exceptions use `message` with the real exception text and add a `details` object (`exception`, `file`, `line`, `trace`). In production, `message` and `error` are generic and `details` is omitted.
+
+### Custom exception handler
+
+**Where to put your code:** When `core/` is installed as a separate Composer package, you still **never** edit vendor/core. Implement `Core\Contracts\ExceptionHandlerInterface` under your application — for example [`app/Exceptions/Handler.php`](app/Exceptions/Handler.php) — and **register** it from [`bootstrap/app.php`](bootstrap/app.php). The template `Handler` delegates to the framework default until you change its `handle()` method.
+
+**Option A — app class instance (highest priority):**
+
+```php
+// bootstrap/app.php, after Application::create()
+$app->exceptionHandler(new \App\Exceptions\Handler($app->isDebug()));
+```
+
+**Option B — anonymous / one-off:**
+
+```php
+use Core\Contracts\ExceptionHandlerInterface;
+use Core\Http\Response;
+
+$app->exceptionHandler(new class implements ExceptionHandlerInterface {
+    public function handle(\Throwable $e): Response
+    {
+        return Response::json(['ok' => false, 'reason' => $e->getMessage()], 500);
+    }
+});
+```
+
+**Option C — container binding** (resolved after `compile()`; use when your handler needs injected services — skipped if you also call `$app->exceptionHandler(...)` with an instance):
+
+```php
+$app->singleton(\Core\Contracts\ExceptionHandlerInterface::class, \App\Exceptions\Handler::class);
+```
+
+If you bind the class name only, ensure `App\Exceptions\Handler` has a constructor the container can satisfy (e.g. inject `Config\AppConfig` for debug instead of a raw bool), or register a factory with `$app->instance(...)`.
+
+Priority: **`$app->exceptionHandler($instance)`** → **container binding** for `ExceptionHandlerInterface` → **built-in** `Core\Exceptions\ExceptionHandler`.
 
 ---
 
@@ -637,6 +687,7 @@ All generator commands write a scaffold to the correct directory and print the f
 | `generate:controller <Name>` | `g:controller` | `app/Http/Controllers/NameController.php` |
 | `generate:service <Name>` | `g:service` | `app/Services/NameService.php` |
 | `generate:middleware <Name>` | `g:middleware` | `app/Http/Middleware/NameMiddleware.php` |
+| `generate:exception <Name>` | `g:exception` | `app/Exceptions/NameException.php` (extends `HttpException`; use `--status`) |
 | `generate:model <Name>` | `g:model` | `app/Models/Name.php` |
 | `generate:migration <name>` | `g:migration` | `database/migrations/YYYY_MM_DD_HHiiss_name.php` |
 | `generate:command <Name>` | `g:command` | `app/Console/Commands/NameCommand.php` |
@@ -649,6 +700,7 @@ php bin/bingo g:service    PostPublisher
 php bin/bingo g:model      Post
 php bin/bingo g:migration  create_posts_table
 php bin/bingo g:middleware RateLimit
+php bin/bingo g:exception PaymentRequired --status=402
 ```
 
 The migration generator infers the table name from the migration name — `create_posts_table` produces a stub that creates the `posts` table.

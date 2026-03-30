@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Core\Http\Middleware;
 
 use Core\Contracts\MiddlewareInterface;
+use Core\Exceptions\TooManyRequestsException;
 use Core\Http\Request;
 use Core\Http\Response;
 
@@ -35,16 +36,18 @@ class RateLimitMiddleware implements MiddlewareInterface
         
         // Check if limit exceeded
         if ($current >= $this->config['max_requests']) {
-            $response = Response::json([
-                'error' => 'Too Many Requests',
-                'message' => 'Rate limit exceeded. Please try again later.'
-            ], 429);
-            
-            if ($this->config['headers']) {
-                $this->addRateLimitHeaders($response, $current, $window);
+            $resetTime = ($window + 1) * $this->config['window_seconds'];
+
+            if (!$this->config['headers']) {
+                throw new TooManyRequestsException();
             }
-            
-            return $response;
+
+            throw new TooManyRequestsException(
+                'Rate limit exceeded. Please try again later.',
+                $this->config['max_requests'],
+                0,
+                $resetTime,
+            );
         }
         
         // Process request

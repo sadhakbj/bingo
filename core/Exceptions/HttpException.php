@@ -21,9 +21,10 @@ class HttpException extends RuntimeException
         return $this->statusCode;
     }
 
-    protected function defaultMessage(): string
+    /** Short reason phrase for JSON `error` (NestJS-style) and default messages. */
+    public static function phraseForStatusCode(int $statusCode): string
     {
-        return match ($this->statusCode) {
+        return match ($statusCode) {
             400 => 'Bad Request',
             401 => 'Unauthorized',
             403 => 'Forbidden',
@@ -35,5 +36,10 @@ class HttpException extends RuntimeException
             500 => 'Internal Server Error',
             default => 'HTTP Error',
         };
+    }
+
+    protected function defaultMessage(): string
+    {
+        return self::phraseForStatusCode($this->statusCode);
     }
 }

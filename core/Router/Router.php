@@ -14,9 +14,12 @@ use Core\Attributes\Route\Route;
 use Core\Attributes\Route\UploadedFile;
 use Core\Attributes\Route\UploadedFiles;
 use Core\Container\Container;
+use Core\Exceptions\MethodNotAllowedException;
+use Core\Exceptions\NotFoundException;
 use Core\Http\Middleware\MiddlewarePipeline;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\Validation\ValidationException;
 use ReflectionClass;
 use ReflectionMethod;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
@@ -47,7 +50,9 @@ class Router
         if ($apiControllerAttr) {
             $apiController = $apiControllerAttr[0]->newInstance();
             $prefix = rtrim($apiController->prefix ?? '', '/');
-            $this->apiControllerPrefixes[] = $prefix;
+            if ($prefix !== '') {
+                $this->apiControllerPrefixes[] = $prefix;
+            }
         }
 
         // Collect class-level middleware — applies to every route in this controller
@@ -114,10 +119,11 @@ class Router
     private function isApiPath(string $path): bool
     {
         foreach ($this->apiControllerPrefixes as $prefix) {
-            if ($prefix === '' || str_starts_with($path, $prefix)) {
+            if (str_starts_with($path, $prefix)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -156,33 +162,34 @@ class Router
                         $reflectionClass = new ReflectionClass($controllerClass);
                         $isApiController = !empty($reflectionClass->getAttributes(\Core\Attributes\ApiController::class));
                     }
-                } catch (\Symfony\Component\Routing\Exception\ResourceNotFoundException $e2) {
+                } catch (\Symfony\Component\Routing\Exception\ResourceNotFoundException) {
                     if ($this->isApiPath($normalizedPath)) {
-                        return \Core\Http\Response::json(['error' => 'Not Found'], 404);
+                        throw new NotFoundException();
                     }
+
                     return "404 - Not Found";
-                } catch (\Symfony\Component\Routing\Exception\MethodNotAllowedException $e2) {
+                } catch (\Symfony\Component\Routing\Exception\MethodNotAllowedException) {
                     if ($this->isApiPath($normalizedPath)) {
-                        return \Core\Http\Response::json(['error' => 'Method Not Allowed'], 405);
+                        throw new MethodNotAllowedException();
                     }
+
                     return "405 - Method Not Allowed";
                 }
             } else {
                 if ($this->isApiPath($normalizedPath)) {
-                    return \Core\Http\Response::json(['error' => 'Not Found'], 404);
+                    throw new NotFoundException();
                 }
+
                 return "404 - Not Found";
             }
-        } catch (\Symfony\Component\Routing\Exception\MethodNotAllowedException $e) {
+        } catch (\Symfony\Component\Routing\Exception\MethodNotAllowedException) {
             if ($this->isApiPath($normalizedPath)) {
-                return \Core\Http\Response::json(['error' => 'Method Not Allowed'], 405);
+                throw new MethodNotAllowedException();
             }
+
             return "405 - Method Not Allowed";
         } catch (\Throwable $e) {
-            if ($isApiController) {
-                return \Core\Http\Response::json(['error' => 'Internal Server Error', 'message' => $e->getMessage()], 500);
-            }
-            return "500 - Internal Server Error";
+            throw $e;
         }
 
         $action = $parameters['_action'];
@@ -218,10 +225,11 @@ class Router
                         if (is_subclass_of($dtoClass, \Core\Data\DataTransferObject::class)) {
                             try {
                                 $value = $dtoClass::fromRequest($req);
-                            } catch (\Core\Validation\ValidationException $e) {
+                            } catch (ValidationException $e) {
                                 if ($isApiController) {
-                                    return \Core\Http\Response::json(['errors' => $e->errors], 422);
+                                    throw $e;
                                 }
+
                                 return "422 - Validation Failed: " . implode(', ', array_keys($e->errors));
                             }
                         }
@@ -309,10 +317,11 @@ class Router
                     } elseif (is_subclass_of($typeName, \Core\Validation\ValidatedRequest::class)) {
                         try {
                             $value = $typeName::createFromRequest($req);
-                        } catch (\Core\Validation\ValidationException $e) {
+                        } catch (ValidationException $e) {
                             if ($isApiController) {
-                                return \Core\Http\Response::json(['errors' => $e->errors], 422);
+                                throw $e;
                             }
+
                             return "422 - Validation Failed: " . implode(', ', array_keys($e->errors));
                         }
                     } else {
