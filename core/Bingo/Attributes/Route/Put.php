@@ -2,16 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Bingo\Attributes;
+namespace Bingo\Attributes\Route;
 
 use Attribute;
-use Bingo\Attributes\Route\Route;
 
 #[Attribute(Attribute::TARGET_METHOD)]
-class Patch extends Route
+class Put extends Route
 {
     public function __construct(string $path)
     {
-        parent::__construct($path, 'PATCH');
+        parent::__construct($path, 'PUT');
     }
 }

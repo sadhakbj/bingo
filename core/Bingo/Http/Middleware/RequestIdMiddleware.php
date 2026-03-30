@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Bingo\Http\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Http\Request;
-use Bingo\Http\Response;
+use Bingo\Http\Response as BingoResponse;
 
 class RequestIdMiddleware implements MiddlewareInterface
 {
@@ -21,7 +22,7 @@ class RequestIdMiddleware implements MiddlewareInterface
         ], $config);
     }
 
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
         // Check if request already has an ID
         $requestId = $request->headers->get($this->config['header_name']);
@@ -34,7 +35,7 @@ class RequestIdMiddleware implements MiddlewareInterface
         $request->attributes->set('request_id', $requestId);
         $request->headers->set($this->config['header_name'], $requestId);
 
-        $response = $next ? $next($request) : Response::json(['message' => 'OK']);
+        $response = $next ? $next($request) : BingoResponse::json(['message' => 'OK']);
 
         // Add request ID to response headers
         if ($this->config['response_header']) {

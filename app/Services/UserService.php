@@ -38,4 +38,20 @@ class UserService
 
         return UserDTO::fromModel($user);
     }
+
+    /**
+     * Demo SSE payloads: "User 1" … "User 10".
+     *
+     * @return \Generator<int, array{index: int, label: string}>
+     */
+    public function demoUserStreamChunks(): \Generator
+    {
+        for ($i = 1; $i <= 10; $i++) {
+            sleep(1);
+            yield [
+                'index' => $i,
+                'label' => "User {$i}",
+            ];
+        }
+    }
 }

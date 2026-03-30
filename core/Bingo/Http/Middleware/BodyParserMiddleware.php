@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bingo\Http\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Exceptions\Http\BadRequestException;
 use Bingo\Http\Request;
-use Bingo\Http\Response;
 use JsonException;
 
 class BodyParserMiddleware implements MiddlewareInterface
@@ -39,7 +39,7 @@ class BodyParserMiddleware implements MiddlewareInterface
         ], $config);
     }
 
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
         try {
             $this->parseBody($request);

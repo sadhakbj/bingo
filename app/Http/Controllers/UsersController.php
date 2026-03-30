@@ -8,27 +8,26 @@ use App\DTOs\CreateUserDTO;
 use App\Http\Middleware\LogMiddleware;
 use App\Models\User;
 use App\Services\UserService;
-use Bingo\Attributes\ApiController;
-use Bingo\Attributes\Get;
 use Bingo\Attributes\Middleware;
-use Bingo\Attributes\Post;
-use Bingo\Attributes\Route\Body;
-use Bingo\Attributes\Route\Headers;
-use Bingo\Attributes\Route\Param;
-use Bingo\Attributes\Route\Query;
-use Bingo\Attributes\Route\Request as ReqAttr;
-use Bingo\Attributes\Route\UploadedFile;
-use Bingo\Attributes\Route\UploadedFiles;
+use Bingo\Attributes\Route\{ApiController,
+    Body,
+    Get,
+    Headers,
+    Param,
+    Post,
+    Query,
+    Request as ReqAttr,
+    UploadedFile,
+    UploadedFiles};
 use Bingo\DTOs\Http\ApiResponse;
-use Bingo\Http\Request;
-use Bingo\Http\Response;
+use Bingo\Http\{Request, Response, Sse\StreamedEvent, StreamedResponse};
 use Symfony\Component\HttpFoundation\File\UploadedFile as File;
 
 #[ApiController('/users')]
 #[Middleware([LogMiddleware::class])]
-class UsersController
+readonly class UsersController
 {
-    public function __construct(private readonly UserService $userService)
+    public function __construct(private UserService $userService)
     {
     }
 
@@ -54,6 +53,26 @@ class UsersController
             'page'    => $page,
             'results' => []
         ]);
+    }
+
+    #[Get('/sse-demo')]
+    public function sseDemo(): StreamedResponse
+    {
+        return Response::eventStream(function (): \Generator {
+            foreach ($this->userService->demoUserStreamChunks() as $chunk) {
+                yield new StreamedEvent('user', $chunk);
+            }
+        });
+    }
+
+    #[Get('/sse-demo-plain')]
+    public function sseDemoPlain(): StreamedResponse
+    {
+        return Response::eventStream(function (): \Generator {
+            foreach ($this->userService->demoUserStreamChunks() as $chunk) {
+                yield $chunk;
+            }
+        });
     }
 
     // NOTE: Specific routes (/search, /upload, etc.) must be declared before /{id}
