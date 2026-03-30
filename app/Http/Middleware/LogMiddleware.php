@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use Core\Contracts\MiddlewareInterface;
-use Core\Http\Request;
-use Core\Http\Response;
+use Bingo\Contracts\MiddlewareInterface;
+use Bingo\Http\Request;
+use Bingo\Http\Response;
 
 class LogMiddleware implements MiddlewareInterface
 {

@@ -69,6 +69,8 @@ The application is now available at `http://127.0.0.1:8000`.
 ├── app/
 │   ├── Console/
 │   │   └── Commands/         # Custom CLI commands
+│   ├── Exceptions/
+│   │   └── Handler.php       # Optional: your ExceptionHandlerInterface (error JSON shape)
 │   ├── DTOs/                 # Data transfer objects (input + output)
 │   ├── Http/
 │   │   ├── Controllers/      # Route controllers
@@ -86,7 +88,9 @@ The application is now available at `http://127.0.0.1:8000`.
 │   ├── MySqlConfig.php       # MySQL driver (customize here)
 │   ├── PgSqlConfig.php       # PostgreSQL driver
 │   └── SQLiteConfig.php      # SQLite driver
-├── core/                     # Framework internals
+├── core/
+│   ├── Bingo/                # Framework code (`Bingo\*` namespaces)
+│   └── helpers.php           # `base_path()`, `env()`, …
 ├── database/
 │   └── migrations/           # Migration files
 ├── public/
@@ -240,11 +244,7 @@ public/index.php
 Routes are declared directly on controller methods using PHP attributes. There are no route files.
 
 ```php
-use Core\Attributes\ApiController;
-use Core\Attributes\Get;
-use Core\Attributes\Post;
-use Core\Attributes\Put;
-use Core\Attributes\Delete;
+use Bingo\Attributes\ApiController;use Bingo\Attributes\Delete;use Bingo\Attributes\Get;use Bingo\Attributes\Post;use Bingo\Attributes\Put;
 
 #[ApiController('/users')]
 class UsersController
@@ -347,12 +347,10 @@ class AdminController
 
 ### Writing Custom Middleware
 
-Implement `Core\Contracts\MiddlewareInterface`:
+Implement `Bingo\Contracts\MiddlewareInterface`:
 
 ```php
-use Core\Contracts\MiddlewareInterface;
-use Core\Http\Request;
-use Core\Http\Response;
+use Bingo\Contracts\MiddlewareInterface;use Bingo\Http\Request;use Bingo\Http\Response;
 
 class AuthMiddleware implements MiddlewareInterface
 {
@@ -390,11 +388,10 @@ The framework registers these automatically in development and production:
 
 ## DTOs and Validation
 
-Input DTOs extend `Core\Data\DataTransferObject` and declare validation constraints using Symfony Validator attributes. When a parameter is annotated with `#[Body]`, the framework fills the DTO from the request body and validates it automatically. Any failure returns `422 Unprocessable Entity` before your controller method is ever called.
+Input DTOs extend `Bingo\Data\DataTransferObject` and declare validation constraints using Symfony Validator attributes. When a parameter is annotated with `#[Body]`, the framework fills the DTO from the request body and validates it automatically. Any failure returns **422** before your controller method is ever called.
 
 ```php
-use Core\Data\DataTransferObject;
-use Symfony\Component\Validator\Constraints as Assert;
+use Bingo\Data\DataTransferObject;use Symfony\Component\Validator\Constraints as Assert;
 
 class CreateUserDTO extends DataTransferObject
 {
@@ -411,16 +408,16 @@ class CreateUserDTO extends DataTransferObject
 }
 ```
 
-Validation failure response:
+Validation failure response (same shape as in [Exception Handling](#exception-handling)):
 
 ```json
 {
-  "success": false,
-  "message": "Validation failed",
-  "errors": {
+  "statusCode": 422,
+  "message": {
     "email": "This value is not a valid email address.",
     "age": "This value should be between 18 and 120."
-  }
+  },
+  "error": "Unprocessable Content"
 }
 ```
 
@@ -511,34 +508,122 @@ $app->instance(PaymentConfig::class, new PaymentConfig(key: env('STRIPE_KEY')));
 
 ## Exception Handling
 
-Throw HTTP exceptions anywhere in your service or controller — the framework catches them and returns the correct JSON response automatically.
+Throw HTTP exceptions anywhere in your service or controller — uncaught throwables are converted to a JSON response by the **exception handler** (comparable to a global `render` in Laravel or a framework-level exception layer).
+
+### HTTP status codes (Symfony)
+
+**Symfony HttpFoundation** already defines status codes on `Response` as `public const` (e.g. `Response::HTTP_NOT_FOUND`). `Bingo\Http\Response` extends Symfony’s `Response`, so use:
 
 ```php
-use Core\Exceptions\NotFoundException;
-use Core\Exceptions\UnauthorizedException;
-use Core\Exceptions\ConflictException;
-use Core\Exceptions\ForbiddenException;
-use Core\Exceptions\BadRequestException;
+use Bingo\Exceptions\Http\HttpException;use Bingo\Http\Response;
+
+throw new HttpException(Response::HTTP_FORBIDDEN, 'You cannot do that');
+```
+
+`HttpException::phraseForStatusCode()` and default JSON **`error`** text use Symfony’s **`Response::$statusTexts`** (IANA-style reason phrases), so you stay aligned with the HTTP component instead of duplicating magic numbers or labels.
+
+### Built-in HTTP exception classes
+
+These live under `Bingo\Exceptions\Http\` (folder `core/Bingo/Exceptions/Http/`). They are thin subclasses of `HttpException` with the correct status preset. Optional **third constructor argument** `?string $description` overrides the JSON **`error`** field when you want a custom short label.
+
+| Class | Status |
+|-------|--------|
+| `BadRequestException` | 400 |
+| `UnauthorizedException` | 401 |
+| `ForbiddenException` | 403 |
+| `NotFoundException` | 404 |
+| `MethodNotAllowedException` | 405 |
+| `NotAcceptableException` | 406 |
+| `RequestTimeoutException` | 408 |
+| `ConflictException` | 409 |
+| `GoneException` | 410 |
+| `PreconditionFailedException` | 412 |
+| `PayloadTooLargeException` | 413 |
+| `UnsupportedMediaTypeException` | 415 |
+| `ImATeapotException` | 418 |
+| `UnprocessableEntityException` | 422 |
+| `TooManyRequestsException` | 429 |
+| `InternalServerErrorException` | 500 |
+| `NotImplementedException` | 501 |
+| `BadGatewayException` | 502 |
+| `ServiceUnavailableException` | 503 |
+| `GatewayTimeoutException` | 504 |
+| `HttpVersionNotSupportedException` | 505 |
+
+DTO validation failures still use **`ValidationException`** → **422** with `message` as a field map (see below).
+
+```php
+use Bingo\Exceptions\Http\BadRequestException;use Bingo\Exceptions\Http\ConflictException;use Bingo\Exceptions\Http\ForbiddenException;use Bingo\Exceptions\Http\NotFoundException;use Bingo\Exceptions\Http\UnauthorizedException;
 
 throw new NotFoundException('User not found');          // 404
 throw new UnauthorizedException();                      // 401
 throw new ConflictException('Email already exists');    // 409
 throw new ForbiddenException('Insufficient scope');     // 403
 throw new BadRequestException('Invalid payload');       // 400
+
+// Custom JSON "error" (third argument)
+throw new BadRequestException('Something bad happened', null, 'Some error description');
 ```
 
-All HTTP exceptions produce a consistent JSON envelope:
+### Default JSON shape
+
+HTTP errors use a small, flat body: `statusCode`, `message`, and `error` (short reason phrase). The HTTP status line matches `statusCode`.
 
 ```json
 {
-  "success": false,
+  "statusCode": 404,
   "message": "User not found",
-  "data": null,
-  "errors": null
+  "error": "Not Found"
 }
 ```
 
-In **debug mode** (`APP_DEBUG=true`), uncaught generic exceptions also expose the exception class, file, line, and stack trace in the `data` field to help during development. In production this information is hidden and a generic `"Internal Server Error"` message is returned.
+Validation failures on `#[Body]` DTOs return **422** with `message` as a **field → message** object. The **`error`** string is Symfony’s reason phrase for **422** (see `Response::$statusTexts`, e.g. *Unprocessable Content*).
+
+```json
+{
+  "statusCode": 422,
+  "message": {
+    "email": "This value is not a valid email address."
+  },
+  "error": "Unprocessable Content"
+}
+```
+
+In **debug mode** (`APP_DEBUG=true`), uncaught non-HTTP exceptions use `message` with the real exception text and add a `details` object (`exception`, `file`, `line`, `trace`). In production, `message` and `error` are generic and `details` is omitted.
+
+### Custom exception handler
+
+**Where to put your code:** When `core/` is installed as a separate Composer package, you still **never** edit vendor/core. Implement `Bingo\Contracts\ExceptionHandlerInterface` under your application — for example [`app/Exceptions/Handler.php`](app/Exceptions/Handler.php) — and **register** it from [`bootstrap/app.php`](bootstrap/app.php). The template `Handler` delegates to the framework default until you change its `handle()` method.
+
+**Option A — app class instance (highest priority):**
+
+```php
+// bootstrap/app.php, after Application::create()
+$app->exceptionHandler(new \App\Exceptions\Handler($app->isDebug()));
+```
+
+**Option B — anonymous / one-off:**
+
+```php
+use Bingo\Contracts\ExceptionHandlerInterface;use Bingo\Http\Response;
+
+$app->exceptionHandler(new class implements ExceptionHandlerInterface {
+    public function handle(\Throwable $e): Response
+    {
+        return Response::json(['ok' => false, 'reason' => $e->getMessage()], 500);
+    }
+});
+```
+
+**Option C — container binding** (resolved after `compile()`; use when your handler needs injected services — skipped if you also call `$app->exceptionHandler(...)` with an instance):
+
+```php
+$app->singleton(\Bingo\Contracts\ExceptionHandlerInterface::class, \App\Exceptions\Handler::class);
+```
+
+If you bind the class name only, ensure `App\Exceptions\Handler` has a constructor the container can satisfy (e.g. inject `Config\AppConfig` for debug instead of a raw bool), or register a factory with `$app->instance(...)`.
+
+Priority: **`$app->exceptionHandler($instance)`** → **container binding** for `ExceptionHandlerInterface` → **built-in** `Bingo\Exceptions\ExceptionHandler`.
 
 ---
 
@@ -573,7 +658,7 @@ php bin/bingo generate:model Post
 
 ## CLI — bin/bingo
 
-Bingo includes a full-featured CLI powered by Symfony Console. All commands follow the `namespace:verb` convention used by NestJS, with short aliases for common ones.
+Bingo includes a full-featured CLI powered by Symfony Console. Commands use a `namespace:verb` style with short aliases for common ones.
 
 ```bash
 php bin/bingo <command> [options] [arguments]
@@ -587,7 +672,7 @@ php bin/bingo serve
 php bin/bingo serve --host=0.0.0.0 --port=9000
 ```
 
-The server command produces NestJS-style output: it prints all registered routes at boot, then formats every incoming request with color-coded HTTP methods and status codes.
+The server command prints registered routes at boot, then logs each request with color-coded HTTP methods and status codes.
 
 ```
  [Bingo] 12345  - 03/30/2026, 12:00:00 PM   LOG    [Kernel]          Starting Bingo application...
@@ -637,6 +722,7 @@ All generator commands write a scaffold to the correct directory and print the f
 | `generate:controller <Name>` | `g:controller` | `app/Http/Controllers/NameController.php` |
 | `generate:service <Name>` | `g:service` | `app/Services/NameService.php` |
 | `generate:middleware <Name>` | `g:middleware` | `app/Http/Middleware/NameMiddleware.php` |
+| `generate:exception <Name>` | `g:exception` | `app/Exceptions/NameException.php` (extends `HttpException`; use `--status`) |
 | `generate:model <Name>` | `g:model` | `app/Models/Name.php` |
 | `generate:migration <name>` | `g:migration` | `database/migrations/YYYY_MM_DD_HHiiss_name.php` |
 | `generate:command <Name>` | `g:command` | `app/Console/Commands/NameCommand.php` |
@@ -649,6 +735,7 @@ php bin/bingo g:service    PostPublisher
 php bin/bingo g:model      Post
 php bin/bingo g:migration  create_posts_table
 php bin/bingo g:middleware RateLimit
+php bin/bingo g:exception PaymentRequired --status=402
 ```
 
 The migration generator infers the table name from the migration name — `create_posts_table` produces a stub that creates the `posts` table.
@@ -720,8 +807,9 @@ Tests mirror the application structure:
 ```
 tests/
 ├── Unit/
-│   ├── Core/
+│   ├── Bingo/
 │   │   ├── Container/
+│   │   ├── Http/
 │   │   ├── Router/
 │   │   └── ...
 │   └── App/

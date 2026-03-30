@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Config;
 
-use Core\Attributes\Config\Env;
+use Bingo\Attributes\Config\Env;
 
 /**
  * Database configuration.
@@ -29,7 +29,7 @@ final class DbConfig
     public string $default = 'sqlite';
 
     /**
-     * @var array<string, class-string<\Core\Config\Driver\DatabaseDriver>>
+     * @var array<string, class-string<\Bingo\Config\Driver\DatabaseDriver>>
      */
     public array $connections = [
         'sqlite' => SQLiteConfig::class,

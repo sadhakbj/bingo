@@ -7,12 +7,9 @@ namespace App\Http\Controllers;
 use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\LogMiddleware;
 use App\Models\User;
-use App\Services\UserService;
-use Config\AppConfig;
-use Core\Attributes\Middleware;
-use Core\Attributes\Route\Route;
-use Core\Http\Request;
-use Core\Http\Response;
+use Bingo\Attributes\Middleware;
+use Bingo\Attributes\Route\Route;
+use Bingo\Http\Response;
 
 class HomeController
 {

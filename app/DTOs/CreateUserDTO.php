@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTOs;
 
-use Core\Data\DataTransferObject;
+use Bingo\Data\DataTransferObject;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class CreateUserDTO extends DataTransferObject

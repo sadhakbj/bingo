@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\Controllers;
 
-use Core\Attributes\ApiController;
-use Core\Attributes\Get;
-use Core\Attributes\Middleware;
-use Core\Http\Response;
+use Bingo\Attributes\ApiController;
+use Bingo\Attributes\Get;
+use Bingo\Attributes\Middleware;
+use Bingo\Http\Response;
 use Tests\Stubs\Middleware\BlockingMiddlewareStub;
 use Tests\Stubs\Middleware\TrackingMiddlewareStub;
 

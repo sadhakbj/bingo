@@ -19,7 +19,7 @@ declare(strict_types=1);
 |
 */
 
-use Core\Console\Kernel;
+use Bingo\Console\Kernel;
 
 // Boot the same application that HTTP uses — routes, DI bindings, and all.
 // The console Kernel wraps it; it never calls $app->run() (that's the HTTP path).

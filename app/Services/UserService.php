@@ -7,8 +7,8 @@ namespace App\Services;
 use App\DTOs\CreateUserDTO;
 use App\DTOs\User\UserDTO;
 use App\Models\User;
-use Core\Exceptions\ConflictException;
-use Core\Exceptions\NotFoundException;
+use Bingo\Exceptions\Http\ConflictException;
+use Bingo\Exceptions\Http\NotFoundException;
 
 class UserService
 {

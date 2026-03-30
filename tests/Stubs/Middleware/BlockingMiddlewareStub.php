@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\Middleware;
 
-use Core\Contracts\MiddlewareInterface;
-use Core\DTOs\Http\ApiResponse;
-use Core\Http\Request;
-use Core\Http\Response;
+use Bingo\Contracts\MiddlewareInterface;
+use Bingo\DTOs\Http\ApiResponse;
+use Bingo\Http\Request;
+use Bingo\Http\Response;
 
 /**
  * Short-circuits the pipeline and returns 403.

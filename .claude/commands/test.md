@@ -57,7 +57,7 @@ tests/
 ## Adding New Tests
 
 1. Place under `tests/Unit/{Core|App}/...` matching the source namespace
-2. Namespace: `Tests\Unit\Core\...` or `Tests\Unit\App\...`
+2. Namespace: `Tests\Unit\Bingo\...` or `Tests\Unit\App\...`
 3. Extend `PHPUnit\Framework\TestCase`
 4. Method names must start with `test_`
 5. Add stubs to `tests/Stubs/` if you need concrete classes for abstract/interface testing

@@ -19,9 +19,24 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UsersController;
-use Core\Application;
+use Bingo\Application;
 
 $app = Application::create();
+
+/*
+|--------------------------------------------------------------------------
+| VarDumper (dd / dump) under PHP built-in server
+|--------------------------------------------------------------------------
+|
+| With Accept: application/json, Symfony VarDumper uses CliDumper → php://stdout.
+| `php bin/bingo serve` redirects that child stdout to /dev/null, so dd() looked
+| like "empty" responses. Prefer HtmlDumper (php://output) for web dumps here.
+|
+*/
+
+if (PHP_SAPI === 'cli-server') {
+    $_SERVER['VAR_DUMPER_FORMAT'] ??= 'html';
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +53,19 @@ $app = Application::create();
 */
 
 // $app->singleton(\App\Contracts\CacheInterface::class, \App\Services\RedisCache::class);
+
+/*
+|--------------------------------------------------------------------------
+| Exception handling (application layer — not in core)
+|--------------------------------------------------------------------------
+|
+| The package default lives in Bingo\Exceptions\ExceptionHandler. To own the
+| format (Problem+JSON, JSend, ApiResponse errors, etc.), register your app
+| handler — see App\Exceptions\Handler (template) and README.
+|
+*/
+
+$app->exceptionHandler(new \App\Exceptions\Handler($app->isDebug()));
 
 /*
 |--------------------------------------------------------------------------

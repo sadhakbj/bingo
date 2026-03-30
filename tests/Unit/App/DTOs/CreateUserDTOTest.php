@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\App\DTOs;
 
 use App\DTOs\CreateUserDTO;
-use Core\Validation\ValidationException;
+use Bingo\Validation\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 class CreateUserDTOTest extends TestCase
