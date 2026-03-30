@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Bingo\Http\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
+use Bingo\Http\StreamedResponse as BingoStreamedResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
 
 class CompressionMiddleware implements MiddlewareInterface
 {
@@ -29,9 +33,26 @@ class CompressionMiddleware implements MiddlewareInterface
         ], $config);
     }
 
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
         $response = $next ? $next($request) : Response::json(['message' => 'OK']);
+
+        if ($response instanceof SymfonyStreamedResponse) {
+            if (!$response instanceof BingoStreamedResponse) {
+                $response = new BingoStreamedResponse(
+                    $response->getCallback(),
+                    $response->getStatusCode(),
+                    $response->headers->all(),
+                );
+            }
+
+            return $response;
+        }
+
+        $contentType = strtolower($response->headers->get('Content-Type', ''));
+        if (str_contains($contentType, 'text/event-stream')) {
+            return $response;
+        }
 
         // Only compress if client accepts gzip
         $acceptEncoding = $request->headers->get('Accept-Encoding', '');
@@ -40,6 +61,9 @@ class CompressionMiddleware implements MiddlewareInterface
         }
 
         $content = $response->getContent();
+        if ($content === false) {
+            return $response;
+        }
         $contentType = $response->headers->get('Content-Type', '');
 
         // Check if content should be compressed

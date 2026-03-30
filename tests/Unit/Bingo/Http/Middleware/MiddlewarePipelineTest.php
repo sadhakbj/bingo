@@ -141,7 +141,7 @@ class MiddlewarePipelineTest extends TestCase
         $middleware = new class($executed) {
             public function __construct(private bool &$executed) {}
 
-            public function handle(Request $request, callable $next): Response
+            public function handle(Request $request, callable $next): \Bingo\Contracts\HttpResponse
             {
                 $this->executed = true;
                 return $next($request);

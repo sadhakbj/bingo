@@ -56,7 +56,7 @@ class GenerateControllerCommand extends Command
 
         namespace App\Http\Controllers;
 
-        use Bingo\Attributes\ApiController;use Bingo\Http\Response;
+        use Bingo\Attributes\Route\ApiController;use Bingo\Http\Response;
 
         #[ApiController('{$prefix}')]
         class {$className}

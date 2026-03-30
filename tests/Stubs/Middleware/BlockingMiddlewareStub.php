@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Stubs\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\DTOs\Http\ApiResponse;
 use Bingo\Http\Request;
@@ -15,7 +16,7 @@ use Bingo\Http\Response;
  */
 class BlockingMiddlewareStub implements MiddlewareInterface
 {
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
         return Response::json(ApiResponse::forbidden()->toArray(), 403);
     }

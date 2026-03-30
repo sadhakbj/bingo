@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Http\Request;
-use Bingo\Http\Response;
 
 class LogMiddleware implements MiddlewareInterface
 {
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
         $startTime = hrtime(true);
 

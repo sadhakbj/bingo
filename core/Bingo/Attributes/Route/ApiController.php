@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bingo\Attributes;
+namespace Bingo\Attributes\Route;
 
 use Attribute;
 

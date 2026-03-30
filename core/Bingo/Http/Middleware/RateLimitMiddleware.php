@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Bingo\Http\Middleware;
 
+use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Exceptions\Http\TooManyRequestsException;
 use Bingo\Http\Request;
-use Bingo\Http\Response;
+use Bingo\Http\Response as BingoResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
@@ -25,7 +27,7 @@ class RateLimitMiddleware implements MiddlewareInterface
         ], $config);
     }
 
-    public function handle(Request $request, callable $next): Response
+    public function handle(Request $request, callable $next): HttpResponse
     {
         $key = $this->generateKey($request);
         $window = $this->getCurrentWindow();
@@ -51,7 +53,7 @@ class RateLimitMiddleware implements MiddlewareInterface
         }
 
         // Process request
-        $response = $next ? $next($request) : Response::json(['message' => 'OK']);
+        $response = $next ? $next($request) : BingoResponse::json(['message' => 'OK']);
 
         // Increment counter (only count this request if configured)
         if (!$this->config['skip_successful'] || $response->getStatusCode() >= 400) {
@@ -81,7 +83,7 @@ class RateLimitMiddleware implements MiddlewareInterface
         return floor(time() / $this->config['window_seconds']);
     }
 
-    private function addRateLimitHeaders(Response $response, int $current, int $window): void
+    private function addRateLimitHeaders(SymfonyResponse $response, int $current, int $window): void
     {
         $remaining = max(0, $this->config['max_requests'] - $current);
         $resetTime = ($window + 1) * $this->config['window_seconds'];
