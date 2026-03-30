@@ -126,7 +126,7 @@ class ServeCommand extends Command
         return Command::SUCCESS;
     }
 
-    // ── NestJS-style log line ─────────────────────────────────────────────────
+    // ── Structured console log line ───────────────────────────────────────────
 
     private function log(OutputInterface $output, string $level, string $context, string $message): void
     {

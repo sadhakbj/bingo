@@ -8,8 +8,10 @@ use Core\Exceptions\BadRequestException;
 use Core\Exceptions\ConflictException;
 use Core\Exceptions\ForbiddenException;
 use Core\Exceptions\HttpException;
+use Core\Exceptions\ImATeapotException;
 use Core\Exceptions\NotFoundException;
 use Core\Exceptions\UnauthorizedException;
+use Core\Http\Response;
 use PHPUnit\Framework\TestCase;
 
 class HttpExceptionTest extends TestCase
@@ -24,6 +26,14 @@ class HttpExceptionTest extends TestCase
 
         $this->assertSame(418, $e->getStatusCode());
         $this->assertSame("I'm a teapot", $e->getMessage());
+    }
+
+    public function test_http_exception_accepts_symfony_response_constants(): void
+    {
+        $e = new HttpException(Response::HTTP_FORBIDDEN, 'Nope');
+
+        $this->assertSame(403, $e->getStatusCode());
+        $this->assertSame('Nope', $e->getMessage());
     }
 
     public function test_http_exception_uses_default_message_when_empty(): void
@@ -117,5 +127,13 @@ class HttpExceptionTest extends TestCase
         $this->assertInstanceOf(HttpException::class, new ForbiddenException());
         $this->assertInstanceOf(HttpException::class, new BadRequestException());
         $this->assertInstanceOf(HttpException::class, new ConflictException());
+    }
+
+    public function test_im_a_teapot_exception_default_message(): void
+    {
+        $e = new ImATeapotException();
+
+        $this->assertSame(418, $e->getStatusCode());
+        $this->assertStringContainsString('teapot', strtolower($e->getMessage()));
     }
 }

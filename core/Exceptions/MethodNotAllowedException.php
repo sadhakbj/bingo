@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Core\Exceptions;
 
-final class MethodNotAllowedException extends HttpException
+use Core\Http\Response;
+
+class MethodNotAllowedException extends HttpException
 {
-    public function __construct(string $message = '', ?\Throwable $previous = null)
+    public function __construct(string $message = '', ?\Throwable $previous = null, ?string $description = null)
     {
-        parent::__construct(405, $message, $previous);
+        parent::__construct(Response::HTTP_METHOD_NOT_ALLOWED, $message, $previous, $description);
     }
 }

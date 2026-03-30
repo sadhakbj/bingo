@@ -121,7 +121,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Resolve a class from the container — alias for get(), matches Laravel/NestJS naming.
+     * Resolve a class from the container — alias for get().
      */
     public function make(string $id): mixed
     {

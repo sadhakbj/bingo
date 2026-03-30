@@ -212,7 +212,7 @@ class Router
             $value = null;
             $handled = false;
             
-            // Check for parameter attributes (NestJS-style)
+            // Check for parameter attributes (declarative binding)
             foreach ($param->getAttributes() as $attr) {
                 $instance = $attr->newInstance();
                 

@@ -9,7 +9,7 @@ use Core\Http\Response;
 use Core\Validation\ValidationException;
 
 /**
- * Default NestJS-style JSON errors: statusCode, message, error (+ optional details in debug).
+ * Default JSON errors: statusCode, message, error (+ optional details in debug).
  */
 class ExceptionHandler implements ExceptionHandlerInterface
 {
@@ -29,17 +29,18 @@ class ExceptionHandler implements ExceptionHandlerInterface
         return $this->nestResponse(
             422,
             $e->errors,
-            'Unprocessable Entity',
+            HttpException::phraseForStatusCode(422),
         );
     }
 
     private function handleHttp(HttpException $e): Response
     {
         $status = $e->getStatusCode();
+        $error  = $e->getDescription() ?? HttpException::phraseForStatusCode($status);
         $response = $this->nestResponse(
             $status,
             $e->getMessage(),
-            HttpException::phraseForStatusCode($status),
+            $error,
         );
 
         if ($e instanceof TooManyRequestsException) {

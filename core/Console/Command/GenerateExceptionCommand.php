@@ -104,9 +104,9 @@ class GenerateExceptionCommand extends Command
 
         final class {$className} extends HttpException
         {
-            public function __construct(string \$message = '{$escapedMessage}', ?\\Throwable \$previous = null)
+            public function __construct(string \$message = '{$escapedMessage}', ?\\Throwable \$previous = null, ?string \$description = null)
             {
-                parent::__construct({$status}, \$message, \$previous);
+                parent::__construct({$status}, \$message, \$previous, \$description);
             }
         }
         PHP;

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Core\Exceptions;
 
+use Core\Http\Response;
+
 /**
  * Optional rate-limit metadata for ExceptionHandler to set X-RateLimit-* headers.
  */
-final class TooManyRequestsException extends HttpException
+class TooManyRequestsException extends HttpException
 {
     public function __construct(
         string $message = 'Rate limit exceeded. Please try again later.',
@@ -15,8 +17,9 @@ final class TooManyRequestsException extends HttpException
         private readonly ?int $rateLimitRemaining = null,
         private readonly ?int $rateLimitReset = null,
         ?\Throwable $previous = null,
+        ?string $description = null,
     ) {
-        parent::__construct(429, $message, $previous);
+        parent::__construct(Response::HTTP_TOO_MANY_REQUESTS, $message, $previous, $description);
     }
 
     public function getRateLimitLimit(): ?int

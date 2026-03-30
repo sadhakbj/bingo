@@ -13,7 +13,7 @@ Concise context for AI assistants working in this repo. Authoritative user docs:
 | **HTTP entry** | `public/index.php` → `bootstrap/app.php` → `Application::run()` |
 | **Namespaces** | `Core\` → `core/`, `App\` → `app/`, `Config\` → `config/` (PSR-4) |
 | **ORM** | Illuminate Database / Eloquent (`illuminate/database ^13`); default SQLite path `database/database.sqlite` |
-| **HTTP** | Symfony HttpFoundation via `Core\Http\Request` / `Response` |
+| **HTTP** | Symfony HttpFoundation via `Core\Http\Request` / `Response`; use `Response::HTTP_*` constants for status codes |
 | **Routing** | Symfony `RouteCollection` + `UrlMatcher`; routes registered by **reflection** on controllers at bootstrap |
 | **Validation** | Symfony Validator on DTO properties |
 | **DI** | `Core\Container\Container` wraps **Symfony ContainerBuilder** + reflection fallback autowiring |
@@ -52,7 +52,8 @@ Uncaught throwables in `Application::handle()` become JSON via `Core\Contracts\E
 | `core/Http/Middleware/MiddlewarePipeline.php` | Global + per-route `$next` chain |
 | `core/Config/ConfigLoader.php` | `#[Env]` → constructor or properties |
 | `core/Contracts/ExceptionHandlerInterface.php` | Pluggable Throwable → `Response` |
-| `core/Exceptions/ExceptionHandler.php` | Default Nest-style JSON errors |
+| `core/Exceptions/ExceptionHandler.php` | Default JSON errors (`statusCode`, `message`, `error`; phrases from Symfony `Response::$statusTexts`) |
+| `core/Exceptions/*Exception.php` | Built-in HTTP exception subclasses |
 | `core/Data/DataTransferObject.php` | Input DTO base (`fromRequest`, validate, `toArray`) |
 | `core/DTOs/Http/ApiResponse.php` | JSON envelope helpers |
 | `core/Database/Database.php` | Eloquent Capsule setup from `DatabaseConfig` |

@@ -6,10 +6,10 @@ namespace Core\Exceptions;
 
 use Core\Http\Response;
 
-class BadRequestException extends HttpException
+class RequestTimeoutException extends HttpException
 {
     public function __construct(string $message = '', ?\Throwable $previous = null, ?string $description = null)
     {
-        parent::__construct(Response::HTTP_BAD_REQUEST, $message, $previous, $description);
+        parent::__construct(Response::HTTP_REQUEST_TIMEOUT, $message, $previous, $description);
     }
 }

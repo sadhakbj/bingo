@@ -28,7 +28,7 @@ class ExceptionHandlerTest extends TestCase
         return json_decode($response->getContent(), true);
     }
 
-    public function test_validation_exception_returns_422_nest_shape(): void
+    public function test_validation_exception_returns_422_json_shape(): void
     {
         $errors = ['email' => 'Required', 'name' => 'Too short'];
         $response = $this->handler()->handle(new ValidationException($errors));
@@ -37,7 +37,7 @@ class ExceptionHandlerTest extends TestCase
         $this->assertSame(422, $response->getStatusCode());
         $this->assertSame(422, $body['statusCode']);
         $this->assertSame($errors, $body['message']);
-        $this->assertSame('Unprocessable Entity', $body['error']);
+        $this->assertSame('Unprocessable Content', $body['error']);
     }
 
     public function test_not_found_exception_returns_404_nest_shape(): void
@@ -80,6 +80,17 @@ class ExceptionHandlerTest extends TestCase
         $this->assertSame('Bad Request', $body['error']);
     }
 
+    public function test_http_exception_description_overrides_error_field(): void
+    {
+        $response = $this->handler()->handle(
+            new BadRequestException('Something bad happened', null, 'Some error description'),
+        );
+        $body = $this->decode($response);
+
+        $this->assertSame('Something bad happened', $body['message']);
+        $this->assertSame('Some error description', $body['error']);
+    }
+
     public function test_conflict_exception_returns_409(): void
     {
         $response = $this->handler()->handle(new ConflictException('Email already taken'));
@@ -97,7 +108,7 @@ class ExceptionHandlerTest extends TestCase
 
         $this->assertSame(418, $response->getStatusCode());
         $this->assertSame('I am a teapot', $body['message']);
-        $this->assertSame('HTTP Error', $body['error']);
+        $this->assertSame("I'm a teapot", $body['error']);
     }
 
     public function test_too_many_requests_sets_rate_limit_headers_when_metadata_present(): void

@@ -392,7 +392,7 @@ The framework registers these automatically in development and production:
 
 ## DTOs and Validation
 
-Input DTOs extend `Core\Data\DataTransferObject` and declare validation constraints using Symfony Validator attributes. When a parameter is annotated with `#[Body]`, the framework fills the DTO from the request body and validates it automatically. Any failure returns `422 Unprocessable Entity` before your controller method is ever called.
+Input DTOs extend `Core\Data\DataTransferObject` and declare validation constraints using Symfony Validator attributes. When a parameter is annotated with `#[Body]`, the framework fills the DTO from the request body and validates it automatically. Any failure returns **422** before your controller method is ever called.
 
 ```php
 use Core\Data\DataTransferObject;
@@ -422,7 +422,7 @@ Validation failure response (same shape as in [Exception Handling](#exception-ha
     "email": "This value is not a valid email address.",
     "age": "This value should be between 18 and 120."
   },
-  "error": "Unprocessable Entity"
+  "error": "Unprocessable Content"
 }
 ```
 
@@ -513,7 +513,50 @@ $app->instance(PaymentConfig::class, new PaymentConfig(key: env('STRIPE_KEY')));
 
 ## Exception Handling
 
-Throw HTTP exceptions anywhere in your service or controller — uncaught throwables are converted to a JSON response by the **exception handler** (same idea as NestJS exception filters or Laravel’s `render`).
+Throw HTTP exceptions anywhere in your service or controller — uncaught throwables are converted to a JSON response by the **exception handler** (comparable to a global `render` in Laravel or a framework-level exception layer).
+
+### HTTP status codes (Symfony)
+
+**Symfony HttpFoundation** already defines status codes on `Response` as `public const` (e.g. `Response::HTTP_NOT_FOUND`). `Core\Http\Response` extends Symfony’s `Response`, so use:
+
+```php
+use Core\Exceptions\HttpException;
+use Core\Http\Response;
+
+throw new HttpException(Response::HTTP_FORBIDDEN, 'You cannot do that');
+```
+
+`HttpException::phraseForStatusCode()` and default JSON **`error`** text use Symfony’s **`Response::$statusTexts`** (IANA-style reason phrases), so you stay aligned with the HTTP component instead of duplicating magic numbers or labels.
+
+### Built-in HTTP exception classes
+
+These are thin subclasses of `HttpException` with the correct status preset (similar to common framework kits). Optional **third constructor argument** `?string $description` overrides the JSON **`error`** field when you want a custom short label.
+
+| Class | Status |
+|-------|--------|
+| `BadRequestException` | 400 |
+| `UnauthorizedException` | 401 |
+| `ForbiddenException` | 403 |
+| `NotFoundException` | 404 |
+| `MethodNotAllowedException` | 405 |
+| `NotAcceptableException` | 406 |
+| `RequestTimeoutException` | 408 |
+| `ConflictException` | 409 |
+| `GoneException` | 410 |
+| `PreconditionFailedException` | 412 |
+| `PayloadTooLargeException` | 413 |
+| `UnsupportedMediaTypeException` | 415 |
+| `ImATeapotException` | 418 |
+| `UnprocessableEntityException` | 422 |
+| `TooManyRequestsException` | 429 |
+| `InternalServerErrorException` | 500 |
+| `NotImplementedException` | 501 |
+| `BadGatewayException` | 502 |
+| `ServiceUnavailableException` | 503 |
+| `GatewayTimeoutException` | 504 |
+| `HttpVersionNotSupportedException` | 505 |
+
+DTO validation failures still use **`ValidationException`** → **422** with `message` as a field map (see below).
 
 ```php
 use Core\Exceptions\NotFoundException;
@@ -527,9 +570,12 @@ throw new UnauthorizedException();                      // 401
 throw new ConflictException('Email already exists');    // 409
 throw new ForbiddenException('Insufficient scope');     // 403
 throw new BadRequestException('Invalid payload');       // 400
+
+// Custom JSON "error" (third argument)
+throw new BadRequestException('Something bad happened', null, 'Some error description');
 ```
 
-### Default JSON shape (NestJS-style)
+### Default JSON shape
 
 HTTP errors use a small, flat body: `statusCode`, `message`, and `error` (short reason phrase). The HTTP status line matches `statusCode`.
 
@@ -541,7 +587,7 @@ HTTP errors use a small, flat body: `statusCode`, `message`, and `error` (short 
 }
 ```
 
-Validation failures on `#[Body]` DTOs return **422** with `message` as a **field → message** object:
+Validation failures on `#[Body]` DTOs return **422** with `message` as a **field → message** object. The **`error`** string is Symfony’s reason phrase for **422** (see `Response::$statusTexts`, e.g. *Unprocessable Content*).
 
 ```json
 {
@@ -549,7 +595,7 @@ Validation failures on `#[Body]` DTOs return **422** with `message` as a **field
   "message": {
     "email": "This value is not a valid email address."
   },
-  "error": "Unprocessable Entity"
+  "error": "Unprocessable Content"
 }
 ```
 
@@ -623,7 +669,7 @@ php bin/bingo generate:model Post
 
 ## CLI — bin/bingo
 
-Bingo includes a full-featured CLI powered by Symfony Console. All commands follow the `namespace:verb` convention used by NestJS, with short aliases for common ones.
+Bingo includes a full-featured CLI powered by Symfony Console. Commands use a `namespace:verb` style with short aliases for common ones.
 
 ```bash
 php bin/bingo <command> [options] [arguments]
@@ -637,7 +683,7 @@ php bin/bingo serve
 php bin/bingo serve --host=0.0.0.0 --port=9000
 ```
 
-The server command produces NestJS-style output: it prints all registered routes at boot, then formats every incoming request with color-coded HTTP methods and status codes.
+The server command prints registered routes at boot, then logs each request with color-coded HTTP methods and status codes.
 
 ```
  [Bingo] 12345  - 03/30/2026, 12:00:00 PM   LOG    [Kernel]          Starting Bingo application...
