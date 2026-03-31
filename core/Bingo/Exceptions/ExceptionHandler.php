@@ -96,14 +96,14 @@ class ExceptionHandler implements ExceptionHandlerInterface
 
     private function applyRateLimitHeaders(Response $response, TooManyRequestsException $e): void
     {
-        if ($e->getRateLimitLimit() !== null) {
-            $response->headers->set('X-RateLimit-Limit', (string) $e->getRateLimitLimit());
+        $result = $e->result;
+        if ($result === null) {
+            return;
         }
-        if ($e->getRateLimitRemaining() !== null) {
-            $response->headers->set('X-RateLimit-Remaining', (string) $e->getRateLimitRemaining());
-        }
-        if ($e->getRateLimitReset() !== null) {
-            $response->headers->set('X-RateLimit-Reset', (string) $e->getRateLimitReset());
-        }
+
+        $response->headers->set('X-RateLimit-Limit',     (string) $result->limit);
+        $response->headers->set('X-RateLimit-Remaining', (string) $result->remaining);
+        $response->headers->set('X-RateLimit-Reset',     (string) $result->resetAt);
+        $response->headers->set('Retry-After',           (string) $result->retryAfter);
     }
 }

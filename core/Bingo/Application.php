@@ -20,6 +20,11 @@ use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
+use Bingo\RateLimit\Contracts\RateLimiterStore;
+use Bingo\RateLimit\RateLimiter;
+use Bingo\RateLimit\Store\FileStore;
+use Bingo\RateLimit\Store\RedisStore;
+use Config\RateLimitConfig;
 use Dotenv\Dotenv;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
@@ -35,6 +40,7 @@ class Application
 
     private AppConfig $appConfig;
     private DatabaseConfig $dbConfig;
+    private RateLimitConfig $rateLimitConfig;
 
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
 
@@ -51,8 +57,9 @@ class Application
         ], $config);
 
         // Build typed config objects — #[Env] attributes drive the wiring
-        $this->appConfig = ConfigLoader::load(AppConfig::class);
-        $this->dbConfig  = $this->bootDatabase();
+        $this->appConfig       = ConfigLoader::load(AppConfig::class);
+        $this->dbConfig        = $this->bootDatabase();
+        $this->rateLimitConfig = ConfigLoader::load(RateLimitConfig::class);
 
         $this->container = new Container();
         $this->router    = new Router($this->container);
@@ -61,12 +68,48 @@ class Application
         // Register config instances so they are injectable everywhere
         $this->container->instance(AppConfig::class, $this->appConfig);
         $this->container->instance(DatabaseConfig::class, $this->dbConfig);
+        $this->container->instance(RateLimitConfig::class, $this->rateLimitConfig);
+
+        // Wire rate limiting from config.
+        // Override the store or the entire middleware in bootstrap/app.php after Application::create():
+        //   $app->instance(RateLimiterStore::class, new RedisStore(...));
+        //   $app->instance(RateLimitMiddleware::class, RateLimitMiddleware::create($limiter, 200, 60));
+        $this->bootRateLimiting();
 
         // Boot Eloquent with typed database config
         Database::setup($this->dbConfig);
 
         if ($this->config['default_middleware']) {
             $this->setDefaultMiddleware();
+        }
+    }
+
+    private function bootRateLimiting(): void
+    {
+        $cfg = $this->rateLimitConfig;
+
+        // Redis in production; FileStore as a local-dev fallback.
+        // InMemoryStore is NOT used — it resets on every request under php -S
+        // because the built-in server spawns a new process per request.
+        $store = extension_loaded('redis')
+            ? RedisStore::fromConfig(
+                host:     $cfg->redisHost,
+                port:     $cfg->redisPort,
+                password: $cfg->redisPassword,
+                db:       $cfg->redisDb,
+            )
+            : new FileStore(base_path('storage/rate-limit'));
+
+        $limiter = new RateLimiter($store);
+
+        $this->container->instance(RateLimiterStore::class, $store);
+        $this->container->instance(RateLimiter::class, $limiter);
+
+        if ($cfg->enabled) {
+            $this->container->instance(
+                \Bingo\Http\Middleware\RateLimitMiddleware::class,
+                \Bingo\Http\Middleware\RateLimitMiddleware::create($limiter, $cfg->maxRequests, $cfg->window),
+            );
         }
     }
 

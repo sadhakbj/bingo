@@ -38,9 +38,8 @@ class MiddlewareInterfaceTest extends TestCase
         ];
 
         foreach ($middlewareClasses as $class) {
-            $this->assertInstanceOf(
-                MiddlewareInterface::class,
-                new $class(),
+            $this->assertTrue(
+                is_a($class, MiddlewareInterface::class, allow_string: true),
                 "$class must implement MiddlewareInterface"
             );
         }

@@ -38,6 +38,10 @@
         "symfony/var-dumper": "^8.0",
         "phpunit/phpunit": "^11.0"
     },
+    "suggest": {
+        "ext-redis": "Required for Redis rate limiting in production (recommended). Install via pecl install redis.",
+        "predis/predis": "Pure-PHP Redis client — alternative to ext-redis when installing a PHP extension is not an option."
+    },
     "scripts": {
         "test": "phpunit",
         "test:coverage": "phpunit --coverage-text"

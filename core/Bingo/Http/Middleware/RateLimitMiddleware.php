@@ -4,113 +4,109 @@ declare(strict_types=1);
 
 namespace Bingo\Http\Middleware;
 
-use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Exceptions\Http\TooManyRequestsException;
 use Bingo\Http\Request;
-use Bingo\Http\Response as BingoResponse;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Bingo\Http\Response;
+use Bingo\RateLimit\RateLimiter;
+use Bingo\RateLimit\RateLimitResult;
+use Bingo\RateLimit\Store\FileStore;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
-    private array $config;
-    private static array $storage = []; // Simple in-memory storage for demo
+    /** @var callable(Request): string */
+    private $keyResolver;
 
-    public function __construct(array $config = [])
-    {
-        $this->config = array_merge([
-            'max_requests' => 100, // Max requests per window
-            'window_seconds' => 3600, // 1 hour window
-            'key_generator' => null, // Custom key generator
-            'skip_successful' => false, // Only count failed requests
-            'headers' => true, // Send rate limit headers
-        ], $config);
+    public function __construct(
+        private readonly RateLimiter $limiter,
+        private readonly int         $limit         = 1_000,
+        private readonly int         $windowSeconds = 60,
+        ?callable                    $keyResolver   = null,
+    ) {
+        $this->keyResolver = $keyResolver ?? static fn(Request $r): string
+            => 'rl:' . ($r->getClientIp() ?? 'unknown');
     }
 
-    public function handle(Request $request, callable $next): HttpResponse
+    public function handle(Request $request, callable $next): Response
     {
-        $key = $this->generateKey($request);
-        $window = $this->getCurrentWindow();
-        $fullKey = $key . ':' . $window;
+        $key    = ($this->keyResolver)($request);
+        $result = $this->limiter->attempt($key, $this->limit, $this->windowSeconds);
 
-        // Get current count
-        $current = self::$storage[$fullKey] ?? 0;
-
-        // Check if limit exceeded
-        if ($current >= $this->config['max_requests']) {
-            $resetTime = ($window + 1) * $this->config['window_seconds'];
-
-            if (!$this->config['headers']) {
-                throw new TooManyRequestsException();
-            }
-
-            throw new TooManyRequestsException(
-                'Rate limit exceeded. Please try again later.',
-                $this->config['max_requests'],
-                0,
-                $resetTime,
-            );
+        if ($result->isDenied()) {
+            throw new TooManyRequestsException(result: $result);
         }
 
-        // Process request
-        $response = $next ? $next($request) : BingoResponse::json(['message' => 'OK']);
+        /** @var Response $response */
+        $response = $next($request);
 
-        // Increment counter (only count this request if configured)
-        if (!$this->config['skip_successful'] || $response->getStatusCode() >= 400) {
-            self::$storage[$fullKey] = $current + 1;
-        }
-
-        // Add rate limit headers
-        if ($this->config['headers']) {
-            $this->addRateLimitHeaders($response, self::$storage[$fullKey] ?? $current, $window);
-        }
+        $this->addHeaders($response, $result);
 
         return $response;
     }
 
-    private function generateKey(Request $request): string
-    {
-        if ($this->config['key_generator'] && is_callable($this->config['key_generator'])) {
-            return call_user_func($this->config['key_generator'], $request);
-        }
+    // -------------------------------------------------------------------------
+    // Factory methods
+    // -------------------------------------------------------------------------
 
-        // Default to IP address
-        return $request->getClientIp() ?: 'unknown';
+    /**
+     * 60 requests per minute, in-memory store.
+     * Useful as a quick per-route limiter when you have no shared backend.
+     */
+    public static function perMinute(int $limit, ?RateLimiter $limiter = null): self
+    {
+        return new self($limiter ?? self::defaultLimiter(), $limit, 60);
     }
 
-    private function getCurrentWindow(): int
+    /**
+     * N requests per hour, in-memory store.
+     */
+    public static function perHour(int $limit, ?RateLimiter $limiter = null): self
     {
-        return floor(time() / $this->config['window_seconds']);
+        return new self($limiter ?? self::defaultLimiter(), $limit, 3600);
     }
 
-    private function addRateLimitHeaders(SymfonyResponse $response, int $current, int $window): void
-    {
-        $remaining = max(0, $this->config['max_requests'] - $current);
-        $resetTime = ($window + 1) * $this->config['window_seconds'];
-
-        $response->headers->set('X-RateLimit-Limit', (string) $this->config['max_requests']);
-        $response->headers->set('X-RateLimit-Remaining', (string) $remaining);
-        $response->headers->set('X-RateLimit-Reset', (string) $resetTime);
+    /**
+     * Fully configured instance — intended for the global production pipeline
+     * when no DI container is available yet (static factory context).
+     */
+    public static function create(
+        ?RateLimiter $limiter       = null,
+        int          $limit         = 1_000,
+        int          $windowSeconds = 60,
+        ?callable    $keyResolver   = null,
+    ): self {
+        return new self($limiter ?? self::defaultLimiter(), $limit, $windowSeconds, $keyResolver);
     }
 
-    public static function create(array $config = []): self
-    {
-        return new self($config);
+    /**
+     * Build a middleware instance from a #[Throttle] attribute value.
+     * The key resolver is scoped to the route name so counters are per-route per-IP.
+     */
+    public static function fromThrottle(
+        RateLimiter $limiter,
+        int         $requests,
+        int         $per,
+        string      $routeName,
+    ): self {
+        $resolver = static fn(Request $r): string
+            => 'throttle:' . $routeName . ':' . ($r->getClientIp() ?? 'unknown');
+
+        return new self($limiter, $requests, $per, $resolver);
     }
 
-    public static function perMinute(int $maxRequests): self
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private function addHeaders(Response $response, RateLimitResult $result): void
     {
-        return new self([
-            'max_requests' => $maxRequests,
-            'window_seconds' => 60
-        ]);
+        $response->headers->set('X-RateLimit-Limit',     (string) $result->limit);
+        $response->headers->set('X-RateLimit-Remaining', (string) $result->remaining);
+        $response->headers->set('X-RateLimit-Reset',     (string) $result->resetAt);
     }
 
-    public static function perHour(int $maxRequests): self
+    private static function defaultLimiter(): RateLimiter
     {
-        return new self([
-            'max_requests' => $maxRequests,
-            'window_seconds' => 3600
-        ]);
+        return new RateLimiter(new FileStore(sys_get_temp_dir() . '/bingo-rate-limit'));
     }
 }

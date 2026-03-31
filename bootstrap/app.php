@@ -56,6 +56,32 @@ if (PHP_SAPI === 'cli-server') {
 
 /*
 |--------------------------------------------------------------------------
+| Rate Limiting
+|--------------------------------------------------------------------------
+|
+| The production middleware pipeline includes RateLimitMiddleware at
+| 1 000 req/min per IP by default. Override it here if you need a
+| different limit, window, or key strategy.
+|
+| Storage backend — automatically selected:
+|   FileStore   — dev fallback when phpredis is not loaded (writes to storage/rate-limit/)
+|   RedisStore  — used in production when the phpredis extension is present
+|   Custom      — implement RateLimiterStore (3 methods) and bind in bootstrap/app.php
+|
+*/
+
+// use Bingo\Http\Middleware\RateLimitMiddleware;
+// use Bingo\RateLimit\Contracts\RateLimiterStore;
+// use Bingo\RateLimit\Store\FileStore;
+//
+// // Tighter global limit
+// $app->use(RateLimitMiddleware::perMinute(60));
+//
+// // Persist counters across restarts (single server)
+// $app->instance(RateLimiterStore::class, new FileStore(base_path('storage/rate-limit')));
+
+/*
+|--------------------------------------------------------------------------
 | Exception handling (application layer — not in core)
 |--------------------------------------------------------------------------
 |

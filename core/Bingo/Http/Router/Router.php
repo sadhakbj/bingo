@@ -6,6 +6,7 @@ namespace Bingo\Http\Router;
 
 use Bingo\Attributes\Middleware;
 use Bingo\Attributes\Route\Body;
+use Bingo\Attributes\Route\Throttle;
 use Bingo\Attributes\Route\Headers;
 use Bingo\Attributes\Route\Param;
 use Bingo\Attributes\Route\Query;
@@ -17,8 +18,11 @@ use Bingo\Container\Container;
 use Bingo\Exceptions\Http\MethodNotAllowedException;
 use Bingo\Exceptions\Http\NotFoundException;
 use Bingo\Http\Middleware\MiddlewarePipeline;
+use Bingo\Http\Middleware\RateLimitMiddleware;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
+use Bingo\RateLimit\RateLimiter;
+use Bingo\RateLimit\Store\FileStore;
 use Bingo\Http\Router\RouteResponseMetadata;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
 use Bingo\Validation\ValidationException;
@@ -35,6 +39,8 @@ class Router
 {
     private RouteCollection $routes;
     private array $middlewares = [];
+    /** @var array<string, Throttle[]> */
+    private array $throttles = [];
 
     public function __construct(
         private readonly ?Container $container = null
@@ -55,17 +61,22 @@ class Router
             $prefix = rtrim($apiController->prefix ?? '', '/');
         }
 
-        // Collect class-level middleware — applies to every route in this controller
+        // Collect class-level middleware and throttles — apply to every route in this controller
         $classMiddlewares = [];
         foreach ($reflectionClass->getAttributes(Middleware::class) as $attr) {
             $classMiddlewares = array_merge($classMiddlewares, $attr->newInstance()->middlewares);
         }
+        $classThrottles = array_map(
+            fn($a) => $a->newInstance(),
+            $reflectionClass->getAttributes(Throttle::class),
+        );
 
         foreach ($methods as $method) {
             // Get all attributes for the method
             $allAttributes = $method->getAttributes();
-            $routeAttributes = [];
-            $methodMiddlewares = [];
+            $routeAttributes    = [];
+            $methodMiddlewares  = [];
+            $methodThrottles    = [];
             foreach ($allAttributes as $attr) {
                 $instance = $attr->newInstance();
                 if ($instance instanceof Route) {
@@ -74,14 +85,19 @@ class Router
                 if ($instance instanceof Middleware) {
                     $methodMiddlewares = array_merge($methodMiddlewares, $instance->middlewares);
                 }
+                if ($instance instanceof Throttle) {
+                    $methodThrottles[] = $instance;
+                }
             }
 
             foreach ($routeAttributes as $route) {
                 // Class-level middleware runs first (outer), method-level runs second (inner)
                 $middlewares = array_merge($classMiddlewares, $methodMiddlewares);
+                $routeName   = $controllerClass . '@' . $method->getName();
 
-                $routeName = $controllerClass . '@' . $method->getName();
                 $this->middlewares[$routeName] = $middlewares;
+                // Class-level throttles apply before method-level throttles
+                $this->throttles[$routeName] = array_merge($classThrottles, $methodThrottles);
 
                 // Prepend prefix if present
                 $fullPath = $prefix . $route->path;
@@ -338,11 +354,27 @@ class Router
             return $response;
         };
 
-        // Run route-level middleware through a proper $next pipeline
-        if (!empty($routeMiddlewares)) {
+        // Build throttle middlewares from any #[Throttle] attributes on this route
+        $throttleMiddlewares = [];
+        foreach ($this->throttles[$routeName] ?? [] as $throttle) {
+            $rateLimiter           = $this->container !== null
+                ? $this->container->make(RateLimiter::class)
+                : new RateLimiter(new FileStore(sys_get_temp_dir() . '/bingo-rate-limit'));
+            $throttleMiddlewares[] = RateLimitMiddleware::fromThrottle(
+                $rateLimiter,
+                $throttle->requests,
+                $throttle->per,
+                $routeName,
+            );
+        }
+
+        // Throttle runs before route middleware (outermost layer)
+        $allRouteMiddlewares = array_merge($throttleMiddlewares, $routeMiddlewares);
+
+        if (!empty($allRouteMiddlewares)) {
             $pipeline = MiddlewarePipeline::create($this->container);
-            foreach ($routeMiddlewares as $middlewareClass) {
-                $pipeline->add($middlewareClass);
+            foreach ($allRouteMiddlewares as $mw) {
+                $pipeline->add($mw);
             }
             return $pipeline->process($request, $finalHandler);
         }
