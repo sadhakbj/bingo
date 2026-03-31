@@ -20,6 +20,8 @@ use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
+use Bingo\RateLimit\Contracts\RateLimiterStore;
+use Bingo\RateLimit\Store\InMemoryStore;
 use Dotenv\Dotenv;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
@@ -61,6 +63,11 @@ class Application
         // Register config instances so they are injectable everywhere
         $this->container->instance(AppConfig::class, $this->appConfig);
         $this->container->instance(DatabaseConfig::class, $this->dbConfig);
+
+        // Rate limiting — bind the default in-memory store.
+        // Override in bootstrap/app.php before run() to use FileStore or Redis:
+        //   $app->instance(RateLimiterStore::class, new FileStore(base_path('storage/rate-limit')));
+        $this->container->bind(RateLimiterStore::class, InMemoryStore::class);
 
         // Boot Eloquent with typed database config
         Database::setup($this->dbConfig);

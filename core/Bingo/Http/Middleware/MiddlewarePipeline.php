@@ -16,20 +16,22 @@ class MiddlewarePipeline
     private ?Container $container = null;
 
     /**
-     * Add global middleware that runs on all requests
+     * Add global middleware that runs on all requests.
+     * Accepts a class-name string, an already-instantiated object, or a callable.
+     * Resolution is deferred to request time so that the DI container is available.
      */
     public function addGlobal($middleware): self
     {
-        $this->globalMiddleware[] = $this->resolveMiddleware($middleware);
+        $this->globalMiddleware[] = $middleware;
         return $this;
     }
 
     /**
-     * Add route-specific middleware
+     * Add route-specific middleware (resolved lazily at request time).
      */
     public function add($middleware): self
     {
-        $this->middleware[] = $this->resolveMiddleware($middleware);
+        $this->middleware[] = $middleware;
         return $this;
     }
 
@@ -57,7 +59,8 @@ class MiddlewarePipeline
             return $finalHandler ? $finalHandler($request) : Response::json(['message' => 'OK']);
         }
 
-        $middleware = $middlewareStack[$index];
+        // Resolve lazily so DI container bindings are available at request time
+        $middleware = $this->resolveMiddleware($middlewareStack[$index]);
 
         // Create next function that calls the next middleware in the stack
         $next = function(Request $req) use ($middlewareStack, $index, $finalHandler) {
@@ -144,7 +147,9 @@ class MiddlewarePipeline
         $pipeline->addGlobal(CompressionMiddleware::create(['level' => 6]));
         $pipeline->addGlobal(SecurityHeadersMiddleware::production());
         $pipeline->addGlobal(RequestIdMiddleware::create());
-        $pipeline->addGlobal(RateLimitMiddleware::create());
+        // Class-string resolved lazily at request time via the DI container,
+        // so the bound RateLimiterStore (InMemoryStore, FileStore, Redis, …) is used.
+        $pipeline->addGlobal(RateLimitMiddleware::class);
 
         return $pipeline;
     }

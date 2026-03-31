@@ -113,19 +113,23 @@ class ExceptionHandlerTest extends TestCase
 
     public function test_too_many_requests_sets_rate_limit_headers_when_metadata_present(): void
     {
+        $result = new \Bingo\RateLimit\RateLimitResult(
+            allowed:    false,
+            limit:      100,
+            remaining:  0,
+            resetAt:    1_700_000_000,
+            retryAfter: 42,
+        );
+
         $response = $this->handler()->handle(
-            new TooManyRequestsException(
-                'Slow down',
-                100,
-                0,
-                1_700_000_000,
-            ),
+            new TooManyRequestsException('Slow down', result: $result),
         );
 
         $this->assertSame(429, $response->getStatusCode());
         $this->assertSame('100', $response->headers->get('X-RateLimit-Limit'));
         $this->assertSame('0', $response->headers->get('X-RateLimit-Remaining'));
         $this->assertSame((string) 1_700_000_000, $response->headers->get('X-RateLimit-Reset'));
+        $this->assertSame('42', $response->headers->get('Retry-After'));
     }
 
     public function test_generic_exception_returns_500(): void
