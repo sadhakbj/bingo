@@ -148,7 +148,7 @@ class MiddlewarePipeline
         $pipeline->addGlobal(SecurityHeadersMiddleware::production());
         $pipeline->addGlobal(RequestIdMiddleware::create());
         // Class-string resolved lazily at request time via the DI container,
-        // so the bound RateLimiterStore (InMemoryStore, FileStore, Redis, …) is used.
+        // so the bound RateLimiterStore (FileStore in dev, RedisStore in prod) is used.
         $pipeline->addGlobal(RateLimitMiddleware::class);
 
         return $pipeline;

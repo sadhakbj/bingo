@@ -246,7 +246,7 @@ These APIs are stable for v1.0 and will not break without a major version bump:
 
 These are deliberate or accepted trade-offs, not bugs:
 
-**`InMemoryStore` is per-worker.** The default rate limit store uses a static PHP array — shared within one process but not across workers or server restarts. For a single-worker deployment this is fine. For multi-worker or multi-server setups, bind `FileStore` (single-server persistence) or implement `RateLimiterStore` with Redis and bind it in `bootstrap/app.php`. The store interface has three methods and takes minutes to implement.
+**Rate limiting requires Redis in production.** The framework uses `RedisStore` (phpredis) as the production backend and automatically falls back to `FileStore` in local development when phpredis is not loaded. There is no in-memory store — static arrays reset on every request under PHP's built-in server. Install phpredis via `pecl install redis` or `docker-php-ext-enable redis`.
 
 **No migration history.** `db:migrate` runs every file in `database/migrations/` on every call. If you need idempotent migrations, guard each with `if (!Capsule::schema()->hasTable(...))` (the generated stub does this by default), or implement a state table yourself.
 

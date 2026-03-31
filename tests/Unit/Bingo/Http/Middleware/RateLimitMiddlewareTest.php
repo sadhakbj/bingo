@@ -9,19 +9,28 @@ use Bingo\Http\Middleware\RateLimitMiddleware;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\RateLimit\RateLimiter;
-use Bingo\RateLimit\Store\InMemoryStore;
+use Bingo\RateLimit\Store\FileStore;
 use PHPUnit\Framework\TestCase;
 
 class RateLimitMiddlewareTest extends TestCase
 {
+    private string $dir;
+
     protected function setUp(): void
     {
-        InMemoryStore::flush();
+        $this->dir = sys_get_temp_dir() . '/bingo_rl_mw_test_' . uniqid();
+        mkdir($this->dir, 0755, true);
+    }
+
+    protected function tearDown(): void
+    {
+        array_map('unlink', glob($this->dir . '/*') ?: []);
+        rmdir($this->dir);
     }
 
     private function limiter(): RateLimiter
     {
-        return new RateLimiter(new InMemoryStore());
+        return new RateLimiter(new FileStore($this->dir));
     }
 
     private function request(string $ip = '1.2.3.4'): Request
@@ -121,7 +130,6 @@ class RateLimitMiddlewareTest extends TestCase
 
         $middleware->handle($this->request('1.1.1.1'), $next);
 
-        // 1.1.1.1 is at limit; 2.2.2.2 should still be allowed
         $this->expectException(TooManyRequestsException::class);
         $middleware->handle($this->request('1.1.1.1'), $next);
     }
@@ -133,7 +141,6 @@ class RateLimitMiddlewareTest extends TestCase
         $next       = $this->okNext();
 
         $middleware->handle($this->request('1.1.1.1'), $next);
-        // 1.1.1.1 is over limit but 2.2.2.2 is not
         $response = $middleware->handle($this->request('2.2.2.2'), $next);
 
         $this->assertSame(200, $response->getStatusCode());
@@ -144,15 +151,14 @@ class RateLimitMiddlewareTest extends TestCase
         $limiter    = $this->limiter();
         $middleware = new RateLimitMiddleware(
             $limiter,
-            limit:       1,
+            limit:         1,
             windowSeconds: 60,
-            keyResolver: fn(Request $r) => 'fixed-key',
+            keyResolver:   fn(Request $r) => 'fixed-key',
         );
         $next = $this->okNext();
 
         $middleware->handle($this->request('1.1.1.1'), $next);
 
-        // Different IP but same fixed key → should be denied
         $this->expectException(TooManyRequestsException::class);
         $middleware->handle($this->request('9.9.9.9'), $next);
     }
@@ -185,9 +191,8 @@ class RateLimitMiddlewareTest extends TestCase
         $request = $this->request();
         $next    = $this->okNext();
 
-        $mw1->handle($request, $next); // route_a hits its limit
+        $mw1->handle($request, $next);
 
-        // route_a is at limit, but route_b is an independent bucket
         $response = $mw2->handle($request, $next);
         $this->assertSame(200, $response->getStatusCode());
     }

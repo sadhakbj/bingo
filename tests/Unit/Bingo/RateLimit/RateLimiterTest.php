@@ -5,19 +5,28 @@ declare(strict_types=1);
 namespace Tests\Unit\Bingo\RateLimit;
 
 use Bingo\RateLimit\RateLimiter;
-use Bingo\RateLimit\Store\InMemoryStore;
+use Bingo\RateLimit\Store\FileStore;
 use PHPUnit\Framework\TestCase;
 
 class RateLimiterTest extends TestCase
 {
+    private string $dir;
+
     protected function setUp(): void
     {
-        InMemoryStore::flush();
+        $this->dir = sys_get_temp_dir() . '/bingo_rl_test_' . uniqid();
+        mkdir($this->dir, 0755, true);
+    }
+
+    protected function tearDown(): void
+    {
+        array_map('unlink', glob($this->dir . '/*') ?: []);
+        rmdir($this->dir);
     }
 
     private function limiter(): RateLimiter
     {
-        return new RateLimiter(new InMemoryStore());
+        return new RateLimiter(new FileStore($this->dir));
     }
 
     public function test_first_attempt_is_allowed(): void
@@ -86,7 +95,6 @@ class RateLimiterTest extends TestCase
         $limiter->attempt('key_a', $limit, 60);
         $limiter->attempt('key_a', $limit, 60);
 
-        // key_a is at limit, key_b should still be allowed
         $resultA = $limiter->attempt('key_a', $limit, 60);
         $resultB = $limiter->attempt('key_b', $limit, 60);
 
@@ -133,7 +141,6 @@ class RateLimiterTest extends TestCase
         $limiter->tooManyAttempts('key', 5, 60);
         $limiter->tooManyAttempts('key', 5, 60);
 
-        // Only one attempt was recorded; four more should be allowed
         $result = $limiter->attempt('key', 5, 60);
         $this->assertTrue($result->isAllowed());
     }

@@ -10,6 +10,7 @@ use App\Models\User;
 use Bingo\Attributes\Middleware;
 use Bingo\Attributes\Route\Route;
 use Bingo\Http\Response;
+use Bingo\Attributes\Route\Throttle;
 
 class HomeController
 {
@@ -19,6 +20,7 @@ class HomeController
 
     #[Route('/', 'GET')]
     #[Middleware([LogMiddleware::class])]
+    #[Throttle(requests: 1, per: 60)]
     public function index(): Response
     {
         $users = User::query()->get();

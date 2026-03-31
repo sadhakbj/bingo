@@ -10,7 +10,7 @@ use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\RateLimit\RateLimiter;
 use Bingo\RateLimit\RateLimitResult;
-use Bingo\RateLimit\Store\InMemoryStore;
+use Bingo\RateLimit\Store\FileStore;
 
 class RateLimitMiddleware implements MiddlewareInterface
 {
@@ -107,6 +107,6 @@ class RateLimitMiddleware implements MiddlewareInterface
 
     private static function defaultLimiter(): RateLimiter
     {
-        return new RateLimiter(new InMemoryStore());
+        return new RateLimiter(new FileStore(sys_get_temp_dir() . '/bingo-rate-limit'));
     }
 }

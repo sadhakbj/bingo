@@ -22,7 +22,7 @@ use Bingo\Http\Middleware\RateLimitMiddleware;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\RateLimit\RateLimiter;
-use Bingo\RateLimit\Store\InMemoryStore;
+use Bingo\RateLimit\Store\FileStore;
 use Bingo\Http\Router\RouteResponseMetadata;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
 use Bingo\Validation\ValidationException;
@@ -359,7 +359,7 @@ class Router
         foreach ($this->throttles[$routeName] ?? [] as $throttle) {
             $rateLimiter           = $this->container !== null
                 ? $this->container->make(RateLimiter::class)
-                : new RateLimiter(new InMemoryStore());
+                : new RateLimiter(new FileStore(sys_get_temp_dir() . '/bingo-rate-limit'));
             $throttleMiddlewares[] = RateLimitMiddleware::fromThrottle(
                 $rateLimiter,
                 $throttle->requests,

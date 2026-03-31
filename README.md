@@ -482,136 +482,179 @@ The framework registers these automatically in development and production:
 
 ## Rate Limiting
 
-Bingo ships a first-class rate limiter built on a **sliding-window counter** algorithm and a swappable storage backend. It is available as a global production middleware, a per-route `#[Throttle]` attribute, and an injectable `RateLimiter` service you can call directly from anywhere.
+Bingo ships a first-class rate limiter built on a **sliding-window counter** algorithm backed by Redis. It is available as a global production middleware, a per-route `#[Throttle]` attribute, and an injectable `RateLimiter` service you can call directly from anywhere.
 
-### Global Rate Limiting
+### Redis Setup
 
-In production, `RateLimitMiddleware` is active automatically at **1,000 requests per minute per IP** — enough headroom that a normal user never notices it, but enough to put a ceiling on bots and scrapers (~16 req/s sustained). To tighten or loosen it, register it explicitly in `bootstrap/app.php` before `return $app`:
+Redis is the only supported store. It is the only backend that works correctly across multiple processes, containers, and pods — which is where Bingo is designed to run.
 
-```php
-use Bingo\Http\Middleware\RateLimitMiddleware;
+#### Installing phpredis (recommended)
 
-// 60 requests per minute per IP (replaces the production default)
-$app->use(RateLimitMiddleware::perMinute(60));
+Bingo uses the **phpredis** C extension — it is native, battle-tested, and significantly faster than any pure-PHP Redis client.
 
-// 500 requests per hour per IP
-$app->use(RateLimitMiddleware::perHour(500));
-
-// Fully configured — custom window and key resolver
-$app->use(RateLimitMiddleware::create(
-    limit:         200,
-    windowSeconds: 60,
-    keyResolver:   fn($request) => $request->headers->get('X-API-Key') ?? $request->getClientIp(),
-));
+**Docker / K8s:**
+```dockerfile
+RUN pecl install redis && docker-php-ext-enable redis
 ```
 
-### Per-Route Throttling
+**macOS:**
+```bash
+pecl install redis
+```
 
-Use `#[Throttle]` on a controller class or method to apply an independent rate limit to that route. Class-level and method-level throttles are additive — each creates its own bucket keyed to `{routeName}:{clientIp}`.
+**Ubuntu / Debian:**
+```bash
+sudo apt-get install php-redis
+```
+
+Once phpredis is installed, add your Redis credentials to `.env`:
+
+```env
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=null
+REDIS_DB=0
+```
+
+That is all — the framework connects and wires everything automatically.
+
+#### Local development without Redis
+
+When phpredis is not loaded, Bingo automatically falls back to `FileStore`. Counters are written to `storage/rate-limit/` as JSON files and persist across requests. **No configuration needed.** This fallback is intentionally only for local development — phpredis is always used when the extension is present.
+
+#### Alternative: predis/predis
+
+If you cannot install a PHP extension, you can bring your own store implementation using the pure-PHP [predis](https://github.com/predis/predis) client. Implement the `RateLimiterStore` contract (three methods) and bind it in `bootstrap/app.php`:
+
+```bash
+composer require predis/predis
+```
 
 ```php
-use Bingo\Attributes\Route\Throttle;
+use Bingo\RateLimit\Contracts\RateLimiterStore;
+use Predis\Client;
 
-// All routes in this controller: 1 000 req/hour per IP
-#[ApiController('/api')]
-#[Throttle(requests: 1000, per: 3600)]
-class ApiController
+class PredisStore implements RateLimiterStore
 {
-    // Inherits the class throttle (1 000/hour)
-    #[Get('/feed')]
-    public function feed(): Response {}
+    private const PREFIX = 'bingo_rl';
+    private const SCRIPT = "local c=redis.call('INCR',KEYS[1]) if c==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end return c";
 
-    // Tighter limit for an expensive endpoint — both throttles apply independently
-    #[Get('/export')]
-    #[Throttle(requests: 10, per: 60)]
-    public function export(): Response {}
-}
-```
-
-`#[Throttle]` is repeatable, so you can stack multiple windows on the same route:
-
-```php
-#[Get('/search')]
-#[Throttle(requests: 5,   per: 1)]    // burst: 5 per second
-#[Throttle(requests: 100, per: 60)]   // sustained: 100 per minute
-public function search(): Response {}
-```
-
-### Storage Backends
-
-The storage backend is bound to `RateLimiterStore` in the DI container. Swap it in `bootstrap/app.php` to change where counters are persisted.
-
-#### `InMemoryStore` (default)
-
-Counters live in a PHP static array — shared across all instances in the same worker process, but **not** across workers or server restarts. Zero configuration.
-
-```php
-// This is the default — no action needed.
-// Explicitly binding it looks like:
-use Bingo\RateLimit\Store\InMemoryStore;
-use Bingo\RateLimit\Contracts\RateLimiterStore;
-
-$app->bind(RateLimiterStore::class, InMemoryStore::class);
-```
-
-#### `FileStore`
-
-Counters are written to JSON files under a directory of your choosing. Counts survive process restarts, making this suitable for **single-server production** deployments without external infrastructure.
-
-```php
-use Bingo\RateLimit\Store\FileStore;
-use Bingo\RateLimit\Contracts\RateLimiterStore;
-
-$app->instance(
-    RateLimiterStore::class,
-    new FileStore(base_path('storage/rate-limit')),
-);
-```
-
-#### Custom backend (Redis, Memcached, DynamoDB, …)
-
-Implement `RateLimiterStore` with its three methods and bind it:
-
-```php
-use Bingo\RateLimit\Contracts\RateLimiterStore;
-
-class RedisRateLimiterStore implements RateLimiterStore
-{
-    public function __construct(private \Redis $redis) {}
+    public function __construct(private readonly Client $redis) {}
 
     public function increment(string $key, int $windowId, int $decaySeconds): int
     {
-        $storageKey = $key . ':' . $windowId;
-        $count      = $this->redis->incr($storageKey);
-        if ($count === 1) {
-            $this->redis->expire($storageKey, $decaySeconds * 2);
-        }
-        return $count;
+        return (int) $this->redis->eval(self::SCRIPT, 1, $this->key($key, $windowId), $decaySeconds * 2);
     }
 
     public function count(string $key, int $windowId): int
     {
-        return (int) ($this->redis->get($key . ':' . $windowId) ?: 0);
+        return (int) ($this->redis->get($this->key($key, $windowId)) ?? 0);
     }
 
     public function reset(string $key): void
     {
-        foreach ($this->redis->keys($key . ':*') as $k) {
-            $this->redis->del($k);
-        }
+        $pattern = self::PREFIX . ':' . hash('sha256', $key) . ':*';
+        $cursor  = 0;
+        do {
+            [$cursor, $keys] = $this->redis->scan($cursor, ['match' => $pattern, 'count' => 100]);
+            if (!empty($keys)) {
+                $this->redis->del($keys);
+            }
+        } while ($cursor != 0);
+    }
+
+    private function key(string $key, int $windowId): string
+    {
+        return self::PREFIX . ':' . hash('sha256', $key) . ':' . $windowId;
     }
 }
 
 // bootstrap/app.php
-$app->instance(RateLimiterStore::class, new RedisRateLimiterStore($redis));
+$app->instance(RateLimiterStore::class, new PredisStore(new Client([
+    'host'     => env('REDIS_HOST', '127.0.0.1'),
+    'port'     => (int) env('REDIS_PORT', 6379),
+    'password' => env('REDIS_PASSWORD'),
+    'database' => (int) env('REDIS_DB', 0),
+])));
 ```
 
-### Using RateLimiter Directly
+---
 
-Inject `RateLimiter` into any service for custom logic — login attempt throttling, OTP verification, email send caps:
+### Global Rate Limiting
+
+`RateLimitMiddleware` is active **in production only** (`APP_ENV=production`). Configure the limits in `.env`:
+
+```env
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_MAX_REQUESTS=1000   # max requests per window per IP
+RATE_LIMIT_WINDOW=60           # window length in seconds
+```
+
+The defaults (1,000 req/min per IP) give legitimate users plenty of headroom while capping bots and scrapers at ~16 req/s sustained.
+
+To override — for example to rate-limit by API key instead of IP:
+
+```php
+// bootstrap/app.php
+use Bingo\Http\Middleware\RateLimitMiddleware;
+
+$app->instance(
+    RateLimitMiddleware::class,
+    RateLimitMiddleware::create(
+        limit:         500,
+        windowSeconds: 60,
+        keyResolver:   fn($req) => $req->headers->get('X-API-Key') ?? $req->getClientIp(),
+    ),
+);
+```
+
+---
+
+### Per-Route Throttling
+
+Use `#[Throttle]` on a controller class or method to apply an independent rate limit. The `per` argument is **always in seconds**.
+
+```php
+use Bingo\Attributes\Route\Throttle;
+
+// Class-level: applies to every route in this controller
+#[ApiController('/api')]
+#[Throttle(requests: 1000, per: 3600)]   // 1 000 req/hour per IP
+class PostsController
+{
+    // Inherits the class throttle (1 000/hour)
+    #[Get('/posts')]
+    public function index(): Response {}
+
+    // Expensive endpoint — method-level throttle stacks on top of the class throttle
+    // Both are checked independently; the tighter one blocks first
+    #[Get('/posts/export')]
+    #[Throttle(requests: 10, per: 60)]   // 10 req/min per IP
+    public function export(): Response {}
+}
+```
+
+`#[Throttle]` is repeatable — stack multiple windows on the same route to enforce both a burst cap and a sustained cap:
+
+```php
+#[Get('/search')]
+#[Throttle(requests: 5,   per: 1)]    // burst: max 5 per second
+#[Throttle(requests: 100, per: 60)]   // sustained: max 100 per minute
+public function search(): Response {}
+```
+
+> **`per` is in seconds.** `per: 60` = 1 minute, `per: 3600` = 1 hour. There is no "per minute" shorthand — be explicit.
+
+---
+
+### Injecting RateLimiter Directly
+
+`RateLimiter` is registered in the DI container and can be injected into any service — useful for login attempt throttling, OTP verification, email send caps, etc.
 
 ```php
 use Bingo\RateLimit\RateLimiter;
+use Bingo\Exceptions\Http\TooManyRequestsException;
+use Bingo\Exceptions\Http\UnauthorizedException;
 
 class AuthService
 {
@@ -619,8 +662,8 @@ class AuthService
 
     public function login(string $email, string $password): User
     {
-        $key    = 'login:' . $email;
-        $result = $this->limiter->attempt($key, limit: 5, windowSeconds: 900);
+        // 5 attempts per 15 minutes per email address
+        $result = $this->limiter->attempt('login:' . $email, limit: 5, windowSeconds: 900);
 
         if ($result->isDenied()) {
             throw new TooManyRequestsException(result: $result);
@@ -632,44 +675,44 @@ class AuthService
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        // Reset the counter on successful login
-        $this->limiter->clear($key);
-
+        $this->limiter->clear('login:' . $email); // reset on success
         return $user;
     }
 }
 ```
 
-`RateLimiter` public API:
+**Public API:**
 
 ```php
 $limiter->attempt(string $key, int $limit, int $windowSeconds): RateLimitResult
-$limiter->tooManyAttempts(string $key, int $limit, int $windowSeconds): bool  // read-only check
+$limiter->tooManyAttempts(string $key, int $limit, int $windowSeconds): bool  // read-only, no increment
 $limiter->clear(string $key): void
 ```
 
+---
+
 ### Response Headers
 
-Every response that passes through `RateLimitMiddleware` (or a `#[Throttle]` route) includes these headers. On a `429` response, `Retry-After` is also set (RFC 6585).
+Every response through `RateLimitMiddleware` or a `#[Throttle]` route includes these headers. On `429`, `Retry-After` is also set per RFC 6585.
 
 | Header | Description |
 |---|---|
-| `X-RateLimit-Limit` | The maximum number of requests allowed in the window |
-| `X-RateLimit-Remaining` | Estimated requests still available in the current window |
-| `X-RateLimit-Reset` | Unix timestamp at which the window resets |
-| `Retry-After` | Seconds to wait before retrying (only on `429` responses) |
+| `X-RateLimit-Limit` | Maximum requests allowed in the window |
+| `X-RateLimit-Remaining` | Estimated requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the current window resets |
+| `Retry-After` | Seconds until the client may retry (429 responses only) |
 
 ### Algorithm
 
-Bingo uses a **sliding-window counter** rather than a fixed window. A fixed window resets on a hard boundary, which lets a client send 2× the limit by bursting at the end of one window and the start of the next.
+Bingo uses a **sliding-window counter** rather than a fixed window. A fixed window resets on a hard boundary, which lets a client double the limit by bursting at the end of one window and the start of the next.
 
-The sliding window weights the previous window's count by how far through the current window we are:
+The sliding window weights the previous window by how far through the current window we are:
 
 ```
 estimated = prev_count × (1 − elapsed_fraction) + curr_count
 ```
 
-If `estimated ≥ limit` the request is denied; otherwise the counter increments. This smooths out bursts with O(1) space per key — the same approach used by Cloudflare and Redis Cell.
+If `estimated ≥ limit` the request is denied; otherwise the counter is atomically incremented via a Lua script. This gives O(1) space per key with no burst vulnerability — the same approach used by Cloudflare and Redis Cell.
 
 ---
 
