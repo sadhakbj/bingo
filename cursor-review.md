@@ -1,6 +1,6 @@
 # Bingo — Expert architectural review (beta)
 
-**Context:** API-first / microservices-oriented PHP framework, NestJS-inspired (attributes, modules-by-convention in folder layout), pragmatic Laravel borrowings (Eloquent, `app/` tree, `Response::json` ergonomics). Heavy use of Symfony components (HTTP Foundation, Routing, Validator, Console, DependencyInjection).  
+**Context:** API-first / microservices-oriented PHP framework with attribute-driven routing, pragmatic Laravel borrowings (Eloquent, `app/` tree, `Response::json` ergonomics). Heavy use of Symfony components (HTTP Foundation, Routing, Validator, Console, DependencyInjection).  
 **Review date:** 2026-03-30  
 **Codebase snapshot:** Day-4 trajectory; README and `composer.json` describe a more mature picture than some older internal notes.
 
@@ -8,7 +8,7 @@
 
 ## Verdict (short)
 
-You are **not** doing something wrong by combining Symfony primitives with Eloquent and attribute routing. That is a coherent product shape: **Symfony as the engine, Nest-style DX on top, Laravel where the PHP ecosystem is strongest (ORM)**. The repo already shows several decisions that match what serious API frameworks need: a real middleware pipeline, a container with autowiring, typed config, PHPUnit coverage, and a single HTTP exception path.
+You are **not** doing something wrong by combining Symfony primitives with Eloquent and attribute routing. That is a coherent product shape: **Symfony as the engine**, a **declarative routing and DI layer**, and **Laravel where the PHP ecosystem is strongest (ORM)**. The repo already shows several decisions that match what serious API frameworks need: a real middleware pipeline, a container with autowiring, typed config, PHPUnit coverage, and a single HTTP exception path.
 
 The main work ahead is **consistency** (one JSON envelope and error contract everywhere), **edge-case correctness** (routing), and **honest limits** for production (rate limiting, multi-process behavior). None of that invalidates the direction.
 
@@ -24,15 +24,15 @@ The **README** is unusually good for a young framework: lifecycle diagram, param
 
 Using **HttpFoundation**, **Routing**, **Validator**, and **Console** is standard practice. Wrapping them behind `Bingo\Http\Request`, `Router`, and `DataTransferObject` is exactly how you avoid rebuilding low-value infrastructure. **Symfony DependencyInjection** behind your `Bingo\Container\Container` is a solid choice: you get compilation, autowiring for registered services, and room to grow without writing a second-rate container from scratch.
 
-### 3. NestJS-like developer experience where it matters
+### 3. Declarative routing and controller ergonomics
 
-- **Attribute routing** on methods with verb shortcuts (`#[Get]`, `#[Post]`, …) matches how Nest feels in TypeScript.
+- **Attribute routing** on methods with verb shortcuts (`#[Get]`, `#[Post]`, …) keeps handlers explicit and discoverable.
 - **Parameter attributes** (`#[Body]`, `#[Query]`, `#[Param]`, `#[Headers]`, uploads, `#[Request]`) are the right abstraction for APIs.
 - **`#[ApiController]`** enforcing a `Response` return type is a simple, enforceable boundary for JSON APIs.
 
 ### 4. Middleware done the modern way
 
-`MiddlewarePipeline` implements a proper **`$next`-style chain** for global middleware. Route-level middleware is also composed through a nested pipeline (`Router::dispatch`), which fixes the older “middleware can’t see the response” class of problems. That aligns with how Express/Nest middleware is supposed to behave.
+`MiddlewarePipeline` implements a proper **`$next`-style chain** for global middleware. Route-level middleware is also composed through a nested pipeline (`Router::dispatch`), which fixes the older “middleware can’t see the response” class of problems. That matches common Node-style middleware semantics.
 
 ### 5. Configuration without magic arrays
 
@@ -57,11 +57,11 @@ Using **HttpFoundation**, **Routing**, **Validator**, and **Console** is standar
 | Area | Observation | Take |
 |------|----------------|------|
 | **Eloquent** | Full Illuminate Database stack | Reasonable default for JSON APIs in PHP; alternative would be Doctrine or raw PDO—higher cost for little gain early on. |
-| **Folder layout** | `app/Http`, `app/Services`, `app/Models` | Familiar to Laravel devs; also close to Nest’s module boundaries if you later introduce formal modules. |
+| **Folder layout** | `app/Http`, `app/Services`, `app/Models` | Familiar to Laravel devs; room to introduce formal modules later if you want bounded contexts. |
 | **`Request::all()`** merging query + body + JSON | Laravel-like ergonomics | Fine for DX; document precedence and security implications for mass-assignment-style patterns. |
 | **Bootstrap `require` style** | Similar mental model to Laravel’s `bootstrap/app.php` | Normal for PHP apps. |
 
-**Bottom line:** The mix is **coherent** if you name it: “Symfony core + Nest-style routing/DI + Laravel’s ORM story.” That is a legitimate niche.
+**Bottom line:** The mix is **coherent**: Symfony core, attribute routing/DI, and Laravel’s ORM story. That is a legitimate niche.
 
 ---
 
@@ -109,7 +109,7 @@ _Original note:_ Broad catch could return exception text for API controllers and
 
 ## Architectural opportunities (post-beta, not blockers)
 
-1. **Formal “modules” or packages** — Nest’s strength is bounded contexts. Your folder structure is ready; you may later add optional module classes that register routes/services (still explicit, not magic auto-discovery if you want predictability).
+1. **Formal “modules” or packages** — Bounded contexts as first-class units. Your folder structure is ready; you may later add optional module classes that register routes/services (still explicit, not magic auto-discovery if you want predictability).
 
 2. **PSR-7 / PSR-15** — Optional bridges would help interoperability; not required if you commit to Symfony Request/Response as *the* contract.
 
@@ -126,7 +126,7 @@ _Original note:_ Broad catch could return exception text for API controllers and
 | Dimension | Grade (beta-appropriate) | Note |
 |-----------|---------------------------|------|
 | Architecture | **Strong** | Clear layers; Symfony-backed core is sound. |
-| DX / Nest alignment | **Strong** | Attributes and DI match stated goals. |
+| DX / attribute routing | **Strong** | Attributes and DI match stated goals. |
 | API consistency | **Needs work** | Unify error/validation envelopes. |
 | Production hardening | **Early** | Rate limit storage, error paths, observability. |
 | Documentation | **Strong** | **README** + **CLAUDE.md**; redundant `docs/*.md` files were removed. |

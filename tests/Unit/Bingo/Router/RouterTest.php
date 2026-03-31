@@ -11,6 +11,8 @@ use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use PHPUnit\Framework\TestCase;
 use Tests\Stubs\Controllers\StubApiController;
+use Tests\Stubs\Controllers\StubClassStatusController;
+use Tests\Stubs\Controllers\StubMetaAttributesController;
 use Tests\Stubs\Controllers\StubPlainController;
 
 class RouterTest extends TestCase
@@ -155,6 +157,77 @@ class RouterTest extends TestCase
         $this->assertSame(200, $withoutSlash->getStatusCode());
         $this->assertStringContainsString('"index":true', $withSlash->getContent());
         $this->assertStringContainsString('"index":true', $withoutSlash->getContent());
+    }
+
+    // -------------------------------------------------------------------------
+    // Response metadata attributes (#[HttpCode], #[Header])
+    // -------------------------------------------------------------------------
+
+    public function test_status_code_attribute_sets_status_when_response_is_default_200(): void
+    {
+        $this->router->registerController(StubApiController::class);
+        $response = $this->router->dispatch($this->makeRequest('/stub/meta-status', 'GET'));
+
+        $this->assertSame(202, $response->getStatusCode());
+    }
+
+    public function test_http_code_attribute_is_alias_of_status_code(): void
+    {
+        $this->router->registerController(StubApiController::class);
+        $response = $this->router->dispatch($this->makeRequest('/stub/meta-http-code', 'GET'));
+
+        $this->assertSame(418, $response->getStatusCode());
+    }
+
+    public function test_explicit_status_code_on_response_wins_over_attribute(): void
+    {
+        $this->router->registerController(StubApiController::class);
+        $response = $this->router->dispatch($this->makeRequest('/stub/meta-explicit-wins', 'GET'));
+
+        $this->assertSame(201, $response->getStatusCode());
+    }
+
+    public function test_response_header_attributes_merge_with_controller_headers(): void
+    {
+        $this->router->registerController(StubApiController::class);
+        $response = $this->router->dispatch($this->makeRequest('/stub/meta-headers', 'GET'));
+
+        $this->assertSame('a', $response->headers->get('X-Stub-A'));
+        $this->assertSame('b', $response->headers->get('X-Stub-B'));
+        $this->assertSame('method-only', $response->headers->get('X-Stub-Method'));
+    }
+
+    public function test_method_response_header_overrides_class_level_same_name(): void
+    {
+        $this->router->registerController(StubMetaAttributesController::class);
+        $response = $this->router->dispatch($this->makeRequest('/stub-meta/combined', 'GET'));
+
+        $this->assertSame('method-overrides', $response->headers->get('X-From-Class'));
+        $this->assertSame('method', $response->headers->get('X-From-Method'));
+    }
+
+    public function test_existing_response_header_is_not_overwritten_by_attribute(): void
+    {
+        $this->router->registerController(StubApiController::class);
+        $response = $this->router->dispatch($this->makeRequest('/stub/meta-header-controller-wins', 'GET'));
+
+        $this->assertSame('from-controller', $response->headers->get('X-Stub-Both'));
+    }
+
+    public function test_class_level_status_code_applies_when_method_has_none(): void
+    {
+        $this->router->registerController(StubClassStatusController::class);
+        $response = $this->router->dispatch($this->makeRequest('/stub-class-status/x', 'GET'));
+
+        $this->assertSame(203, $response->getStatusCode());
+    }
+
+    public function test_method_status_code_overrides_class_level(): void
+    {
+        $this->router->registerController(StubClassStatusController::class);
+        $response = $this->router->dispatch($this->makeRequest('/stub-class-status/y', 'GET'));
+
+        $this->assertSame(404, $response->getStatusCode());
     }
 
     // -------------------------------------------------------------------------

@@ -6,6 +6,8 @@ namespace Tests\Stubs\Controllers;
 
 use Bingo\Attributes\Route\ApiController;
 use Bingo\Attributes\Route\Get;
+use Bingo\Attributes\Route\Header;
+use Bingo\Attributes\Route\HttpCode;
 use Bingo\Attributes\Route\Param;
 use Bingo\Attributes\Route\Post;
 use Bingo\Attributes\Route\Query;
@@ -42,5 +44,41 @@ class StubApiController
     public function search(#[Query('q')] ?string $q, #[Query('page')] int $page = 1): Response
     {
         return Response::json(['q' => $q, 'page' => $page]);
+    }
+
+    #[Get('/meta-status')]
+    #[HttpCode(202)]
+    public function metaStatus(): Response
+    {
+        return Response::json(['accepted' => true]);
+    }
+
+    #[Get('/meta-http-code')]
+    #[HttpCode(418)]
+    public function metaHttpCode(): Response
+    {
+        return Response::json(['teapot' => true]);
+    }
+
+    #[Get('/meta-explicit-wins')]
+    #[HttpCode(204)]
+    public function metaExplicitWins(): Response
+    {
+        return Response::json(['created' => true], 201);
+    }
+
+    #[Get('/meta-headers')]
+    #[Header('X-Stub-A', 'a')]
+    #[Header('X-Stub-B', 'b')]
+    public function metaHeaders(): Response
+    {
+        return Response::json(['ok' => true], 200, ['X-Stub-Method' => 'method-only']);
+    }
+
+    #[Get('/meta-header-controller-wins')]
+    #[Header('X-Stub-Both', 'from-attribute')]
+    public function metaHeaderControllerWins(): Response
+    {
+        return Response::json(['ok' => true], 200, ['X-Stub-Both' => 'from-controller']);
     }
 }

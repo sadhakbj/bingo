@@ -4,7 +4,7 @@ Concise context for AI assistants working in this repo. Authoritative user docs:
 
 ## Project overview
 
-**Bingo** is a PHP **8.5+** API-first framework by Bijaya Prasad Kuikel (`sadhakbj`). It combines NestJS-style **attribute routing and DTOs**, Laravel **Eloquent** and familiar `app/` layout, and **Symfony components** (HTTP Foundation, Routing, Validator, Console, DependencyInjection). It does **not** ship Laravel or the full Symfony Framework.
+**Bingo** is a PHP **8.5+** API-first framework by Bijaya Prasad Kuikel (`sadhakbj`). It uses **attribute routing and DTOs**, Laravel **Eloquent** and a familiar `app/` layout, and **Symfony components** (HTTP Foundation, Routing, Validator, Console, DependencyInjection). It does **not** ship Laravel or the full Symfony Framework.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ public/index.php
   → Response::send()
 ```
 
-Uncaught throwables in `Application::handle()` become JSON via `Bingo\Contracts\ExceptionHandlerInterface` (default: `Bingo\Exceptions\ExceptionHandler`, Nest-style). **Application-owned** overrides live under `app/` (e.g. `App\Exceptions\Handler`) and are registered in `bootstrap/app.php` — do not edit `core/` when it is a Composer package.
+Uncaught throwables in `Application::handle()` become JSON via `Bingo\Contracts\ExceptionHandlerInterface` (default: `Bingo\Exceptions\ExceptionHandler`). **Application-owned** overrides live under `app/` (e.g. `App\Exceptions\Handler`) and are registered in `bootstrap/app.php` — do not edit `core/` when it is a Composer package.
 
 ## Important files
 
@@ -58,7 +58,8 @@ Uncaught throwables in `Application::handle()` become JSON via `Bingo\Contracts\
 | `core/Bingo/DTOs/Http/ApiResponse.php` | JSON envelope helpers |
 | `core/Bingo/Database/Database.php` | Eloquent Capsule setup from `DatabaseConfig` |
 | `app/Exceptions/Handler.php` | Optional `ExceptionHandlerInterface`; customize error JSON here |
-| `app/Http/Controllers/UsersController.php` | `#[ApiController]` demo |
+| `app/Http/Controllers/UsersController.php` | Sample `#[ApiController]` app |
+| `app/Http/Controllers/HomeController.php` | Sample `#[Route]` app |
 | `app/Services/UserService.php` | Service layer (Eloquent-backed) |
 
 **Migrations:** `php bin/bingo db:migrate` (alias `db:m`). Migration PHP files live in `database/migrations/`. There is **no** `database/migrate.php` in current workflow.
@@ -73,10 +74,12 @@ Uncaught throwables in `Application::handle()` become JSON via `Bingo\Contracts\
 
 **Parameters:** `#[Body]`, `#[Query('key')]`, `#[Param('key')]`, `#[Headers('key')]`, `#[Request]`, `#[UploadedFile('key')]`, `#[UploadedFiles]`.
 
+**Response metadata (method or class):** `#[HttpCode]` and `#[Header]` — applied by the router after the action returns; rules and examples in README → *Response metadata (status & headers)*.
+
 ## DTOs
 
 - Input DTOs extend `DataTransferObject`; use Symfony `Assert\*` on properties.
-- `fromRequest()` fills + validates; API controllers throw `ValidationException` → **422** with Nest-style body (`message` = field map).
+- `fromRequest()` fills + validates; API controllers throw `ValidationException` → **422** with a field map in `message`.
 - Output DTOs can be plain `readonly` classes (e.g. `App\DTOs\User\UserDTO`).
 - Use `ApiResponse::success()` (and related) for **success** response envelopes in controllers; framework **errors** use the default exception handler format unless you replace it.
 

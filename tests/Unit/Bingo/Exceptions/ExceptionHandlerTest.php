@@ -40,7 +40,7 @@ class ExceptionHandlerTest extends TestCase
         $this->assertSame('Unprocessable Content', $body['error']);
     }
 
-    public function test_not_found_exception_returns_404_nest_shape(): void
+    public function test_not_found_exception_returns_404_error_envelope(): void
     {
         $response = $this->handler()->handle(new NotFoundException('User not found'));
         $body = $this->decode($response);
@@ -180,7 +180,7 @@ class ExceptionHandlerTest extends TestCase
         }
     }
 
-    public function test_all_error_responses_have_nest_core_keys(): void
+    public function test_all_error_responses_have_standard_envelope_keys(): void
     {
         $cases = [
             new ValidationException(['f' => 'e']),

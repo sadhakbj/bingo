@@ -19,6 +19,7 @@ use Bingo\Exceptions\Http\NotFoundException;
 use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
+use Bingo\Http\Router\RouteResponseMetadata;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
 use Bingo\Validation\ValidationException;
 use ReflectionClass;
@@ -331,7 +332,10 @@ class Router
                 );
             }
 
-            return $result instanceof SymfonyResponse ? $result : new Response((string) $result);
+            $response = $result instanceof SymfonyResponse ? $result : new Response((string) $result);
+            RouteResponseMetadata::apply($reflection, $response);
+
+            return $response;
         };
 
         // Run route-level middleware through a proper $next pipeline

@@ -28,7 +28,7 @@ class ExceptionHandler implements ExceptionHandlerInterface
 
     private function handleValidation(ValidationException $e): Response
     {
-        return $this->nestResponse(
+        return $this->errorEnvelope(
             422,
             $e->errors,
             HttpException::phraseForStatusCode(422),
@@ -39,7 +39,7 @@ class ExceptionHandler implements ExceptionHandlerInterface
     {
         $status = $e->getStatusCode();
         $error  = $e->getDescription() ?? HttpException::phraseForStatusCode($status);
-        $response = $this->nestResponse(
+        $response = $this->errorEnvelope(
             $status,
             $e->getMessage(),
             $error,
@@ -55,7 +55,7 @@ class ExceptionHandler implements ExceptionHandlerInterface
     private function handleGeneric(\Throwable $e): Response
     {
         if ($this->debug) {
-            return $this->nestResponse(
+            return $this->errorEnvelope(
                 500,
                 $e->getMessage(),
                 'Internal Server Error',
@@ -68,7 +68,7 @@ class ExceptionHandler implements ExceptionHandlerInterface
             );
         }
 
-        return $this->nestResponse(
+        return $this->errorEnvelope(
             500,
             'Internal Server Error',
             'Internal Server Error',
@@ -79,7 +79,7 @@ class ExceptionHandler implements ExceptionHandlerInterface
      * @param string|array<string, string> $message String or field map (validation)
      * @param array<string, mixed>|null    $details Only when debug / extended payloads
      */
-    private function nestResponse(int $statusCode, string|array $message, string $error, ?array $details = null): Response
+    private function errorEnvelope(int $statusCode, string|array $message, string $error, ?array $details = null): Response
     {
         $body = [
             'statusCode' => $statusCode,

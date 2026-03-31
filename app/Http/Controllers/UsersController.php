@@ -9,7 +9,8 @@ use App\Http\Middleware\LogMiddleware;
 use App\Models\User;
 use App\Services\UserService;
 use Bingo\Attributes\Middleware;
-use Bingo\Attributes\Route\{ApiController,
+use Bingo\Attributes\Route\{
+    ApiController,
     Body,
     Get,
     Headers,
@@ -18,7 +19,8 @@ use Bingo\Attributes\Route\{ApiController,
     Query,
     Request as ReqAttr,
     UploadedFile,
-    UploadedFiles};
+    UploadedFiles
+};
 use Bingo\DTOs\Http\ApiResponse;
 use Bingo\Http\{Request, Response, Sse\StreamedEvent, StreamedResponse};
 use Symfony\Component\HttpFoundation\File\UploadedFile as File;
@@ -36,7 +38,7 @@ readonly class UsersController
     {
         return Response::json([
             'message' => 'List of users',
-            'users'   => User::all()->toArray()
+            'users' => User::all()->toArray()
         ]);
     }
 
@@ -48,9 +50,9 @@ readonly class UsersController
     ): Response {
         return Response::json([
             'message' => 'Search users',
-            'query'   => $query,
-            'limit'   => $limit,
-            'page'    => $page,
+            'query' => $query,
+            'limit' => $limit,
+            'page' => $page,
             'results' => []
         ]);
     }
@@ -81,12 +83,12 @@ readonly class UsersController
     #[Post('/')]
     public function create(#[Body] CreateUserDTO $dto): Response
     {
-        $userDTO  = $this->userService->createUser($dto);
+        $userDTO = $this->userService->createUser($dto);
         $response = ApiResponse::success(
-            data:       $userDTO,
-            message:    'User created successfully',
+            data: $userDTO,
+            message: 'User created successfully',
             statusCode: 201,
-            meta:       ['user_metadata' => $userDTO->getMetadata()],
+            meta: ['user_metadata' => $userDTO->getMetadata()],
         );
 
         return Response::json($response->toArray(), 201);
@@ -95,7 +97,7 @@ readonly class UsersController
     #[Get('/{id}')]
     public function show(#[Param('id')] int $id): Response
     {
-        $userDTO  = $this->userService->getUserById($id);
+        $userDTO = $this->userService->getUserById($id);
         $response = ApiResponse::success(data: $userDTO->toArray());
 
         return Response::json($response->toArray());
@@ -110,15 +112,15 @@ readonly class UsersController
         return Response::json([
             'api_version' => $apiVersion,
             'avatar_info' => $avatar ? [
-                'name'      => $avatar->getClientOriginalName(),
-                'size'      => $avatar->getSize(),
+                'name' => $avatar->getClientOriginalName(),
+                'size' => $avatar->getSize(),
                 'mime_type' => $avatar->getClientMimeType(),
-                'is_valid'  => $avatar->isValid()
+                'is_valid' => $avatar->isValid()
             ] : null,
-            'all_files'      => count($request->files->all()),
+            'all_files' => count($request->files->all()),
             'content_length' => $request->headers->get('Content-Length'),
-            'request_id'     => $request->headers->get('X-Request-ID'),
-            'timestamp'      => date('c')
+            'request_id' => $request->headers->get('X-Request-ID'),
+            'timestamp' => date('c')
         ]);
     }
 
@@ -133,19 +135,19 @@ readonly class UsersController
         foreach ($files as $key => $file) {
             if ($file && $file->isValid()) {
                 $fileInfos[$key] = [
-                    'name'      => $file->getClientOriginalName(),
-                    'size'      => $file->getSize(),
+                    'name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
                     'mime_type' => $file->getClientMimeType(),
-                    'is_valid'  => $file->isValid()
+                    'is_valid' => $file->isValid()
                 ];
             }
         }
 
         return Response::json([
-            'user_data'      => $dto->toArray(),
-            'api_version'    => $apiVersion,
+            'user_data' => $dto->toArray(),
+            'api_version' => $apiVersion,
             'uploaded_files' => $fileInfos,
-            'total_files'    => count($fileInfos)
+            'total_files' => count($fileInfos)
         ]);
     }
 }

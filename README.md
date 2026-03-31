@@ -2,7 +2,7 @@
 
 > A PHP 8.5+ framework for API-first development — attribute-driven routing, typed configuration, automatic dependency injection, and Laravel Eloquent ORM, with zero boilerplate.
 
-Inspired by the structure of NestJS and the ergonomics of Laravel, but built from scratch on top of Symfony's HTTP, Routing, Validator, Console, and DI components.
+Built from scratch on top of Symfony's HTTP, Routing, Validator, Console, and DI components, with attribute-driven routing and a familiar `app/` layout.
 
 ---
 
@@ -17,6 +17,7 @@ Inspired by the structure of NestJS and the ergonomics of Laravel, but built fro
   - [Environment Reference](#environment-reference)
 - [Request Lifecycle](#request-lifecycle)
 - [Routing](#routing)
+  - [Response metadata (status & headers)](#response-metadata-status--headers)
 - [Parameter Binding](#parameter-binding)
 - [Server-Sent Events (SSE)](#server-sent-events-sse)
 - [Middleware](#middleware)
@@ -287,6 +288,64 @@ List all registered routes at any time:
 ```bash
 php bin/bingo show:routes
 ```
+
+### Response metadata (status & headers)
+
+The router inspects **`#[HttpCode]`** and **`#[Header]`** on the **controller class** and the **matched action method** *after* your code returns. They work the same for `#[ApiController]` routes and plain `#[Route]` actions.
+
+**`#[HttpCode]`**
+
+- Sets the response status only when it is still the default **200** (e.g. you returned `Response::json($data)` without a second argument).
+- If you already set a status in code (`Response::json($data, 201)`, streamed responses with their own code, etc.), the attribute is **not** applied.
+- On a method, use **one** `#[HttpCode]`. For a default status on every action in a class, put `#[HttpCode]` on the **class**; a `#[HttpCode]` on a **method** overrides that for that action only (method is read first, then class).
+
+**`#[Header]`**
+
+- Adds outgoing headers. Use **`Attribute::IS_REPEATABLE`**: stack several `#[Header('Name', 'value')]` lines on the same method or class.
+- **Class** headers are merged first, then **method** headers; the same header **name** on the method **replaces** the class value.
+- If the **`Response` already has that header name** when the action returns, the attribute does **nothing** for that name (your code wins).
+
+```php
+use Bingo\Attributes\Route\Get;
+use Bingo\Attributes\Route\Header;
+use Bingo\Attributes\Route\HttpCode;
+use Bingo\Http\Response;
+
+#[Get('/jobs')]
+#[HttpCode(202)]
+#[Header('X-Request-Id', 'queued')]
+public function queue(): Response
+{
+    return Response::json(['status' => 'queued']);
+}
+```
+
+Class-level default headers with per-route status and header overrides:
+
+```php
+use Bingo\Attributes\Route\ApiController;
+use Bingo\Attributes\Route\Get;
+use Bingo\Attributes\Route\Header;
+use Bingo\Attributes\Route\HttpCode;
+use Bingo\Http\Response;
+
+#[ApiController('/reports')]
+#[Header('X-API-Version', '1')]
+class ReportsController
+{
+    #[Get('/export')]
+    #[HttpCode(202)]
+    #[Header('X-API-Version', '2')] // replaces class header for this route only
+    public function export(): Response
+    {
+        return Response::json(['state' => 'processing']);
+    }
+}
+```
+
+> **Request vs response:** `#[Headers]` on a **parameter** reads a **request** header into the action. `#[Header]` on the **method or class** sets a **response** header. Different attributes.
+
+To verify behaviour, hit your own route with `curl -i` or a client that shows status and response headers.
 
 ---
 
