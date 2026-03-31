@@ -19,8 +19,8 @@ class RateLimitMiddleware implements MiddlewareInterface
 
     public function __construct(
         private readonly RateLimiter $limiter,
-        private readonly int         $limit         = 100,
-        private readonly int         $windowSeconds = 3600,
+        private readonly int         $limit         = 1_000,
+        private readonly int         $windowSeconds = 60,
         ?callable                    $keyResolver   = null,
     ) {
         $this->keyResolver = $keyResolver ?? static fn(Request $r): string
@@ -71,8 +71,8 @@ class RateLimitMiddleware implements MiddlewareInterface
      */
     public static function create(
         ?RateLimiter $limiter       = null,
-        int          $limit         = 100,
-        int          $windowSeconds = 3600,
+        int          $limit         = 1_000,
+        int          $windowSeconds = 60,
         ?callable    $keyResolver   = null,
     ): self {
         return new self($limiter ?? self::defaultLimiter(), $limit, $windowSeconds, $keyResolver);

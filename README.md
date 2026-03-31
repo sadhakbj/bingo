@@ -216,8 +216,8 @@ DB_STICKY=false
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
 
 # Rate limiting
-RATE_LIMIT_REQUESTS=100
-RATE_LIMIT_WINDOW=3600
+# Rate limiting is configured in bootstrap/app.php, not via env vars.
+# Default (production only): 1 000 requests per minute per IP.
 ```
 
 ---
@@ -476,7 +476,7 @@ The framework registers these automatically in development and production:
 | `CompressionMiddleware` | Gzip-compresses responses larger than 1 KB when the client supports it. Skips streamed bodies (`Bingo\Http\StreamedResponse` / SSE) and `text/event-stream` so chunks are not buffered or gzipped. |
 | `SecurityHeadersMiddleware` | Adds HSTS, CSP, `X-Frame-Options`, `X-Content-Type-Options`, and `X-XSS-Protection`. |
 | `RequestIdMiddleware` | Generates a UUID v4 `X-Request-ID` for every request and echoes it in the response. |
-| `RateLimitMiddleware` | Sliding-window per-IP rate limiting. Active in production pipeline by default (100 req/hour). Fully configurable — see [Rate Limiting](#rate-limiting). |
+| `RateLimitMiddleware` | Sliding-window per-IP rate limiting. Active in production only (default: 1 000 req/min). Fully configurable — see [Rate Limiting](#rate-limiting). |
 
 ---
 
@@ -486,7 +486,7 @@ Bingo ships a first-class rate limiter built on a **sliding-window counter** alg
 
 ### Global Rate Limiting
 
-In production, `RateLimitMiddleware` is active automatically at 100 requests per hour per IP. To customise the limit, add it explicitly in `bootstrap/app.php` before `return $app`:
+In production, `RateLimitMiddleware` is active automatically at **1,000 requests per minute per IP** — enough headroom that a normal user never notices it, but enough to put a ceiling on bots and scrapers (~16 req/s sustained). To tighten or loosen it, register it explicitly in `bootstrap/app.php` before `return $app`:
 
 ```php
 use Bingo\Http\Middleware\RateLimitMiddleware;
@@ -500,7 +500,7 @@ $app->use(RateLimitMiddleware::perHour(500));
 // Fully configured — custom window and key resolver
 $app->use(RateLimitMiddleware::create(
     limit:         200,
-    windowSeconds: 3600,
+    windowSeconds: 60,
     keyResolver:   fn($request) => $request->headers->get('X-API-Key') ?? $request->getClientIp(),
 ));
 ```
