@@ -129,6 +129,69 @@ class Router
         }
     }
 
+    /**
+     * Register controllers from discovery cache.
+     *
+     * This method bypasses reflection and builds routes directly from cached metadata,
+     * providing zero-overhead route registration in production.
+     *
+     * @param array $cachedControllers Discovered controller metadata
+     */
+    public function registerFromCache(array $cachedControllers): void
+    {
+        foreach ($cachedControllers as $controllerData) {
+            $prefix = $controllerData['prefix'];
+            $classMiddlewares = $controllerData['class_middleware'];
+
+            foreach ($controllerData['routes'] as $routeData) {
+                // Build full path (prefix + route path)
+                $fullPath = $prefix . $routeData['path'];
+                if ($fullPath === '') {
+                    $fullPath = '/';
+                }
+                $fullPath = preg_replace('#//+#', '/', $fullPath); // Clean up double slashes
+
+                // No trailing slash on registered paths (except root)
+                if ($fullPath !== '/' && str_ends_with($fullPath, '/')) {
+                    $fullPath = rtrim($fullPath, '/');
+                }
+
+                $routeName = $controllerData['class'] . '@' . $routeData['action'];
+
+                // Merge class-level and method-level middleware
+                $middlewares = array_merge($classMiddlewares, $routeData['middleware']);
+                $this->middlewares[$routeName] = $middlewares;
+
+                // Handle throttles (convert to Throttle objects if present)
+                $throttles = [];
+                if ($routeData['throttle']) {
+                    $throttles[] = new Throttle(
+                        requests: $routeData['throttle']['requests'],
+                        per: $routeData['throttle']['per'],
+                    );
+                }
+                $this->throttles[$routeName] = $throttles;
+
+                // Create Symfony route
+                $symfonyRoute = new SymfonyRoute(
+                    $fullPath,
+                    [
+                        '_controller' => $controllerData['class'],
+                        '_action' => $routeData['action'],
+                        '_route_name' => $routeName,
+                    ],
+                    [],
+                    [],
+                    '',
+                    [],
+                    [$routeData['method']],
+                );
+
+                $this->routes->add($routeName, $symfonyRoute);
+            }
+        }
+    }
+
     public function getRoutes(): RouteCollection
     {
         return $this->routes;

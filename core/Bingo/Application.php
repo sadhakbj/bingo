@@ -52,6 +52,7 @@ class Application
     private RateLimitConfig $rateLimitConfig;
 
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
+    private array $discoveredCommands = [];
 
     public function __construct(array $config = [])
     {
@@ -60,11 +61,6 @@ class Application
 
         // Load environment variables automatically
         $this->loadEnvironmentVariables();
-
-        $this->config = array_merge([
-            'default_middleware' => true,
-        ], $config);
-
         // Build typed config objects — #[Env] attributes drive the wiring
         $this->appConfig       = ConfigLoader::load(AppConfig::class);
         $this->dbConfig        = $this->bootDatabase();
@@ -93,9 +89,10 @@ class Application
         // Boot Eloquent with typed database config
         Database::setup($this->dbConfig);
 
-        if ($this->config['default_middleware']) {
+        // Auto-discover controllers, commands, middleware
+        $this->bootDiscovery();
+
             $this->setDefaultMiddleware();
-        }
     }
 
     private function bootRateLimiting(): void
@@ -177,6 +174,33 @@ class Application
         }
 
         return new DatabaseConfig($defaultName, $connections);
+    }
+
+    /**
+     * Auto-discover controllers, commands, and other components via attributes.
+     *
+     * In development, rebuilds cache when files change (filemtime check).
+     * In production, requires pre-built cache (fail-fast if missing).
+     */
+    private function bootDiscovery(): void
+    {
+        $manager = new \Bingo\Discovery\DiscoveryManager(
+            cachePath: base_path('storage/framework/discovery.php'),
+            appPath: base_path('app'),
+            isProduction: $this->appConfig->env === 'production',
+        );
+
+        $discovered = $manager->load();
+
+        // Register discovered controllers
+        if (!empty($discovered['controllers'])) {
+            $this->router->registerFromCache($discovered['controllers']);
+        }
+
+        // Store discovered commands for console kernel (accessed via getDiscoveredCommands())
+        if (!empty($discovered['commands'])) {
+            $this->discoveredCommands = $discovered['commands'];
+        }
     }
 
     private function loadEnvironmentVariables(): void
@@ -364,6 +388,14 @@ class Application
     }
 
     /**
+     * Get discovered commands for registration in console kernel.
+     */
+    public function getDiscoveredCommands(): array
+    {
+        return $this->discoveredCommands;
+    }
+
+    /**
      * Resolve a class from the container.
      */
     public function make(string $abstract): mixed
@@ -393,28 +425,6 @@ class Application
     public static function create(array $config = []): self
     {
         return new self($config);
-    }
-
-    /**
-     * Create production-ready application
-     */
-    public static function production(array $config = []): self
-    {
-        return new self(array_merge([
-            'environment' => 'production',
-            'default_middleware' => true,
-        ], $config));
-    }
-
-    /**
-     * Create development application
-     */
-    public static function development(array $config = []): self
-    {
-        return new self(array_merge([
-            'environment' => 'development',
-            'default_middleware' => true,
-        ], $config));
     }
 
     /**

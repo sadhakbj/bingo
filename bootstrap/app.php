@@ -17,8 +17,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\UsersController;
 use Bingo\Application;
 
 $app = Application::create();
@@ -122,13 +120,22 @@ $app->exceptionHandler(new \App\Exceptions\Handler($app->isDebug()));
 
 /*
 |--------------------------------------------------------------------------
-| Register Controllers
+| Auto-Discovery
 |--------------------------------------------------------------------------
+|
+| Controllers, commands, and middleware are automatically discovered via
+| PHP attributes. Just create controllers with #[ApiController] or route
+| attributes (#[Get], #[Post], etc.) — no manual registration needed.
+|
+| In production, pre-build the cache for zero overhead:
+|   php bin/bingo discovery:generate
+|
+| In development, the cache rebuilds automatically when files change.
+|
 */
 
-$app->controllers([
-    HomeController::class,
-    UsersController::class,
-]);
+// No controller registration needed — discovery handles it automatically!
+// Manual registration is still available if needed for edge cases:
+// $app->controller(SomeSpecialController::class);
 
 return $app;

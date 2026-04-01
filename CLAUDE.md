@@ -18,15 +18,19 @@ Concise context for AI assistants working in this repo. Authoritative user docs:
 | **Validation** | Symfony Validator on DTO properties |
 | **DI** | `Bingo\Container\Container` wraps **Symfony ContainerBuilder** + reflection fallback autowiring |
 | **Config** | Typed classes in `config/` wired by `Bingo\Config\ConfigLoader` + `#[Env]` |
+| **Rate Limiting** | **Redis-backed sliding-window counter** (`RateLimiter` + `RedisStore`); falls back to persistent `FileStore` when phpredis unavailable; production-ready, cluster-safe |
+| **Logging** | **Monolog v3** PSR-3 logger; structured `text` (slog-style) or `json` format; rotating file handler + stderr; production-ready |
+| **Discovery** | **Automatic component discovery** via attributes; scans `app/` for controllers, commands; caches to `storage/framework/discovery.php`; filemtime validation in dev, pre-built in prod |
 | **CLI** | Symfony Console via `php bin/bingo` (`bootstrap/console.php`) |
 
 ## Request lifecycle
 
 ```
 public/index.php
-  → bootstrap/app.php (optional DI bindings, controller registration)
+  → bootstrap/app.php (optional DI bindings)
   → Application::run()
   → container->compile()          ← Symfony DI freeze; register services before this
+  → bootDiscovery()               ← Auto-discover controllers/commands from cache
   → Request::createFromGlobals()
   → MiddlewarePipeline::process()
         Cors → BodyParser → Compression → SecurityHeaders → RequestId
@@ -57,6 +61,15 @@ Uncaught throwables in `Application::handle()` become JSON via `Bingo\Contracts\
 | `core/Bingo/Data/DataTransferObject.php` | Input DTO base (`fromRequest`, validate, `toArray`) |
 | `core/Bingo/DTOs/Http/ApiResponse.php` | JSON envelope helpers |
 | `core/Bingo/Database/Database.php` | Eloquent Capsule setup from `DatabaseConfig` |
+| `core/Bingo/RateLimit/RateLimiter.php` | Sliding-window rate limiter service (injectable) |
+| `core/Bingo/RateLimit/Store/RedisStore.php` | Redis store (production, cluster-safe via phpredis) |
+| `core/Bingo/RateLimit/Store/FileStore.php` | File-based persistent store (dev fallback) |
+| `core/Bingo/Log/SlogTextFormatter.php` | Go slog-style `key=value` formatter |
+| `core/Bingo/Log/RequestContextProcessor.php` | Adds `request_id` to all log entries |
+| `core/Bingo/Discovery/DiscoveryManager.php` | Auto-discovery orchestrator; caches component metadata |
+| `core/Bingo/Discovery/Discoverers/ControllerDiscoverer.php` | Scans controllers for `#[ApiController]` and route attributes |
+| `core/Bingo/Discovery/Discoverers/CommandDiscoverer.php` | Scans console commands extending Symfony `Command` |
+| `storage/framework/discovery.php` | Generated cache file (auto-rebuilt in dev when files change) |
 | `app/Exceptions/Handler.php` | Optional `ExceptionHandlerInterface`; customize error JSON here |
 | `app/Http/Controllers/UsersController.php` | Sample `#[ApiController]` app |
 | `app/Http/Controllers/HomeController.php` | Sample `#[Route]` app |
@@ -85,7 +98,9 @@ Uncaught throwables in `Application::handle()` become JSON via `Bingo\Contracts\
 
 ## Built-in global middleware
 
-`CorsMiddleware`, `BodyParserMiddleware`, `CompressionMiddleware`, `SecurityHeadersMiddleware`, `RequestIdMiddleware`, `RateLimitMiddleware` (prod). Rate limiting is **in-process static storage** — per worker, not distributed; fine for demos, not a cluster-wide guarantee.
+`CorsMiddleware`, `BodyParserMiddleware`, `CompressionMiddleware`, `SecurityHeadersMiddleware`, `RequestIdMiddleware`, `RateLimitMiddleware` (prod).
+
+**Rate limiting:** Redis-backed sliding-window counter (production-ready, cluster-safe). Requires `phpredis` extension; automatically falls back to persistent `FileStore` for local dev. Use `#[Throttle]` attribute for per-route limits. See README → *Rate Limiting* for Redis setup, predis alternative, and injectable `RateLimiter` service.
 
 ## Models
 
@@ -95,15 +110,15 @@ Eloquent models in `app/Models/` (e.g. Illuminate `#[Table]`, `#[Fillable]`, `#[
 
 See **README.md** for full `.env` reference. `Dotenv::safeLoad()` — missing `.env` is OK.
 
-**Dependencies (runtime):** `php ^8.5`, `illuminate/database`, Symfony `http-foundation`, `routing`, `console`, `validator`, `dependency-injection`, `vlucas/phpdotenv`.
+**Dependencies (runtime):** `php ^8.5`, `illuminate/database`, Symfony `http-foundation`, `routing`, `console`, `validator`, `dependency-injection`, `vlucas/phpdotenv`, `monolog/monolog`.
+
+**Optional (production):** `ext-redis` (phpredis for distributed rate limiting).
 
 **Dev:** `phpunit/phpunit`, `symfony/var-dumper`.
 
 ## Known limitations (accurate)
 
-- **No controller auto-discovery** — register classes in `bootstrap/app.php` (`$app->controllers([...])`).
-- **Rate limit** — memory-only unless you replace middleware or add an external gateway.
-- **Success vs error JSON** — errors use the default `ExceptionHandler` shape; successes may still use `ApiResponse` or raw arrays.
+- **Success vs error JSON** — errors use the default `ExceptionHandler` shape; successes may use `ApiResponse` or raw arrays (not enforced).
 - **Unknown routes / wrong method** — `Router` throws `NotFoundException` / `MethodNotAllowedException`; `Application` maps them through `ExceptionHandler` (JSON envelope). Use an explicit `#[ApiController('/api')]` prefix to keep API routes grouped; empty prefix is still fine for route paths.
 - **Roadmap features** not built yet: OpenAPI generation, formal modules/guards, queues, etc.
 
@@ -111,11 +126,13 @@ See **README.md** for full `.env` reference. `Dotenv::safeLoad()` — missing `.
 
 ```bash
 composer install
-php bin/bingo serve              # dev server + route log
+php bin/bingo serve                 # dev server + route log
 php bin/bingo show:routes
 php bin/bingo db:migrate
-php bin/bingo g:exception Name   # app/Exceptions (optional --status=4xx)
-composer test                    # PHPUnit
+php bin/bingo discovery:generate    # pre-build discovery cache (production)
+php bin/bingo discovery:clear       # clear discovery cache
+php bin/bingo g:exception Name      # app/Exceptions (optional --status=4xx)
+composer test                       # PHPUnit
 ```
 
 ## Conventions
@@ -124,3 +141,35 @@ composer test                    # PHPUnit
 - `Bingo\` = framework; `App\` = application.
 - API controller methods return `Response`; use `ApiResponse` for envelopes where possible.
 - Controller → Service → Model for non-trivial logic.
+
+## Deployment (Kubernetes/Docker)
+
+**PHP requires source + dependencies in container** (unlike compiled Go binaries):
+
+```dockerfile
+FROM php:8.5-fpm-alpine
+WORKDIR /var/www
+
+# Install dependencies (includes vendor/ in image)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader
+
+# Copy app code
+COPY . .
+
+# CRITICAL: Generate discovery cache during build
+RUN php bin/bingo discovery:generate
+
+# Optimize autoloader for production
+RUN composer dump-autoload --optimize --classmap-authoritative
+
+EXPOSE 9000
+CMD ["php-fpm"]
+```
+
+**Key points:**
+- `vendor/` **must** be bundled in image (200-300MB is normal for PHP apps)
+- Run `discovery:generate` **during Docker build** (bakes cache into image)
+- Production mode requires pre-built cache or app throws `RuntimeException`
+- When `core/` becomes a Composer package (`sadhakbj/bingo-framework`), it lives in `vendor/` — totally fine
+- GCR/Docker Hub images with vendor/ are standard PHP practice
