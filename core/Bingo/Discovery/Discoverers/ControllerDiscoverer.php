@@ -24,8 +24,8 @@ use ReflectionMethod;
  * Discovers controllers by scanning app/Http/Controllers for classes with
  * route attributes (#[ApiController], #[Get], #[Post], etc.).
  *
- * Extracts complete route metadata including paths, HTTP methods, middleware,
- * throttle limits, and parameter bindings.
+ * Extracts route metadata including paths, HTTP methods, middleware, and
+ * throttle limits. Parameter bindings are resolved at runtime via reflection.
  */
 class ControllerDiscoverer implements DiscovererInterface
 {
@@ -89,6 +89,7 @@ class ControllerDiscoverer implements DiscovererInterface
         // Get class-level metadata
         $prefix = $this->getPrefix($reflection);
         $classMiddleware = $this->getMiddleware($reflection);
+        $classThrottles = $this->getThrottles($reflection);
 
         $routes = [];
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -111,6 +112,7 @@ class ControllerDiscoverer implements DiscovererInterface
             'class' => $class,
             'prefix' => $prefix,
             'class_middleware' => $classMiddleware,
+            'class_throttles' => $classThrottles,
             'routes' => $routes,
         ];
     }
@@ -143,7 +145,7 @@ class ControllerDiscoverer implements DiscovererInterface
             'path' => $path,
             'action' => $method->getName(),
             'middleware' => $this->getMiddleware($method),
-            'throttle' => $this->getThrottle($method),
+            'throttles' => $this->getThrottles($method),
         ];
     }
 
@@ -176,20 +178,29 @@ class ControllerDiscoverer implements DiscovererInterface
     }
 
     /**
-     * Extract throttle limits from #[Throttle] attribute.
+     * Extract all throttle limits from #[Throttle] attributes.
+     * Supports multiple throttles on both classes and methods.
      */
-    private function getThrottle(ReflectionMethod $method): ?array
+    private function getThrottles(ReflectionClass|ReflectionMethod $reflection): array
     {
-        $attrs = $method->getAttributes(Throttle::class);
+        $attrs = $reflection->getAttributes(Throttle::class);
         if (empty($attrs)) {
-            return null;
+            return [];
         }
 
-        $instance = $attrs[0]->newInstance();
-        return [
-            'requests' => $instance->requests,
-            'per' => $instance->per,
-        ];
+        $throttles = [];
+        foreach ($attrs as $attr) {
+            $instance = $attr->newInstance();
+            $throttles[] = [
+                'requests' => $instance->requests,
+                'per' => $instance->per,
+            ];
+        }
+
+        return $throttles;
+    }
+
+        return $throttles;
     }
 
     /**

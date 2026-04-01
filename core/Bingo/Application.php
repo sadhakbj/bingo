@@ -8,6 +8,7 @@ use Bingo\Http\Middleware\BodyParserMiddleware;
 use Bingo\Http\Middleware\CorsMiddleware;
 use Bingo\Log\RequestContextProcessor;
 use Config\AppConfig;
+use Config\CorsConfig;
 use Config\DbConfig;
 use Config\LogConfig;
 use Bingo\Config\ConfigLoader;
@@ -50,6 +51,7 @@ class Application
     private AppConfig $appConfig;
     private DatabaseConfig $dbConfig;
     private RateLimitConfig $rateLimitConfig;
+    private CorsConfig $corsConfig;
 
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
     private array $discoveredCommands = [];
@@ -61,10 +63,16 @@ class Application
 
         // Load environment variables automatically
         $this->loadEnvironmentVariables();
+
+        $this->config = array_merge([
+            'default_middleware' => true,
+        ], $config);
+
         // Build typed config objects — #[Env] attributes drive the wiring
         $this->appConfig       = ConfigLoader::load(AppConfig::class);
         $this->dbConfig        = $this->bootDatabase();
         $this->rateLimitConfig = ConfigLoader::load(RateLimitConfig::class);
+        $this->corsConfig      = ConfigLoader::load(CorsConfig::class);
 
         $this->container = new Container();
         $this->router    = new Router($this->container);
@@ -74,6 +82,7 @@ class Application
         $this->container->instance(AppConfig::class, $this->appConfig);
         $this->container->instance(DatabaseConfig::class, $this->dbConfig);
         $this->container->instance(RateLimitConfig::class, $this->rateLimitConfig);
+        $this->container->instance(CorsConfig::class, $this->corsConfig);
 
         // Wire rate limiting from config.
         // Override the store or the entire middleware in bootstrap/app.php after Application::create():
@@ -92,7 +101,9 @@ class Application
         // Auto-discover controllers, commands, middleware
         $this->bootDiscovery();
 
-        $this->setDefaultMiddleware();
+        if ($this->config['default_middleware']) {
+            $this->setDefaultMiddleware();
+        }
     }
 
     private function bootRateLimiting(): void
@@ -346,7 +357,7 @@ class Application
     {
         if ($this->appConfig->env === 'production') {
             $this->pipeline = MiddlewarePipeline::productionApi([
-                'allowed_origins' => $this->config['cors']['allowed_origins'] ?? []
+                'allowed_origins' => $this->corsConfig->getAllowedOrigins()
             ]);
         } else {
             $this->pipeline = MiddlewarePipeline::defaultApi();

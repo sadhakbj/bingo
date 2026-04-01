@@ -142,6 +142,7 @@ class Router
         foreach ($cachedControllers as $controllerData) {
             $prefix = $controllerData['prefix'];
             $classMiddlewares = $controllerData['class_middleware'];
+            $classThrottles = $controllerData['class_throttles'] ?? [];
 
             foreach ($controllerData['routes'] as $routeData) {
                 // Build full path (prefix + route path)
@@ -162,12 +163,16 @@ class Router
                 $middlewares = array_merge($classMiddlewares, $routeData['middleware']);
                 $this->middlewares[$routeName] = $middlewares;
 
-                // Handle throttles (convert to Throttle objects if present)
+                // Merge class-level and method-level throttles (convert to Throttle objects)
+                // Class-level throttles apply first, then method-level (same order as registerController)
+                $methodThrottles = $routeData['throttles'] ?? [];
+                $allThrottleData = array_merge($classThrottles, $methodThrottles);
+
                 $throttles = [];
-                if ($routeData['throttle']) {
+                foreach ($allThrottleData as $throttleData) {
                     $throttles[] = new Throttle(
-                        requests: $routeData['throttle']['requests'],
-                        per: $routeData['throttle']['per'],
+                        requests: $throttleData['requests'],
+                        per: $throttleData['per'],
                     );
                 }
                 $this->throttles[$routeName] = $throttles;
