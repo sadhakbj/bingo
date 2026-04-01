@@ -8,6 +8,7 @@ use Bingo\Http\Middleware\BodyParserMiddleware;
 use Bingo\Http\Middleware\CorsMiddleware;
 use Bingo\Log\RequestContextProcessor;
 use Config\AppConfig;
+use Config\CorsConfig;
 use Config\DbConfig;
 use Config\LogConfig;
 use Bingo\Config\ConfigLoader;
@@ -50,8 +51,10 @@ class Application
     private AppConfig $appConfig;
     private DatabaseConfig $dbConfig;
     private RateLimitConfig $rateLimitConfig;
+    private CorsConfig $corsConfig;
 
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
+    private array $discoveredCommands = [];
 
     public function __construct(array $config = [])
     {
@@ -69,6 +72,7 @@ class Application
         $this->appConfig       = ConfigLoader::load(AppConfig::class);
         $this->dbConfig        = $this->bootDatabase();
         $this->rateLimitConfig = ConfigLoader::load(RateLimitConfig::class);
+        $this->corsConfig      = ConfigLoader::load(CorsConfig::class);
 
         $this->container = new Container();
         $this->router    = new Router($this->container);
@@ -78,6 +82,7 @@ class Application
         $this->container->instance(AppConfig::class, $this->appConfig);
         $this->container->instance(DatabaseConfig::class, $this->dbConfig);
         $this->container->instance(RateLimitConfig::class, $this->rateLimitConfig);
+        $this->container->instance(CorsConfig::class, $this->corsConfig);
 
         // Wire rate limiting from config.
         // Override the store or the entire middleware in bootstrap/app.php after Application::create():
@@ -92,6 +97,9 @@ class Application
 
         // Boot Eloquent with typed database config
         Database::setup($this->dbConfig);
+
+        // Auto-discover controllers, commands, middleware
+        $this->bootDiscovery();
 
         if ($this->config['default_middleware']) {
             $this->setDefaultMiddleware();
@@ -177,6 +185,33 @@ class Application
         }
 
         return new DatabaseConfig($defaultName, $connections);
+    }
+
+    /**
+     * Auto-discover controllers, commands, and other components via attributes.
+     *
+     * In development, rebuilds cache when files change (filemtime check).
+     * In production, requires pre-built cache (fail-fast if missing).
+     */
+    private function bootDiscovery(): void
+    {
+        $manager = new \Bingo\Discovery\DiscoveryManager(
+            cachePath: base_path('storage/framework/discovery.php'),
+            appPath: base_path('app'),
+            isProduction: $this->appConfig->env === 'production',
+        );
+
+        $discovered = $manager->load();
+
+        // Register discovered controllers
+        if (!empty($discovered['controllers'])) {
+            $this->router->registerFromCache($discovered['controllers']);
+        }
+
+        // Store discovered commands for console kernel (accessed via getDiscoveredCommands())
+        if (!empty($discovered['commands'])) {
+            $this->discoveredCommands = $discovered['commands'];
+        }
     }
 
     private function loadEnvironmentVariables(): void
@@ -322,7 +357,7 @@ class Application
     {
         if ($this->appConfig->env === 'production') {
             $this->pipeline = MiddlewarePipeline::productionApi([
-                'allowed_origins' => $this->config['cors']['allowed_origins'] ?? []
+                'allowed_origins' => $this->corsConfig->getAllowedOrigins()
             ]);
         } else {
             $this->pipeline = MiddlewarePipeline::defaultApi();
@@ -364,6 +399,14 @@ class Application
     }
 
     /**
+     * Get discovered commands for registration in console kernel.
+     */
+    public function getDiscoveredCommands(): array
+    {
+        return $this->discoveredCommands;
+    }
+
+    /**
      * Resolve a class from the container.
      */
     public function make(string $abstract): mixed
@@ -393,28 +436,6 @@ class Application
     public static function create(array $config = []): self
     {
         return new self($config);
-    }
-
-    /**
-     * Create production-ready application
-     */
-    public static function production(array $config = []): self
-    {
-        return new self(array_merge([
-            'environment' => 'production',
-            'default_middleware' => true,
-        ], $config));
-    }
-
-    /**
-     * Create development application
-     */
-    public static function development(array $config = []): self
-    {
-        return new self(array_merge([
-            'environment' => 'development',
-            'default_middleware' => true,
-        ], $config));
     }
 
     /**

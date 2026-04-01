@@ -27,7 +27,10 @@ $app = require __DIR__ . '/app.php';
 
 $kernel = new Kernel($app);
 
-// Register your commands here:
+// Framework commands are auto-registered by the kernel
+// No need to manually register discovery:generate, discovery:clear, show:routes, etc.
+
+// Register your application commands here:
 // $kernel->command(\App\Console\Commands\SendEmailsCommand::class);
 
 return $kernel;

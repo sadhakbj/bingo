@@ -129,6 +129,74 @@ class Router
         }
     }
 
+    /**
+     * Register controllers from discovery cache.
+     *
+     * This method bypasses reflection and builds routes directly from cached metadata,
+     * providing zero-overhead route registration in production.
+     *
+     * @param array $cachedControllers Discovered controller metadata
+     */
+    public function registerFromCache(array $cachedControllers): void
+    {
+        foreach ($cachedControllers as $controllerData) {
+            $prefix = $controllerData['prefix'];
+            $classMiddlewares = $controllerData['class_middleware'];
+            $classThrottles = $controllerData['class_throttles'] ?? [];
+
+            foreach ($controllerData['routes'] as $routeData) {
+                // Build full path (prefix + route path)
+                $fullPath = $prefix . $routeData['path'];
+                if ($fullPath === '') {
+                    $fullPath = '/';
+                }
+                $fullPath = preg_replace('#//+#', '/', $fullPath); // Clean up double slashes
+
+                // No trailing slash on registered paths (except root)
+                if ($fullPath !== '/' && str_ends_with($fullPath, '/')) {
+                    $fullPath = rtrim($fullPath, '/');
+                }
+
+                $routeName = $controllerData['class'] . '@' . $routeData['action'];
+
+                // Merge class-level and method-level middleware
+                $middlewares = array_merge($classMiddlewares, $routeData['middleware']);
+                $this->middlewares[$routeName] = $middlewares;
+
+                // Merge class-level and method-level throttles (convert to Throttle objects)
+                // Class-level throttles apply first, then method-level (same order as registerController)
+                $methodThrottles = $routeData['throttles'] ?? [];
+                $allThrottleData = array_merge($classThrottles, $methodThrottles);
+
+                $throttles = [];
+                foreach ($allThrottleData as $throttleData) {
+                    $throttles[] = new Throttle(
+                        requests: $throttleData['requests'],
+                        per: $throttleData['per'],
+                    );
+                }
+                $this->throttles[$routeName] = $throttles;
+
+                // Create Symfony route
+                $symfonyRoute = new SymfonyRoute(
+                    $fullPath,
+                    [
+                        '_controller' => $controllerData['class'],
+                        '_action' => $routeData['action'],
+                        '_route_name' => $routeName,
+                    ],
+                    [],
+                    [],
+                    '',
+                    [],
+                    [$routeData['method']],
+                );
+
+                $this->routes->add($routeName, $symfonyRoute);
+            }
+        }
+    }
+
     public function getRoutes(): RouteCollection
     {
         return $this->routes;

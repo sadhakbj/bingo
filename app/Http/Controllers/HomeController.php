@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Middleware\AuthMiddleware;
-use App\Http\Middleware\LogMiddleware;
 use App\Models\User;
 use Bingo\Attributes\Middleware;
 use Bingo\Attributes\Route\Route;

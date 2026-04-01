@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Bingo\Console;
 
 use Bingo\Application;
+use Bingo\Console\Command\DiscoveryClearCommand;
+use Bingo\Console\Command\DiscoveryGenerateCommand;
 use Bingo\Console\Command\GenerateCommandCommand;
 use Bingo\Console\Command\GenerateControllerCommand;
 use Bingo\Console\Command\GenerateExceptionCommand;
@@ -54,6 +56,8 @@ class Kernel
             new ServeCommand($basePath, $this->app),
             new ShowRoutesCommand($this->app),
             new MigrateCommand($basePath, $this->app),
+            new DiscoveryGenerateCommand(),
+            new DiscoveryClearCommand(),
             new GenerateControllerCommand($basePath),
             new GenerateServiceCommand($basePath),
             new GenerateMiddlewareCommand($basePath),
