@@ -92,7 +92,7 @@ class Application
         // Auto-discover controllers, commands, middleware
         $this->bootDiscovery();
 
-            $this->setDefaultMiddleware();
+        $this->setDefaultMiddleware();
     }
 
     private function bootRateLimiting(): void
