@@ -9,21 +9,47 @@ use Bingo\Exceptions\Http\HttpException;
 use Bingo\Exceptions\Http\TooManyRequestsException;
 use Bingo\Http\Response;
 use Bingo\Validation\ValidationException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Default JSON errors: statusCode, message, error (+ optional details in debug).
  */
 class ExceptionHandler implements ExceptionHandlerInterface
 {
-    public function __construct(private readonly bool $debug = false) {}
+    public function __construct(
+        private readonly bool $debug = false,
+        private readonly ?LoggerInterface $logger = null,
+    ) {}
 
     public function handle(\Throwable $e): Response
     {
+        $this->log($e);
+
         return match (true) {
             $e instanceof ValidationException => $this->handleValidation($e),
             $e instanceof HttpException       => $this->handleHttp($e),
             default                           => $this->handleGeneric($e),
         };
+    }
+
+    private function log(\Throwable $e): void
+    {
+        if ($this->logger === null) {
+            return;
+        }
+
+        $statusCode = $e instanceof HttpException ? $e->getStatusCode() : 500;
+        $context    = [
+            'exception' => $e::class,
+            'file'      => $e->getFile(),
+            'line'      => $e->getLine(),
+        ];
+
+        if ($statusCode >= 500) {
+            $this->logger->error($e->getMessage(), $context);
+        } else {
+            $this->logger->info($e->getMessage(), $context);
+        }
     }
 
     private function handleValidation(ValidationException $e): Response

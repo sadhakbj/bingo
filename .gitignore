@@ -18,6 +18,8 @@ Thumbs.db
 # Logs and reports
 *.log
 logs/
+storage/logs/*.log*
+storage/rate-limit/
 *.cache
 *.tmp
 

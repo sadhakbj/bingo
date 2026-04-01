@@ -15,33 +15,33 @@ use Bingo\Attributes\Config\Env;
  * Redis is the only supported store — it is the only backend that
  * works correctly across multiple processes, containers, or pods.
  */
-final class RateLimitConfig
+final readonly class RateLimitConfig
 {
     public function __construct(
             /** Disable entirely (e.g. staging environments). Default: on in production. */
         #[Env('RATE_LIMIT_ENABLED', default: true)]
-        public readonly bool $enabled,
+        public bool $enabled,
 
             /** Maximum requests per IP within the window. */
         #[Env('RATE_LIMIT_MAX_REQUESTS', default: 1)]
-        public readonly int $maxRequests,
+        public int $maxRequests,
 
             /** Sliding-window length in seconds. */
         #[Env('RATE_LIMIT_WINDOW', default: 60)]
-        public readonly int $window,
+        public int $window,
 
         #[Env('REDIS_HOST', default: '127.0.0.1')]
-        public readonly string $redisHost,
+        public string $redisHost,
 
         #[Env('REDIS_PORT', default: 6379)]
-        public readonly int $redisPort,
+        public int $redisPort,
 
             /** Set to your Redis password, or leave as "null" / empty for no auth. */
         #[Env('REDIS_PASSWORD', default: 'null')]
-        public readonly string $redisPassword,
+        public string $redisPassword,
 
         #[Env('REDIS_DB', default: 0)]
-        public readonly int $redisDb,
+        public int $redisDb,
     ) {
     }
 }

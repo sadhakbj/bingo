@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Bingo\Contracts;
 
 use App\Http\Middleware\AuthMiddleware;
-use App\Http\Middleware\LogMiddleware;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Http\Middleware\BodyParserMiddleware;
 use Bingo\Http\Middleware\CompressionMiddleware;
@@ -34,7 +33,6 @@ class MiddlewareInterfaceTest extends TestCase
             RateLimitMiddleware::class,
             // App middleware
             AuthMiddleware::class,
-            LogMiddleware::class,
         ];
 
         foreach ($middlewareClasses as $class) {
