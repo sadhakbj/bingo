@@ -6,8 +6,10 @@ namespace Bingo;
 
 use Bingo\Http\Middleware\BodyParserMiddleware;
 use Bingo\Http\Middleware\CorsMiddleware;
+use Bingo\Log\RequestContextProcessor;
 use Config\AppConfig;
 use Config\DbConfig;
+use Config\LogConfig;
 use Bingo\Config\ConfigLoader;
 use Bingo\Config\DatabaseConfig;
 use Bingo\Container\Container;
@@ -26,6 +28,13 @@ use Bingo\RateLimit\Store\FileStore;
 use Bingo\RateLimit\Store\RedisStore;
 use Config\RateLimitConfig;
 use Dotenv\Dotenv;
+use Bingo\Log\SlogTextFormatter;
+use Monolog\Formatter\JsonFormatter;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Level;
+use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
 
@@ -76,6 +85,11 @@ class Application
         //   $app->instance(RateLimitMiddleware::class, RateLimitMiddleware::create($limiter, 200, 60));
         $this->bootRateLimiting();
 
+        // Boot structured logging (Monolog, PSR-3).
+        // Override the logger in bootstrap/app.php:
+        //   $app->instance(\Psr\Log\LoggerInterface::class, $yourLogger);
+        $this->bootLogging();
+
         // Boot Eloquent with typed database config
         Database::setup($this->dbConfig);
 
@@ -111,6 +125,38 @@ class Application
                 \Bingo\Http\Middleware\RateLimitMiddleware::create($limiter, $cfg->maxRequests, $cfg->window),
             );
         }
+    }
+
+    private function bootLogging(): void
+    {
+        $cfg       = ConfigLoader::load(LogConfig::class);
+        $processor = new RequestContextProcessor();
+        $logger    = new Logger('bingo');
+
+        $level       = Level::fromName(ucfirst($cfg->level));
+        $stderrLevel = Level::fromName(ucfirst($cfg->stderrLevel));
+
+        $stderrHandler = new StreamHandler('php://stderr', $stderrLevel);
+        $fileHandler   = new RotatingFileHandler(base_path($cfg->path), 30, $level);
+
+        // Colors only when stderr is an interactive terminal — never in files or pipes
+        $isTerminal = defined('STDERR') && stream_isatty(\STDERR);
+
+        $stderrHandler->setFormatter(match ($cfg->format) {
+            'json'  => new JsonFormatter(),
+            default => new SlogTextFormatter(colors: $isTerminal, timeFormat: $cfg->timeFormat),
+        });
+        $fileHandler->setFormatter(match ($cfg->format) {
+            'json'  => new JsonFormatter(),
+            default => new SlogTextFormatter(colors: false, timeFormat: $cfg->timeFormat),
+        });
+
+        $logger->pushHandler($fileHandler);
+        $logger->pushHandler($stderrHandler);
+        $logger->pushProcessor($processor);
+
+        $this->container->instance(LoggerInterface::class, $logger);
+        $this->container->instance(RequestContextProcessor::class, $processor);
     }
 
     private function bootDatabase(): DatabaseConfig
@@ -251,7 +297,11 @@ class Application
             return $this->container->make(ExceptionHandlerInterface::class);
         }
 
-        return new ExceptionHandler($this->isDebug());
+        $logger = $this->container->has(LoggerInterface::class)
+            ? $this->container->make(LoggerInterface::class)
+            : null;
+
+        return new ExceptionHandler($this->isDebug(), $logger);
     }
 
     /**

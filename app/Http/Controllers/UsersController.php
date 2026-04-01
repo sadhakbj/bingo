@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\DTOs\CreateUserDTO;
-use App\Http\Middleware\LogMiddleware;
 use App\Models\User;
 use App\Services\UserService;
 use Bingo\Attributes\Middleware;
@@ -22,14 +21,14 @@ use Bingo\Attributes\Route\{
     UploadedFiles
 };
 use Bingo\DTOs\Http\ApiResponse;
+use Psr\Log\LoggerInterface;
 use Bingo\Http\{Request, Response, Sse\StreamedEvent, StreamedResponse};
 use Symfony\Component\HttpFoundation\File\UploadedFile as File;
 
 #[ApiController('/users')]
-#[Middleware([LogMiddleware::class])]
 readonly class UsersController
 {
-    public function __construct(private UserService $userService)
+    public function __construct(private UserService $userService, private LoggerInterface $logger)
     {
     }
 

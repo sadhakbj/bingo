@@ -33,6 +33,7 @@ Built from scratch on top of Symfony's HTTP, Routing, Validator, Console, and DI
   - [Response Headers](#response-headers)
 - [DTOs and Validation](#dtos-and-validation)
 - [Dependency Injection](#dependency-injection)
+- [Logging](#logging)
 - [Exception Handling](#exception-handling)
 - [Eloquent ORM](#eloquent-orm)
 - [CLI — bin/bingo](#cli--binbingo)
@@ -833,6 +834,125 @@ $app->instance(PaymentConfig::class, new PaymentConfig(key: env('STRIPE_KEY')));
 **Resolution order:** pre-built instances → registered singletons/bindings → reflection fallback.
 
 `AppConfig` and `DatabaseConfig` are pre-registered by the framework and available for injection everywhere without any setup.
+
+---
+
+## Logging
+
+Bingo ships a PSR-3 compliant structured logger (Monolog v3) that starts automatically — no setup required.
+
+### Output format
+
+Bingo's logger is inspired by Go's `slog` package. You choose the format via `LOG_FORMAT`:
+
+| `LOG_FORMAT` | Output style | Best for |
+|---|---|---|
+| `text` (default) | `key=value` pairs — human-readable, grep-friendly | local dev, terminal |
+| `json` | One JSON object per line | Docker / k8s, Loki, Datadog, any log shipper |
+
+**`text` example:**
+```
+time=2024-01-15T12:03:44+00:00 level=INFO msg="HTTP GET" method=GET path=/users status=200 duration_ms=4 ip=127.0.0.1 request_id=abc-123
+time=2024-01-15T12:03:44+00:00 level=INFO msg="User created" id=1 email=alice@example.com
+time=2024-01-15T12:03:44+00:00 level=WARN msg="Duplicate email on user creation" email=alice@example.com
+time=2024-01-15T12:03:44+00:00 level=ERROR msg="Something exploded" exception=RuntimeException file=/app/Service.php line=42
+```
+
+**`json` example:**
+```json
+{"message":"HTTP GET","context":{"method":"GET","path":"/users","status":200,"duration_ms":4,"ip":"127.0.0.1"},"level_name":"INFO","channel":"bingo","datetime":"2024-01-15T12:03:44+00:00","extra":{"request_id":"abc-123","trace_id":null,"span_id":null}}
+```
+
+### Output destinations (stack channel)
+
+| Handler | Minimum level | Purpose |
+|---------|--------------|---------|
+| `stderr` | `LOG_STDERR_LEVEL` (default: `error`) | Picked up by Docker / k8s log shippers |
+| Rotating file | `LOG_LEVEL` (default: `debug`) | Full detail; rotates daily, 30 files kept |
+
+To see `DEBUG` logs in the terminal, set `LOG_STDERR_LEVEL=debug` in your `.env`.
+
+### Configuration
+
+```env
+LOG_FORMAT=text            # text (slog-style key=value) | json
+LOG_CHANNEL=stack          # stack is the only built-in channel
+LOG_LEVEL=debug            # minimum level for the file handler
+LOG_STDERR_LEVEL=error     # minimum level for stderr
+LOG_PATH=storage/logs/bingo.log
+```
+
+### What gets logged automatically
+
+- **Exceptions** — 5xx as `error`, 4xx as `info` (via `ExceptionHandler`)
+- **Your own calls** — `$this->logger->info(...)` anywhere in your services or controllers
+
+Access logging (method, path, status, IP) is intentionally left to your reverse proxy (nginx, Caddy, Traefik, AWS ALB). Every real deployment has one.
+
+### Injecting the logger
+
+The logger is bound as `Psr\Log\LoggerInterface` in the DI container — inject it anywhere via the constructor:
+
+```php
+use Psr\Log\LoggerInterface;
+
+class UserService
+{
+    public function __construct(private readonly LoggerInterface $logger) {}
+
+    public function createUser(CreateUserDTO $dto): UserDTO
+    {
+        $this->logger->debug('Creating user', ['email' => $dto->email]);
+
+        if (User::where('email', $dto->email)->exists()) {
+            $this->logger->warning('Duplicate email', ['email' => $dto->email]);
+            throw new ConflictException('Email already exists');
+        }
+
+        $user = User::create([...]);
+        $this->logger->info('User created', ['id' => $user->id]);
+
+        return UserDTO::fromModel($user);
+    }
+}
+```
+
+The eight PSR-3 levels are all available: `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, `emergency`.
+
+### Custom logger
+
+Override the auto-booted logger in `bootstrap/app.php`:
+
+```php
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Level;
+
+$logger = new Logger('my-app', [new StreamHandler('php://stdout', Level::Debug)]);
+$app->instance(\Psr\Log\LoggerInterface::class, $logger);
+```
+
+### OpenTelemetry migration path (Prometheus / Loki / Datadog)
+
+OTel is not wired by default — logs only carry `request_id` until you opt in. When you are ready:
+
+```bash
+composer require open-telemetry/opentelemetry-logger-monolog
+```
+
+Then swap the logger in `bootstrap/app.php`:
+
+```php
+use OpenTelemetry\Contrib\Logs\Monolog\Handler as OTelHandler;
+use Monolog\Logger;
+use Monolog\Level;
+
+$otelLogger = /* your OpenTelemetry SDK logger provider */;
+$logger = new Logger('bingo', [new OTelHandler($otelLogger, Level::Debug)]);
+$app->instance(\Psr\Log\LoggerInterface::class, $logger);
+```
+
+The OTel handler injects `trace_id` and `span_id` automatically from the active span context.
 
 ---
 

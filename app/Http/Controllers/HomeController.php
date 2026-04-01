@@ -19,7 +19,6 @@ class HomeController
     }
 
     #[Route('/', 'GET')]
-    #[Middleware([LogMiddleware::class])]
     #[Throttle(requests: 1, per: 60)]
     public function index(): Response
     {
@@ -28,14 +27,13 @@ class HomeController
     }
 
     #[Route('/about', 'GET')]
-    #[Middleware([LogMiddleware::class, AuthMiddleware::class])]
+    #[Middleware([AuthMiddleware::class])]
     public function about(): string
     {
         return "About us page";
     }
 
     #[Route('/contact', 'POST')]
-    #[Middleware([LogMiddleware::class])]
     public function contact(): string
     {
         return "Contact form submitted";

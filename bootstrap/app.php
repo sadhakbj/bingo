@@ -82,6 +82,33 @@ if (PHP_SAPI === 'cli-server') {
 
 /*
 |--------------------------------------------------------------------------
+| Logging
+|--------------------------------------------------------------------------
+|
+| Bingo boots a PSR-3 Monolog logger automatically:
+|   - stderr  (ERROR+)  — picked up by Docker / k8s log shippers
+|   - rotating file (DEBUG+) — stored at LOG_PATH
+|
+| Override the logger for custom channels or to wire OTel:
+|
+|   use Monolog\Logger;
+|   use Monolog\Handler\StreamHandler;
+|   use Monolog\Level;
+|   $logger = new Logger('my-app', [new StreamHandler('php://stdout', Level::Debug)]);
+|   $app->instance(\Psr\Log\LoggerInterface::class, $logger);
+|
+| OTel migration (Prometheus / Loki / Datadog):
+|
+|   composer require open-telemetry/opentelemetry-logger-monolog
+|   // Then replace the logger instance above with an OTel-backed one.
+|   // trace_id and span_id are already reserved in RequestContextProcessor.
+|
+*/
+
+// $app->instance(\Psr\Log\LoggerInterface::class, $yourLogger);
+
+/*
+|--------------------------------------------------------------------------
 | Exception handling (application layer — not in core)
 |--------------------------------------------------------------------------
 |

@@ -9,12 +9,18 @@ use App\DTOs\User\UserDTO;
 use App\Models\User;
 use Bingo\Exceptions\Http\ConflictException;
 use Bingo\Exceptions\Http\NotFoundException;
+use Psr\Log\LoggerInterface;
 
 class UserService
 {
+    public function __construct(private readonly LoggerInterface $logger) {}
+
     public function createUser(CreateUserDTO $dto): UserDTO
     {
+        $this->logger->debug('Creating user', ['email' => $dto->email]);
+
         if (User::where('email', $dto->email)->exists()) {
+            $this->logger->warning('Duplicate email on user creation', ['email' => $dto->email]);
             throw new ConflictException('Email already exists');
         }
 
@@ -25,14 +31,19 @@ class UserService
             'bio'   => $dto->bio ?? null,
         ]);
 
+        $this->logger->info('User created', ['id' => $user->id, 'email' => $user->email]);
+
         return UserDTO::fromModel($user->loadMissing('posts'));
     }
 
     public function getUserById(int $id): UserDTO
     {
+        $this->logger->debug('Fetching user', ['id' => $id]);
+
         $user = User::with('posts')->find($id);
 
         if (!$user) {
+            $this->logger->info('User not found', ['id' => $id]);
             throw new NotFoundException('User not found');
         }
 
