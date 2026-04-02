@@ -14,7 +14,7 @@ use Psr\Log\LoggerInterface;
 
 readonly class UserService
 {
-    public function __construct(private LoggerInterface $logger, private IUSerRepository $userRepo)
+    public function __construct(private LoggerInterface $logger, private IUserRepository $userRepo)
     {
     }
 
