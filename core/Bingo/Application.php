@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Bingo;
 
-use Bingo\Http\Middleware\BodyParserMiddleware;
-use Bingo\Http\Middleware\CorsMiddleware;
 use Bingo\Log\RequestContextProcessor;
-use Config\AppConfig;
 use Config\CorsConfig;
 use Config\DbConfig;
 use Config\LogConfig;
@@ -18,16 +15,14 @@ use Bingo\Contracts\ExceptionHandlerInterface;
 use Bingo\Contracts\HttpResponse;
 use Bingo\Database\Database;
 use Bingo\Exceptions\ExceptionHandler;
+use Bingo\Http\Middleware\CorsMiddleware;
 use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
 use Bingo\RateLimit\Contracts\RateLimiterStore;
-use Bingo\RateLimit\RateLimiter;
 use Bingo\RateLimit\Store\FileStore;
-use Bingo\RateLimit\Store\RedisStore;
-use Config\RateLimitConfig;
 use Dotenv\Dotenv;
 use Bingo\Log\SlogTextFormatter;
 use Monolog\Formatter\JsonFormatter;
@@ -45,50 +40,25 @@ class Application
     private Router $router;
     private MiddlewarePipeline $pipeline;
     private array $controllers = [];
-    private array $config = [];
     private string $basePath;
-
-    private AppConfig $appConfig;
-    private DatabaseConfig $dbConfig;
-    private RateLimitConfig $rateLimitConfig;
-    private CorsConfig $corsConfig;
 
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
     private array $discoveredCommands = [];
 
-    public function __construct(array $config = [])
+    public function __construct(string $basePath)
     {
-        // Determine base path (where composer.json is located)
-        $this->basePath = $this->findBasePath();
-
-        // Load environment variables automatically
+        $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
         $this->loadEnvironmentVariables();
 
-        $this->config = array_merge([
-            'default_middleware' => true,
-        ], $config);
 
-        // Build typed config objects — #[Env] attributes drive the wiring
-        $this->appConfig       = ConfigLoader::load(AppConfig::class);
-        $this->dbConfig        = $this->bootDatabase();
-        $this->rateLimitConfig = ConfigLoader::load(RateLimitConfig::class);
-        $this->corsConfig      = ConfigLoader::load(CorsConfig::class);
+        $dbConfig = $this->bootDatabase();
 
         $this->container = new Container();
         $this->router    = new Router($this->container);
         $this->pipeline  = MiddlewarePipeline::create($this->container);
 
-        // Register config instances so they are injectable everywhere
-        $this->container->instance(AppConfig::class, $this->appConfig);
-        $this->container->instance(DatabaseConfig::class, $this->dbConfig);
-        $this->container->instance(RateLimitConfig::class, $this->rateLimitConfig);
-        $this->container->instance(CorsConfig::class, $this->corsConfig);
-
-        // Wire rate limiting from config.
-        // Override the store or the entire middleware in bootstrap/app.php after Application::create():
-        //   $app->instance(RateLimiterStore::class, new RedisStore(...));
-        //   $app->instance(RateLimitMiddleware::class, RateLimitMiddleware::create($limiter, 200, 60));
-        $this->bootRateLimiting();
+        $this->container->instance(DatabaseConfig::class, $dbConfig);
+        $this->container->instance(RateLimiterStore::class, new FileStore(base_path('storage/rate-limit')));
 
         // Boot structured logging (Monolog, PSR-3).
         // Override the logger in bootstrap/app.php:
@@ -96,43 +66,12 @@ class Application
         $this->bootLogging();
 
         // Boot Eloquent with typed database config
-        Database::setup($this->dbConfig);
+        Database::setup($dbConfig);
 
         // Auto-discover controllers, commands, middleware
         $this->bootDiscovery();
 
-        if ($this->config['default_middleware']) {
-            $this->setDefaultMiddleware();
-        }
-    }
-
-    private function bootRateLimiting(): void
-    {
-        $cfg = $this->rateLimitConfig;
-
-        // Redis in production; FileStore as a local-dev fallback.
-        // InMemoryStore is NOT used — it resets on every request under php -S
-        // because the built-in server spawns a new process per request.
-        $store = extension_loaded('redis')
-            ? RedisStore::fromConfig(
-                host:     $cfg->redisHost,
-                port:     $cfg->redisPort,
-                password: $cfg->redisPassword,
-                db:       $cfg->redisDb,
-            )
-            : new FileStore(base_path('storage/rate-limit'));
-
-        $limiter = new RateLimiter($store);
-
-        $this->container->instance(RateLimiterStore::class, $store);
-        $this->container->instance(RateLimiter::class, $limiter);
-
-        if ($cfg->enabled) {
-            $this->container->instance(
-                \Bingo\Http\Middleware\RateLimitMiddleware::class,
-                \Bingo\Http\Middleware\RateLimitMiddleware::create($limiter, $cfg->maxRequests, $cfg->window),
-            );
-        }
+        $this->setDefaultMiddleware();
     }
 
     private function bootLogging(): void
@@ -198,7 +137,7 @@ class Application
         $manager = new \Bingo\Discovery\DiscoveryManager(
             cachePath: base_path('storage/framework/discovery.php'),
             appPath: base_path('app'),
-            isProduction: $this->appConfig->env === 'production',
+            isProduction: env('APP_ENV', 'development') === 'production',
         );
 
         $discovered = $manager->load();
@@ -216,34 +155,7 @@ class Application
 
     private function loadEnvironmentVariables(): void
     {
-        try {
-            $dotenv = Dotenv::createImmutable($this->basePath);
-            $dotenv->safeLoad();
-        } catch (\Exception $e) {
-            // .env file is optional, so we don't fail if it's missing
-        }
-    }
-
-    /**
-     * Find the base path of the application
-     */
-    private function findBasePath(): string
-    {
-        $currentDir = __DIR__;
-
-        // Walk up directories until we find composer.json
-        while (!file_exists($currentDir . '/composer.json')) {
-            $parentDir = dirname($currentDir);
-
-            // Prevent infinite loop
-            if ($parentDir === $currentDir) {
-                return dirname(__DIR__); // Fallback to framework parent dir
-            }
-
-            $currentDir = $parentDir;
-        }
-
-        return $currentDir;
+        Dotenv::createImmutable($this->basePath)->load();
     }
 
     /**
@@ -355,15 +267,9 @@ class Application
      */
     private function setDefaultMiddleware(): void
     {
-        if ($this->appConfig->env === 'production') {
-            $this->pipeline = MiddlewarePipeline::productionApi([
-                'allowed_origins' => $this->corsConfig->getAllowedOrigins()
-            ]);
-        } else {
-            $this->pipeline = MiddlewarePipeline::defaultApi();
-        }
+        $cors = CorsMiddleware::fromConfig(ConfigLoader::load(CorsConfig::class));
 
-        // Static factories use `new self()` internally — re-inject the container
+        $this->pipeline = MiddlewarePipeline::defaults($cors);
         $this->pipeline->setContainer($this->container);
     }
 
@@ -399,14 +305,6 @@ class Application
     }
 
     /**
-     * Get discovered commands for registration in console kernel.
-     */
-    public function getDiscoveredCommands(): array
-    {
-        return $this->discoveredCommands;
-    }
-
-    /**
      * Resolve a class from the container.
      */
     public function make(string $abstract): mixed
@@ -433,17 +331,9 @@ class Application
     /**
      * Application factory method
      */
-    public static function create(array $config = []): self
+    public static function create(string $basePath): self
     {
-        return new self($config);
-    }
-
-    /**
-     * Get application configuration
-     */
-    public function getConfig(): array
-    {
-        return $this->config;
+        return new self($basePath);
     }
 
     /**
@@ -467,7 +357,7 @@ class Application
      */
     public function environment(): string
     {
-        return $this->appConfig->env;
+        return (string) $this->env('APP_ENV', 'development');
     }
 
     /**
@@ -475,7 +365,7 @@ class Application
      */
     public function isDebug(): bool
     {
-        return $this->appConfig->debug;
+        return (bool) env('APP_DEBUG', false);
     }
 
 }

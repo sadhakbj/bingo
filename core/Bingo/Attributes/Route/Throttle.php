@@ -27,13 +27,13 @@ use Attribute;
  *       new FileStore(base_path('storage/rate-limit')));
  */
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
-final class Throttle
+final readonly class Throttle
 {
     public function __construct(
         /** Maximum number of requests allowed in $per seconds. */
-        public readonly int $requests,
+        public int $requests,
 
         /** Window length in seconds. */
-        public readonly int $per,
+        public int $per,
     ) {}
 }

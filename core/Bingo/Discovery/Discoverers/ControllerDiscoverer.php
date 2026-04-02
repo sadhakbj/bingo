@@ -200,9 +200,6 @@ class ControllerDiscoverer implements DiscovererInterface
         return $throttles;
     }
 
-        return $throttles;
-    }
-
     /**
      * Map attribute class to HTTP method string.
      */

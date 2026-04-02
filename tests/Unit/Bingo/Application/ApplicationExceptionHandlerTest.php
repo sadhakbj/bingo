@@ -13,14 +13,14 @@ use Tests\Stubs\Controllers\StubApiController;
 
 class ApplicationExceptionHandlerTest extends TestCase
 {
-    private function appWithoutDefaultMiddleware(): Application
+    private function makeApp(): Application
     {
-        return Application::create(['default_middleware' => false]);
+        return Application::create(dirname(__DIR__, 4));
     }
 
     public function test_handle_uses_custom_exception_handler_instance(): void
     {
-        $app = $this->appWithoutDefaultMiddleware();
+        $app = $this->makeApp();
         $app->controllers([StubApiController::class]);
         $app->exceptionHandler(new class implements ExceptionHandlerInterface {
             public function handle(\Throwable $e): Response
@@ -37,7 +37,7 @@ class ApplicationExceptionHandlerTest extends TestCase
 
     public function test_explicit_exception_handler_overrides_container_binding(): void
     {
-        $app = $this->appWithoutDefaultMiddleware();
+        $app = $this->makeApp();
         $app->singleton(ExceptionHandlerInterface::class, ContainerBoundHandler::class);
         $app->exceptionHandler(new InstanceHandler());
 
@@ -49,7 +49,7 @@ class ApplicationExceptionHandlerTest extends TestCase
 
     public function test_container_bound_exception_handler_when_no_explicit_instance(): void
     {
-        $app = $this->appWithoutDefaultMiddleware();
+        $app = $this->makeApp();
         $app->singleton(ExceptionHandlerInterface::class, ContainerBoundHandler::class);
         $app->controllers([StubApiController::class]);
 
