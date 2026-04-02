@@ -51,9 +51,9 @@ readonly class ProviderBootstrapper
     }
 
     /**
-     * Build ReflectionClass instances for each discovered provider class.
+     * Build provider instances and their ReflectionClass, instantiating each class once.
      *
-     * @return array<array{class: string, reflection: \ReflectionClass}>
+     * @return array<array{instance: object, reflection: \ReflectionClass}>
      */
     private function reflectProviders(): array
     {
@@ -65,7 +65,7 @@ readonly class ProviderBootstrapper
             }
 
             $reflected[] = [
-                'class'      => $className,
+                'instance'   => new $className(),
                 'reflection' => new \ReflectionClass($className),
             ];
         }
@@ -80,8 +80,6 @@ readonly class ProviderBootstrapper
     private function runRegisterPhase(array $providers): void
     {
         foreach ($providers as $providerData) {
-            $provider = new $providerData['class']();
-
             foreach ($providerData['reflection']->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
                 if (empty($method->getAttributes(Singleton::class))) {
                     continue;
@@ -93,7 +91,7 @@ readonly class ProviderBootstrapper
                     continue;
                 }
 
-                $result = $method->invoke($provider, ...$this->resolveArgs($method));
+                $result = $method->invoke($providerData['instance'], ...$this->resolveArgs($method));
                 $this->container->instance($returnType->getName(), $result);
             }
         }
@@ -105,14 +103,12 @@ readonly class ProviderBootstrapper
     private function runBootPhase(array $providers): void
     {
         foreach ($providers as $providerData) {
-            $provider = new $providerData['class']();
-
             foreach ($providerData['reflection']->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
                 if (empty($method->getAttributes(Boots::class))) {
                     continue;
                 }
 
-                $method->invoke($provider, ...$this->resolveArgs($method));
+                $method->invoke($providerData['instance'], ...$this->resolveArgs($method));
             }
         }
     }

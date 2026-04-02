@@ -9,7 +9,7 @@ use Bingo\Attributes\Provider\ServiceProvider;
 #[ServiceProvider]
 class AppServiceProvider
 {
-    // Interface → concrete bindings go on the concrete class via #[Binds].
+    // Interface → concrete bindings belong on the interface via #[Bind(ConcreteClass::class)].
     // Use #[Singleton] here for third-party classes, config-driven construction,
-    // or anything that needs manual wiring.
+    // or anything the container cannot autowire on its own.
 }

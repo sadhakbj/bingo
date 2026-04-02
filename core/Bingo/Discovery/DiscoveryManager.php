@@ -23,7 +23,7 @@ use RecursiveIteratorIterator;
  */
 class DiscoveryManager
 {
-    private const META_FILE = 'meta.php';
+    private const META_FILE = 'meta';
 
     /** @var DiscovererInterface[] */
     private array $discoverers = [];
