@@ -11,6 +11,8 @@ class Database
 {
     private static ?Capsule $instance = null;
 
+
+
     public static function setup(DatabaseConfig $config): Capsule
     {
         if (self::$instance !== null) {

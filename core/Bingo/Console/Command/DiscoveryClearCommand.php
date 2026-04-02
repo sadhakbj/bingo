@@ -19,15 +19,17 @@ class DiscoveryClearCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $cachePath = base_path('storage/framework/discovery.php');
+        $cacheDir = base_path('storage/framework/discovery');
 
-        if (file_exists($cachePath)) {
-            unlink($cachePath);
+        if (is_dir($cacheDir)) {
+            foreach (glob($cacheDir . '/*.php') as $file) {
+                unlink($file);
+            }
             $output->writeln('<info>✓ Discovery cache cleared!</info>');
             $output->writeln('');
             $output->writeln('The cache will be rebuilt automatically on the next request.');
         } else {
-            $output->writeln('<comment>No cache file found.</comment>');
+            $output->writeln('<comment>No cache directory found.</comment>');
         }
 
         return Command::SUCCESS;

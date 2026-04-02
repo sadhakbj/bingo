@@ -4,35 +4,21 @@ declare(strict_types=1);
 
 namespace Bingo;
 
-use Bingo\Log\RequestContextProcessor;
-use Config\CorsConfig;
-use Config\DbConfig;
-use Config\LogConfig;
-use Bingo\Config\ConfigLoader;
-use Bingo\Config\DatabaseConfig;
+use Bingo\Bootstrap\ProviderBootstrapper;
 use Bingo\Container\Container;
 use Bingo\Contracts\ExceptionHandlerInterface;
 use Bingo\Contracts\HttpResponse;
-use Bingo\Database\Database;
 use Bingo\Exceptions\ExceptionHandler;
-use Bingo\Http\Middleware\CorsMiddleware;
 use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
-use Bingo\RateLimit\Contracts\RateLimiterStore;
-use Bingo\RateLimit\Store\FileStore;
 use Dotenv\Dotenv;
-use Bingo\Log\SlogTextFormatter;
-use Monolog\Formatter\JsonFormatter;
-use Monolog\Handler\RotatingFileHandler;
-use Monolog\Handler\StreamHandler;
-use Monolog\Level;
-use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
+use Bingo\Discovery\DiscoveryManager;
 
 class Application
 {
@@ -50,107 +36,45 @@ class Application
         $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
         $this->loadEnvironmentVariables();
 
-
-        $dbConfig = $this->bootDatabase();
-
         $this->container = new Container();
         $this->router    = new Router($this->container);
         $this->pipeline  = MiddlewarePipeline::create($this->container);
 
-        $this->container->instance(DatabaseConfig::class, $dbConfig);
-        $this->container->instance(RateLimiterStore::class, new FileStore(base_path('storage/rate-limit')));
+        // Make router and pipeline injectable so providers can receive them
+        $this->container->instance(Router::class, $this->router);
+        $this->container->instance(MiddlewarePipeline::class, $this->pipeline);
 
-        // Boot structured logging (Monolog, PSR-3).
-        // Override the logger in bootstrap/app.php:
-        //   $app->instance(\Psr\Log\LoggerInterface::class, $yourLogger);
-        $this->bootLogging();
+        $discovered = $this->bootDiscovery();
 
-        // Boot Eloquent with typed database config
-        Database::setup($dbConfig);
+        new ProviderBootstrapper(
+            container: $this->container,
+            bindings:  $discovered['bindings']  ?? [],
+            providers: $discovered['providers'] ?? [],
+        )->boot();
 
-        // Auto-discover controllers, commands, middleware
-        $this->bootDiscovery();
-
-        $this->setDefaultMiddleware();
-    }
-
-    private function bootLogging(): void
-    {
-        $cfg       = ConfigLoader::load(LogConfig::class);
-        $processor = new RequestContextProcessor();
-        $logger    = new Logger('bingo');
-
-        $level       = Level::fromName(ucfirst($cfg->level));
-        $stderrLevel = Level::fromName(ucfirst($cfg->stderrLevel));
-
-        $stderrHandler = new StreamHandler('php://stderr', $stderrLevel);
-        $fileHandler   = new RotatingFileHandler(base_path($cfg->path), 30, $level);
-
-        // Colors only when stderr is an interactive terminal — never in files or pipes
-        $isTerminal = defined('STDERR') && stream_isatty(\STDERR);
-
-        $stderrHandler->setFormatter(match ($cfg->format) {
-            'json'  => new JsonFormatter(),
-            default => new SlogTextFormatter(colors: $isTerminal, timeFormat: $cfg->timeFormat),
-        });
-        $fileHandler->setFormatter(match ($cfg->format) {
-            'json'  => new JsonFormatter(),
-            default => new SlogTextFormatter(colors: false, timeFormat: $cfg->timeFormat),
-        });
-
-        $logger->pushHandler($fileHandler);
-        $logger->pushHandler($stderrHandler);
-        $logger->pushProcessor($processor);
-
-        $this->container->instance(LoggerInterface::class, $logger);
-        $this->container->instance(RequestContextProcessor::class, $processor);
-    }
-
-    private function bootDatabase(): DatabaseConfig
-    {
-        /** @var DbConfig $dbConfig */
-        $dbConfig    = ConfigLoader::load(DbConfig::class);
-        $defaultName = $dbConfig->default;
-
-        $connections = [];
-        foreach ($dbConfig->connections as $name => $driverClass) {
-            $connections[$name] = ConfigLoader::load($driverClass);
-        }
-
-        if (!isset($connections[$defaultName])) {
-            throw new \InvalidArgumentException(
-                "DB_CONNECTION is set to '{$defaultName}' but it is not listed in DbConfig::\$connections."
-            );
-        }
-
-        return new DatabaseConfig($defaultName, $connections);
-    }
-
-    /**
-     * Auto-discover controllers, commands, and other components via attributes.
-     *
-     * In development, rebuilds cache when files change (filemtime check).
-     * In production, requires pre-built cache (fail-fast if missing).
-     */
-    private function bootDiscovery(): void
-    {
-        $manager = new \Bingo\Discovery\DiscoveryManager(
-            cachePath: base_path('storage/framework/discovery.php'),
-            appPath: base_path('app'),
-            isProduction: env('APP_ENV', 'development') === 'production',
-        );
-
-        $discovered = $manager->load();
-
-        // Register discovered controllers
         if (!empty($discovered['controllers'])) {
             $this->router->registerFromCache($discovered['controllers']);
         }
 
-        // Store discovered commands for console kernel (accessed via getDiscoveredCommands())
         if (!empty($discovered['commands'])) {
             $this->discoveredCommands = $discovered['commands'];
         }
+    }
+
+    /**
+     * Load the discovery cache (or rebuild in dev when files change).
+     * Returns the full discovered metadata array.
+     */
+    private function bootDiscovery(): array
+    {
+        $manager = new DiscoveryManager(
+            cacheDir:      base_path('storage/framework/discovery'),
+            appPath:       base_path('app'),
+            coreBingoPath: __DIR__,
+            isProduction:  env('APP_ENV', 'development') === 'production',
+        );
+
+        return $manager->load();
     }
 
     private function loadEnvironmentVariables(): void
@@ -260,17 +184,6 @@ class Application
         $request  = Request::createFromGlobals();
         $response = $this->handle($request);
         $response->send();
-    }
-
-    /**
-     * Set default middleware for API applications
-     */
-    private function setDefaultMiddleware(): void
-    {
-        $cors = CorsMiddleware::fromConfig(ConfigLoader::load(CorsConfig::class));
-
-        $this->pipeline = MiddlewarePipeline::defaults($cors);
-        $this->pipeline->setContainer($this->container);
     }
 
     /**

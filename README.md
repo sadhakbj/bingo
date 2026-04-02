@@ -37,6 +37,10 @@ Built from scratch on top of Symfony's HTTP, Routing, Validator, Console, and DI
   - [Response Headers](#response-headers)
 - [DTOs and Validation](#dtos-and-validation)
 - [Dependency Injection](#dependency-injection)
+  - [Zero Configuration Resolution](#zero-configuration-resolution)
+  - [Binding Interfaces to Implementations](#binding-interfaces-to-implementations)
+  - [Service Providers](#service-providers)
+  - [Explicit Bindings in bootstrap/app.php](#explicit-bindings-in-bootstrapappphp)
 - [Logging](#logging)
 - [Exception Handling](#exception-handling)
 - [Eloquent ORM](#eloquent-orm)
@@ -946,18 +950,115 @@ return Response::json(
 
 ## Dependency Injection
 
-The DI container automatically resolves concrete classes with typed constructors — no registration needed for the common case:
+### Zero Configuration Resolution
+
+Concrete classes with typed constructors are resolved automatically — no registration needed:
 
 ```php
 #[ApiController('/users')]
 class UsersController
 {
-    // UserService is resolved and injected automatically
-    public function __construct(private readonly UserService $userService) {}
+    // UserService and LoggerInterface are resolved and injected automatically
+    public function __construct(
+        private readonly UserService $userService,
+        private readonly LoggerInterface $logger,
+    ) {}
 }
 ```
 
-Register explicit bindings in `bootstrap/app.php` for interfaces or shared instances:
+`AppConfig`, `DatabaseConfig`, and `LoggerInterface` are pre-registered by the framework and injectable anywhere without setup.
+
+**Resolution order:** pre-built instances → registered singletons/bindings → reflection fallback.
+
+---
+
+### Binding Interfaces to Implementations
+
+When a constructor type-hints an interface, the container needs to know which concrete class to inject. Place `#[Bind]` on the **interface** — the interface owns the binding decision:
+
+```php
+// app/Repositories/IUserRepository.php
+use Bingo\Attributes\Provider\Bind;
+
+#[Bind(UserRepository::class)]
+interface IUserRepository
+{
+    public function findById(int $id): ?User;
+    public function all(): iterable;
+}
+```
+
+```php
+// app/Repositories/UserRepository.php — clean, no attributes needed
+class UserRepository implements IUserRepository
+{
+    public function findById(int $id): ?User { return User::find($id); }
+    public function all(): iterable { return User::all(); }
+}
+```
+
+The framework scans `app/` automatically and registers the binding. Any class that type-hints `IUserRepository` receives `UserRepository` without any wiring in `bootstrap/app.php`.
+
+**To swap implementations** — change one line on the interface, nothing else:
+
+```php
+#[Bind(RedisUserRepository::class)]   // ← was UserRepository::class
+interface IUserRepository { ... }
+```
+
+**Singleton vs transient** — default is singleton (one shared instance). Opt out explicitly:
+
+```php
+#[Bind(UserRepository::class, singleton: false)]   // new instance per resolution
+interface IUserRepository { ... }
+```
+
+---
+
+### Service Providers
+
+Service providers wire things that need manual construction — third-party classes, config-driven setup, or anything the container cannot autowire on its own. Place them in `app/Providers/` and mark with `#[ServiceProvider]`.
+
+```php
+// app/Providers/AppServiceProvider.php
+use Bingo\Attributes\Provider\ServiceProvider;
+use Bingo\Attributes\Provider\Singleton;
+use Bingo\Attributes\Provider\Boots;
+
+#[ServiceProvider]
+class AppServiceProvider
+{
+    // #[Singleton] — return type becomes the container key, result is shared
+    #[Singleton]
+    public function stripeClient(): StripeClient
+    {
+        return new StripeClient(env('STRIPE_KEY'));
+    }
+
+    // #[Boots] — runs after all singletons are registered; use for side-effects
+    #[Boots]
+    public function boot(StripeClient $stripe): void
+    {
+        $stripe->setApiVersion('2024-06-20');
+    }
+}
+```
+
+| Attribute | Target | Purpose |
+|-----------|--------|---------|
+| `#[ServiceProvider]` | class | Marks the class for auto-discovery |
+| `#[Singleton]` | method | Return value registered as a shared singleton; return type is the container key |
+| `#[Boots]` | method | Runs after all `#[Singleton]` methods across all providers; return value ignored |
+
+**Execution order:** all `#[Singleton]` methods run first (across all providers), then all `#[Boots]` methods. This guarantees every singleton is available when boot runs.
+
+Parameters on `#[Singleton]` and `#[Boots]` methods are resolved from the container — type-hint whatever you need.
+
+---
+
+### Explicit Bindings in bootstrap/app.php
+
+For one-off wiring that doesn't belong in a provider:
 
 ```php
 // Interface → concrete (shared singleton)
@@ -969,10 +1070,6 @@ $app->bind(ReportBuilder::class);
 // Pre-built object — bypasses the container entirely
 $app->instance(PaymentConfig::class, new PaymentConfig(key: env('STRIPE_KEY')));
 ```
-
-**Resolution order:** pre-built instances → registered singletons/bindings → reflection fallback.
-
-`AppConfig` and `DatabaseConfig` are pre-registered by the framework and available for injection everywhere without any setup.
 
 ---
 

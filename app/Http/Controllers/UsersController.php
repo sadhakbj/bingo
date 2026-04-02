@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\DTOs\CreateUserDTO;
 use App\Http\Middleware\AuthMiddleware;
 use App\Models\User;
+use App\Repositories\IUserRepository;
 use App\Services\UserService;
 use Bingo\Attributes\Middleware;
 use Bingo\Attributes\Route\{
@@ -27,19 +28,19 @@ use Bingo\Http\{Request, Response, Sse\StreamedEvent, StreamedResponse};
 use Symfony\Component\HttpFoundation\File\UploadedFile as File;
 
 #[ApiController('/users')]
-#[Middleware([AuthMiddleware::class])]
 readonly class UsersController
 {
-    public function __construct(private UserService $userService, private LoggerInterface $logger)
+    public function __construct(private UserService $userService, private IUserRepository $userRepo)
     {
     }
 
     #[Get('/')]
     public function index(): Response
     {
+        $users = $this->userRepo->all();
         return Response::json([
             'message' => 'List of users',
-            'users' => User::all()->toArray()
+            'users' => $users
         ]);
     }
 
