@@ -6,22 +6,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Middleware\AuthMiddleware;
 use App\Models\User;
-use App\Services\GreetingService;
 use Bingo\Attributes\Middleware;
-use Bingo\Attributes\Route\Param;
 use Bingo\Attributes\Route\Route;
 use Bingo\Http\Response;
 use Bingo\Attributes\Route\Throttle;
 
-class HomeController
+final class HomeController
 {
-    public function __construct(private readonly GreetingService $greetingService) {}
+    public function __construct() {}
 
-    #[Route('/greet/{name}', 'GET')]
-    public function greet(#[Param('name')] string $name): Response
-    {
-        return Response::json(['message' => $this->greetingService->greet($name)]);
-    }
 
     #[Route('/', 'GET')]
     #[Throttle(requests: 1, per: 60)]

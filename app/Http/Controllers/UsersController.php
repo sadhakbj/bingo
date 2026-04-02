@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\DTOs\CreateUserDTO;
-use App\Http\Middleware\AuthMiddleware;
-use App\Models\User;
 use App\Repositories\IUserRepository;
 use App\Services\UserService;
-use Bingo\Attributes\Middleware;
 use Bingo\Attributes\Route\{
     ApiController,
     Body,
@@ -23,7 +20,6 @@ use Bingo\Attributes\Route\{
     UploadedFiles
 };
 use Bingo\DTOs\Http\ApiResponse;
-use Psr\Log\LoggerInterface;
 use Bingo\Http\{Request, Response, Sse\StreamedEvent, StreamedResponse};
 use Symfony\Component\HttpFoundation\File\UploadedFile as File;
 

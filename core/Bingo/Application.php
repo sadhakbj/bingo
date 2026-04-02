@@ -8,17 +8,19 @@ use Bingo\Bootstrap\ProviderBootstrapper;
 use Bingo\Container\Container;
 use Bingo\Contracts\ExceptionHandlerInterface;
 use Bingo\Contracts\HttpResponse;
+use Bingo\Discovery\DiscoveryManager;
 use Bingo\Exceptions\ExceptionHandler;
 use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
+use Bingo\Config\ConfigLoader;
+use Config\AppConfig;
 use Dotenv\Dotenv;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
-use Bingo\Discovery\DiscoveryManager;
 
 class Application
 {
@@ -30,11 +32,13 @@ class Application
 
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
     private array $discoveredCommands = [];
+    private AppConfig $appConfig;
 
     public function __construct(string $basePath)
     {
         $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
         $this->loadEnvironmentVariables();
+        $this->appConfig = ConfigLoader::load(AppConfig::class);
 
         $this->container = new Container();
         $this->router    = new Router($this->container);
@@ -71,7 +75,7 @@ class Application
             cacheDir:      base_path('storage/framework/discovery'),
             appPath:       base_path('app'),
             coreBingoPath: __DIR__,
-            isProduction:  env('APP_ENV', 'development') === 'production',
+            isProduction:  $this->appConfig->env === 'production',
         );
 
         return $manager->load();
@@ -234,14 +238,6 @@ class Application
     }
 
     /**
-     * Get the middleware pipeline
-     */
-    public function getPipeline(): MiddlewarePipeline
-    {
-        return $this->pipeline;
-    }
-
-    /**
      * Application factory method
      */
     public static function create(string $basePath): self
@@ -258,27 +254,19 @@ class Application
     }
 
     /**
-     * Get environment variable with default
-     */
-    public function env(string $key, mixed $default = null): mixed
-    {
-        return $_ENV[$key] ?? $default;
-    }
-
-    /**
-     * Get current environment
+     * Get current environment (e.g. "development", "production").
      */
     public function environment(): string
     {
-        return (string) $this->env('APP_ENV', 'development');
+        return $this->appConfig->env;
     }
 
     /**
-     * Check if application is in debug mode
+     * Check if application is in debug mode.
      */
     public function isDebug(): bool
     {
-        return (bool) env('APP_DEBUG', false);
+        return $this->appConfig->debug;
     }
 
 }

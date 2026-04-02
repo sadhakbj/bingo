@@ -35,7 +35,7 @@ final class RedisStore implements RateLimiterStore
      * TTL is 2× the window so the previous window survives for the
      * sliding-window weighted estimate.
      */
-    private const INCR_SCRIPT = <<<'LUA'
+    private const string INCR_SCRIPT = <<<'LUA'
         local count = redis.call('INCR', KEYS[1])
         if count == 1 then
             redis.call('EXPIRE', KEYS[1], ARGV[1])
@@ -43,7 +43,7 @@ final class RedisStore implements RateLimiterStore
         return count
         LUA;
 
-    private const PREFIX = 'bingo_rl';
+    private const string PREFIX = 'bingo_rl';
 
     public function __construct(private readonly Redis $redis) {}
 

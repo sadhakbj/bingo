@@ -12,8 +12,8 @@ use Bingo\Attributes\Config\Env;
  * Global limits are driven by these env vars.
  * Per-route / per-controller limits use the #[Throttle] attribute.
  *
- * Redis is the only supported store — it is the only backend that
- * works correctly across multiple processes, containers, or pods.
+ * RATE_LIMIT_DRIVER=redis  → RedisStore (requires ext-redis; works across processes/pods)
+ * RATE_LIMIT_DRIVER=file   → FileStore  (single-process only; good for local dev)
  */
 final readonly class RateLimitConfig
 {
@@ -22,8 +22,12 @@ final readonly class RateLimitConfig
         #[Env('RATE_LIMIT_ENABLED', default: true)]
         public bool $enabled,
 
+            /** "redis" or "file". Defaults to "file" so dev works with zero setup. */
+        #[Env('RATE_LIMIT_DRIVER', default: 'file')]
+        public string $driver,
+
             /** Maximum requests per IP within the window. */
-        #[Env('RATE_LIMIT_MAX_REQUESTS', default: 1)]
+        #[Env('RATE_LIMIT_REQUESTS', default: 100)]
         public int $maxRequests,
 
             /** Sliding-window length in seconds. */

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bingo\Providers;
 
-use Bingo\Attributes\Provider\Boots;
 use Bingo\Attributes\Provider\ServiceProvider;
 use Bingo\Attributes\Provider\Singleton;
 use Bingo\Config\ConfigLoader;
@@ -39,7 +38,6 @@ class DatabaseServiceProvider
         return new DatabaseConfig($defaultName, $connections);
     }
 
-    #[Boots]
     public function boot(DatabaseConfig $config): void
     {
         Database::setup($config);

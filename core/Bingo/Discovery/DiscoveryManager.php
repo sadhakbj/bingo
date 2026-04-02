@@ -115,7 +115,10 @@ class DiscoveryManager
     }
 
     /**
-     * Cache is valid when meta.php exists and no app/ file is newer than it.
+     * Cache is valid when meta.php exists and no watched file is newer than it.
+     *
+     * Watches app/ (controllers, bindings, providers) and core/Bingo/Providers/
+     * so that changes to core providers also trigger a rebuild in development.
      */
     private function isCacheValid(): bool
     {
@@ -125,15 +128,21 @@ class DiscoveryManager
             return false;
         }
 
-        $cacheTime = filemtime($metaPath);
+        $cacheTime    = filemtime($metaPath);
+        $watchedPaths = array_filter([
+            $this->appPath,
+            $this->coreBingoPath . DIRECTORY_SEPARATOR . 'Providers',
+        ], 'is_dir');
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($this->appPath, RecursiveDirectoryIterator::SKIP_DOTS),
-        );
+        foreach ($watchedPaths as $path) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
+            );
 
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php' && $file->getMTime() > $cacheTime) {
-                return false;
+            foreach ($iterator as $file) {
+                if ($file->isFile() && $file->getExtension() === 'php' && $file->getMTime() > $cacheTime) {
+                    return false;
+                }
             }
         }
 

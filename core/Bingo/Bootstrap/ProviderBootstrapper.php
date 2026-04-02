@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bingo\Bootstrap;
 
-use Bingo\Attributes\Provider\Boots;
 use Bingo\Attributes\Provider\Singleton;
 use Bingo\Container\Container;
 
@@ -98,18 +97,17 @@ readonly class ProviderBootstrapper
     }
 
     /**
-     * Boot phase: run all #[Boots] methods after all services are registered.
+     * Boot phase: call boot() on each provider after all singletons are registered.
      */
     private function runBootPhase(array $providers): void
     {
         foreach ($providers as $providerData) {
-            foreach ($providerData['reflection']->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-                if (empty($method->getAttributes(Boots::class))) {
-                    continue;
-                }
-
-                $method->invoke($providerData['instance'], ...$this->resolveArgs($method));
+            if (!$providerData['reflection']->hasMethod('boot')) {
+                continue;
             }
+
+            $method = $providerData['reflection']->getMethod('boot');
+            $method->invoke($providerData['instance'], ...$this->resolveArgs($method));
         }
     }
 
