@@ -15,7 +15,7 @@ use Bingo\Http\Response;
  * When `core/` is consumed as a separate Composer package, you customize errors here
  * (or replace this class entirely). Wire it from bootstrap/app.php, for example:
  *
- *   $app->exceptionHandler(new Handler($app->isDebug()));
+ *   $app->exceptionHandler(new Handler($app->debug));
  *
  * Or register via the container (see README) so you can inject services into this class.
  */

@@ -4,260 +4,95 @@ declare(strict_types=1);
 
 namespace Bingo;
 
-use Bingo\Http\Middleware\BodyParserMiddleware;
-use Bingo\Http\Middleware\CorsMiddleware;
-use Bingo\Log\RequestContextProcessor;
-use Config\AppConfig;
-use Config\CorsConfig;
-use Config\DbConfig;
-use Config\LogConfig;
+use Bingo\Bootstrap\ProviderBootstrapper;
 use Bingo\Config\ConfigLoader;
-use Bingo\Config\DatabaseConfig;
 use Bingo\Container\Container;
 use Bingo\Contracts\ExceptionHandlerInterface;
 use Bingo\Contracts\HttpResponse;
-use Bingo\Database\Database;
+use Bingo\Discovery\DiscoveryManager;
 use Bingo\Exceptions\ExceptionHandler;
 use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
-use Bingo\RateLimit\Contracts\RateLimiterStore;
-use Bingo\RateLimit\RateLimiter;
-use Bingo\RateLimit\Store\FileStore;
-use Bingo\RateLimit\Store\RedisStore;
-use Config\RateLimitConfig;
+use Config\AppConfig;
 use Dotenv\Dotenv;
-use Bingo\Log\SlogTextFormatter;
-use Monolog\Formatter\JsonFormatter;
-use Monolog\Handler\RotatingFileHandler;
-use Monolog\Handler\StreamHandler;
-use Monolog\Level;
-use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse;
 
 class Application
 {
+    public readonly string $basePath;
+    public private(set) Router $router;
+
+    public string $environment { get => $this->appConfig->env; }
+    public bool   $debug       { get => $this->appConfig->debug; }
+
     private Container $container;
-    private Router $router;
     private MiddlewarePipeline $pipeline;
     private array $controllers = [];
-    private array $config = [];
-    private string $basePath;
-
-    private AppConfig $appConfig;
-    private DatabaseConfig $dbConfig;
-    private RateLimitConfig $rateLimitConfig;
-    private CorsConfig $corsConfig;
-
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
     private array $discoveredCommands = [];
+    private AppConfig $appConfig;
 
-    public function __construct(array $config = [])
+    /**
+     * @throws \ReflectionException
+     */
+    public function __construct(string $basePath)
     {
-        // Determine base path (where composer.json is located)
-        $this->basePath = $this->findBasePath();
-
-        // Load environment variables automatically
+        $this->basePath  = rtrim($basePath, DIRECTORY_SEPARATOR);
         $this->loadEnvironmentVariables();
-
-        $this->config = array_merge([
-            'default_middleware' => true,
-        ], $config);
-
-        // Build typed config objects — #[Env] attributes drive the wiring
-        $this->appConfig       = ConfigLoader::load(AppConfig::class);
-        $this->dbConfig        = $this->bootDatabase();
-        $this->rateLimitConfig = ConfigLoader::load(RateLimitConfig::class);
-        $this->corsConfig      = ConfigLoader::load(CorsConfig::class);
+        $this->appConfig = ConfigLoader::load(AppConfig::class);
 
         $this->container = new Container();
         $this->router    = new Router($this->container);
         $this->pipeline  = MiddlewarePipeline::create($this->container);
 
-        // Register config instances so they are injectable everywhere
-        $this->container->instance(AppConfig::class, $this->appConfig);
-        $this->container->instance(DatabaseConfig::class, $this->dbConfig);
-        $this->container->instance(RateLimitConfig::class, $this->rateLimitConfig);
-        $this->container->instance(CorsConfig::class, $this->corsConfig);
+        $this->container->instance(Router::class, $this->router);
+        $this->container->instance(MiddlewarePipeline::class, $this->pipeline);
 
-        // Wire rate limiting from config.
-        // Override the store or the entire middleware in bootstrap/app.php after Application::create():
-        //   $app->instance(RateLimiterStore::class, new RedisStore(...));
-        //   $app->instance(RateLimitMiddleware::class, RateLimitMiddleware::create($limiter, 200, 60));
-        $this->bootRateLimiting();
+        $discovered = $this->bootDiscovery();
 
-        // Boot structured logging (Monolog, PSR-3).
-        // Override the logger in bootstrap/app.php:
-        //   $app->instance(\Psr\Log\LoggerInterface::class, $yourLogger);
-        $this->bootLogging();
+        new ProviderBootstrapper(
+            container: $this->container,
+            bindings:  $discovered['bindings']  ?? [],
+            providers: $discovered['providers'] ?? [],
+        )->boot();
 
-        // Boot Eloquent with typed database config
-        Database::setup($this->dbConfig);
-
-        // Auto-discover controllers, commands, middleware
-        $this->bootDiscovery();
-
-        if ($this->config['default_middleware']) {
-            $this->setDefaultMiddleware();
-        }
-    }
-
-    private function bootRateLimiting(): void
-    {
-        $cfg = $this->rateLimitConfig;
-
-        // Redis in production; FileStore as a local-dev fallback.
-        // InMemoryStore is NOT used — it resets on every request under php -S
-        // because the built-in server spawns a new process per request.
-        $store = extension_loaded('redis')
-            ? RedisStore::fromConfig(
-                host:     $cfg->redisHost,
-                port:     $cfg->redisPort,
-                password: $cfg->redisPassword,
-                db:       $cfg->redisDb,
-            )
-            : new FileStore(base_path('storage/rate-limit'));
-
-        $limiter = new RateLimiter($store);
-
-        $this->container->instance(RateLimiterStore::class, $store);
-        $this->container->instance(RateLimiter::class, $limiter);
-
-        if ($cfg->enabled) {
-            $this->container->instance(
-                \Bingo\Http\Middleware\RateLimitMiddleware::class,
-                \Bingo\Http\Middleware\RateLimitMiddleware::create($limiter, $cfg->maxRequests, $cfg->window),
-            );
-        }
-    }
-
-    private function bootLogging(): void
-    {
-        $cfg       = ConfigLoader::load(LogConfig::class);
-        $processor = new RequestContextProcessor();
-        $logger    = new Logger('bingo');
-
-        $level       = Level::fromName(ucfirst($cfg->level));
-        $stderrLevel = Level::fromName(ucfirst($cfg->stderrLevel));
-
-        $stderrHandler = new StreamHandler('php://stderr', $stderrLevel);
-        $fileHandler   = new RotatingFileHandler(base_path($cfg->path), 30, $level);
-
-        // Colors only when stderr is an interactive terminal — never in files or pipes
-        $isTerminal = defined('STDERR') && stream_isatty(\STDERR);
-
-        $stderrHandler->setFormatter(match ($cfg->format) {
-            'json'  => new JsonFormatter(),
-            default => new SlogTextFormatter(colors: $isTerminal, timeFormat: $cfg->timeFormat),
-        });
-        $fileHandler->setFormatter(match ($cfg->format) {
-            'json'  => new JsonFormatter(),
-            default => new SlogTextFormatter(colors: false, timeFormat: $cfg->timeFormat),
-        });
-
-        $logger->pushHandler($fileHandler);
-        $logger->pushHandler($stderrHandler);
-        $logger->pushProcessor($processor);
-
-        $this->container->instance(LoggerInterface::class, $logger);
-        $this->container->instance(RequestContextProcessor::class, $processor);
-    }
-
-    private function bootDatabase(): DatabaseConfig
-    {
-        /** @var DbConfig $dbConfig */
-        $dbConfig    = ConfigLoader::load(DbConfig::class);
-        $defaultName = $dbConfig->default;
-
-        $connections = [];
-        foreach ($dbConfig->connections as $name => $driverClass) {
-            $connections[$name] = ConfigLoader::load($driverClass);
-        }
-
-        if (!isset($connections[$defaultName])) {
-            throw new \InvalidArgumentException(
-                "DB_CONNECTION is set to '{$defaultName}' but it is not listed in DbConfig::\$connections."
-            );
-        }
-
-        return new DatabaseConfig($defaultName, $connections);
-    }
-
-    /**
-     * Auto-discover controllers, commands, and other components via attributes.
-     *
-     * In development, rebuilds cache when files change (filemtime check).
-     * In production, requires pre-built cache (fail-fast if missing).
-     */
-    private function bootDiscovery(): void
-    {
-        $manager = new \Bingo\Discovery\DiscoveryManager(
-            cachePath: base_path('storage/framework/discovery.php'),
-            appPath: base_path('app'),
-            isProduction: $this->appConfig->env === 'production',
-        );
-
-        $discovered = $manager->load();
-
-        // Register discovered controllers
         if (!empty($discovered['controllers'])) {
             $this->router->registerFromCache($discovered['controllers']);
         }
 
-        // Store discovered commands for console kernel (accessed via getDiscoveredCommands())
         if (!empty($discovered['commands'])) {
             $this->discoveredCommands = $discovered['commands'];
         }
     }
 
+    private function bootDiscovery(): array
+    {
+        $manager = new DiscoveryManager(
+            cacheDir:      base_path('storage/framework/discovery'),
+            appPath:       base_path('app'),
+            coreBingoPath: __DIR__,
+            isProduction:  $this->appConfig->env === 'production',
+        );
+
+        return $manager->load();
+    }
+
     private function loadEnvironmentVariables(): void
     {
-        try {
-            $dotenv = Dotenv::createImmutable($this->basePath);
-            $dotenv->safeLoad();
-        } catch (\Exception $e) {
-            // .env file is optional, so we don't fail if it's missing
-        }
+        Dotenv::createImmutable($this->basePath)->load();
     }
 
-    /**
-     * Find the base path of the application
-     */
-    private function findBasePath(): string
-    {
-        $currentDir = __DIR__;
-
-        // Walk up directories until we find composer.json
-        while (!file_exists($currentDir . '/composer.json')) {
-            $parentDir = dirname($currentDir);
-
-            // Prevent infinite loop
-            if ($parentDir === $currentDir) {
-                return dirname(__DIR__); // Fallback to framework parent dir
-            }
-
-            $currentDir = $parentDir;
-        }
-
-        return $currentDir;
-    }
-
-    /**
-     * Intuitive use() method to add middleware
-     */
     public function use($middleware): self
     {
         $this->pipeline->use($middleware);
         return $this;
     }
 
-    /**
-     * Register a controller
-     */
     public function controller(string $controllerClass): self
     {
         $this->controllers[] = $controllerClass;
@@ -265,9 +100,6 @@ class Application
         return $this;
     }
 
-    /**
-     * Register multiple controllers
-     */
     public function controllers(array $controllers): self
     {
         foreach ($controllers as $controller) {
@@ -276,9 +108,6 @@ class Application
         return $this;
     }
 
-    /**
-     * Handle HTTP request
-     */
     public function handle(Request $request): HttpResponse
     {
         try {
@@ -311,14 +140,9 @@ class Application
         }
     }
 
-    /**
-     * Override the default exception → JSON mapping (highest priority).
-     * Also accepts container binding: singleton(ExceptionHandlerInterface::class, ...).
-     */
     public function exceptionHandler(ExceptionHandlerInterface $handler): self
     {
         $this->customExceptionHandler = $handler;
-
         return $this;
     }
 
@@ -336,12 +160,9 @@ class Application
             ? $this->container->make(LoggerInterface::class)
             : null;
 
-        return new ExceptionHandler($this->isDebug(), $logger);
+        return new ExceptionHandler($this->debug, $logger);
     }
 
-    /**
-     * Run the application
-     */
     public function run(): void
     {
         $this->container->compile();
@@ -350,132 +171,41 @@ class Application
         $response->send();
     }
 
-    /**
-     * Set default middleware for API applications
-     */
-    private function setDefaultMiddleware(): void
-    {
-        if ($this->appConfig->env === 'production') {
-            $this->pipeline = MiddlewarePipeline::productionApi([
-                'allowed_origins' => $this->corsConfig->getAllowedOrigins()
-            ]);
-        } else {
-            $this->pipeline = MiddlewarePipeline::defaultApi();
-        }
-
-        // Static factories use `new self()` internally — re-inject the container
-        $this->pipeline->setContainer($this->container);
-    }
-
-    /**
-     * Register a singleton — one shared instance for the entire lifecycle.
-     * $app->singleton(UserService::class);
-     * $app->singleton(CacheInterface::class, RedisCache::class);
-     */
     public function singleton(string $abstract, ?string $concrete = null): self
     {
         $this->container->singleton($abstract, $concrete);
         return $this;
     }
 
-    /**
-     * Register a transient binding — new instance per resolution.
-     * $app->bind(MailerInterface::class, SmtpMailer::class);
-     */
     public function bind(string $abstract, ?string $concrete = null): self
     {
         $this->container->bind($abstract, $concrete);
         return $this;
     }
 
-    /**
-     * Register a pre-built object instance.
-     * $app->instance(Config::class, new Config([...]));
-     */
     public function instance(string $abstract, object $instance): self
     {
         $this->container->instance($abstract, $instance);
         return $this;
     }
 
-    /**
-     * Get discovered commands for registration in console kernel.
-     */
-    public function getDiscoveredCommands(): array
-    {
-        return $this->discoveredCommands;
-    }
-
-    /**
-     * Resolve a class from the container.
-     */
     public function make(string $abstract): mixed
     {
         return $this->container->make($abstract);
     }
 
-    /**
-     * Get the router instance
-     */
-    public function getRouter(): Router
-    {
-        return $this->router;
-    }
-
-    /**
-     * Get the middleware pipeline
-     */
-    public function getPipeline(): MiddlewarePipeline
-    {
-        return $this->pipeline;
-    }
-
-    /**
-     * Application factory method
-     */
-    public static function create(array $config = []): self
-    {
-        return new self($config);
-    }
-
-    /**
-     * Get application configuration
-     */
-    public function getConfig(): array
-    {
-        return $this->config;
-    }
-
-    /**
-     * Get the base path of the application
-     */
     public function basePath(string $path = ''): string
     {
         return $this->basePath . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : '');
     }
 
-    /**
-     * Get environment variable with default
-     */
-    public function env(string $key, mixed $default = null): mixed
+    public static function create(string $basePath): self
     {
-        return $_ENV[$key] ?? $default;
+        return new self($basePath);
     }
 
-    /**
-     * Get current environment
-     */
-    public function environment(): string
+    public function getDiscoveredCommands(): array
     {
-        return $this->appConfig->env;
+        return $this->discoveredCommands;
     }
-
-    /**
-     * Check if application is in debug mode
-     */
-    public function isDebug(): bool
-    {
-        return $this->appConfig->debug;
-    }
-
 }

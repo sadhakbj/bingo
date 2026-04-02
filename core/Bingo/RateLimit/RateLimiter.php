@@ -18,9 +18,9 @@ use Bingo\RateLimit\Contracts\RateLimiterStore;
  * If estimated_rate ≥ limit the request is denied; otherwise the current
  * window counter is incremented and the request is allowed.
  */
-class RateLimiter
+readonly class RateLimiter
 {
-    public function __construct(private readonly RateLimiterStore $store) {}
+    public function __construct(private RateLimiterStore $store) {}
 
     /**
      * Record a hit and return the result.

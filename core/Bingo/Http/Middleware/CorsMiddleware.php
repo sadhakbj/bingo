@@ -8,6 +8,7 @@ use Bingo\Contracts\HttpResponse;
 use Bingo\Contracts\MiddlewareInterface;
 use Bingo\Http\Request;
 use Bingo\Http\Response as BingoResponse;
+use Config\CorsConfig;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class CorsMiddleware implements MiddlewareInterface
@@ -133,34 +134,29 @@ class CorsMiddleware implements MiddlewareInterface
     }
 
     /**
-     * Create CORS middleware with Express.js style configuration
+     * Build from a typed CorsConfig — all user-configured values are respected.
+     */
+    public static function fromConfig(CorsConfig $config): self
+    {
+        return new self([
+            'allowed_origins'  => $config->getAllowedOrigins(),
+            'allowed_methods'  => array_map('trim', explode(',', $config->allowedMethods)),
+            'allowed_headers'  => $config->allowedHeaders === '*'
+                ? ['*']
+                : array_map('trim', explode(',', $config->allowedHeaders)),
+            'exposed_headers'  => $config->exposedHeaders !== ''
+                ? array_map('trim', explode(',', $config->exposedHeaders))
+                : [],
+            'allow_credentials' => $config->supportsCredentials,
+            'max_age'           => $config->maxAge,
+        ]);
+    }
+
+    /**
+     * Create CORS middleware with a raw config array (escape hatch).
      */
     public static function create(array $config = []): self
     {
         return new self($config);
-    }
-
-    /**
-     * Default CORS configuration for development
-     */
-    public static function development(): self
-    {
-        return new self([
-            'allowed_origins' => ['*'],
-            'allow_credentials' => false,
-        ]);
-    }
-
-    /**
-     * Restrictive CORS configuration for production
-     */
-    public static function production(array $allowedOrigins): self
-    {
-        return new self([
-            'allowed_origins' => $allowedOrigins,
-            'allow_credentials' => true,
-            'allowed_headers' => ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-            'max_age' => 3600, // 1 hour
-        ]);
     }
 }

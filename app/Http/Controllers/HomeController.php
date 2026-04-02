@@ -11,11 +11,10 @@ use Bingo\Attributes\Route\Route;
 use Bingo\Http\Response;
 use Bingo\Attributes\Route\Throttle;
 
-class HomeController
+final class HomeController
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
+
 
     #[Route('/', 'GET')]
     #[Throttle(requests: 1, per: 60)]

@@ -19,7 +19,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Bingo\Application;
 
-$app = Application::create();
+$app = Application::create(dirname(__DIR__));
 
 /*
 |--------------------------------------------------------------------------
@@ -116,7 +116,7 @@ if (PHP_SAPI === 'cli-server') {
 |
 */
 
-$app->exceptionHandler(new \App\Exceptions\Handler($app->isDebug()));
+$app->exceptionHandler(new \App\Exceptions\Handler($app->debug));
 
 /*
 |--------------------------------------------------------------------------

@@ -118,38 +118,19 @@ class MiddlewarePipeline
     }
 
     /**
-     * Create default API middleware pipeline (like Express.js defaults)
+     * Build the default middleware stack.
+     * The caller is responsible for constructing the CorsMiddleware instance
+     * (typically via CorsMiddleware::fromConfig()) so all user config is respected.
      */
-    public static function defaultApi(): self
+    public static function defaults(CorsMiddleware $cors): self
     {
         $pipeline = new self();
 
-        // Add common API middleware
-        $pipeline->addGlobal(CorsMiddleware::development());
+        $pipeline->addGlobal($cors);
         $pipeline->addGlobal(BodyParserMiddleware::json());
         $pipeline->addGlobal(CompressionMiddleware::create());
         $pipeline->addGlobal(SecurityHeadersMiddleware::create());
         $pipeline->addGlobal(RequestIdMiddleware::create());
-
-        return $pipeline;
-    }
-
-    /**
-     * Create production API middleware pipeline
-     */
-    public static function productionApi(array $corsConfig = []): self
-    {
-        $pipeline = new self();
-
-        // Add production middleware with tighter security
-        $pipeline->addGlobal(CorsMiddleware::production($corsConfig['allowed_origins'] ?? []));
-        $pipeline->addGlobal(BodyParserMiddleware::production());
-        $pipeline->addGlobal(CompressionMiddleware::create(['level' => 6]));
-        $pipeline->addGlobal(SecurityHeadersMiddleware::production());
-        $pipeline->addGlobal(RequestIdMiddleware::create());
-        // Class-string resolved lazily at request time via the DI container,
-        // so the bound RateLimiterStore (FileStore in dev, RedisStore in prod) is used.
-        $pipeline->addGlobal(RateLimitMiddleware::class);
 
         return $pipeline;
     }

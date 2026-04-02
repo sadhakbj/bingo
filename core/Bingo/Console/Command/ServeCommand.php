@@ -37,7 +37,7 @@ class ServeCommand extends Command
         // ── Boot log ─────────────────────────────────────────────────────────
         $this->log($output, 'LOG', 'Kernel', 'Starting Bingo application...');
 
-        foreach ($this->app->getRouter()->getRoutes() as $name => $route) {
+        foreach ($this->app->router->getRoutes() as $name => $route) {
             $methods = implode('|', $route->getMethods());
             $path    = $route->getPath();
             $this->log(

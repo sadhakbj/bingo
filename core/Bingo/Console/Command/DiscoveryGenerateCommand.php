@@ -25,9 +25,10 @@ class DiscoveryGenerateCommand extends Command
         $output->writeln('');
 
         $manager = new DiscoveryManager(
-            cachePath: base_path('storage/framework/discovery.php'),
-            appPath: base_path('app'),
-            isProduction: false, // Force discovery even if APP_ENV=production
+            cacheDir:      base_path('storage/framework/discovery'),
+            appPath:       base_path('app'),
+            coreBingoPath: dirname(__DIR__, 2), // core/Bingo/
+            isProduction:  false, // Force discovery even if APP_ENV=production
         );
 
         $discovered = $manager->rebuild();
@@ -43,8 +44,10 @@ class DiscoveryGenerateCommand extends Command
         }
         $output->writeln('  Routes:      <info>' . $routeCount . '</info>');
         $output->writeln('  Commands:    <info>' . count($discovered['commands']) . '</info>');
+        $output->writeln('  Bindings:    <info>' . count($discovered['bindings']) . '</info>');
+        $output->writeln('  Providers:   <info>' . count($discovered['providers']) . '</info>');
         $output->writeln('');
-        $output->writeln('<comment>Cache location:</comment> storage/framework/discovery.php');
+        $output->writeln('<comment>Cache location:</comment> storage/framework/discovery/');
 
         return Command::SUCCESS;
     }

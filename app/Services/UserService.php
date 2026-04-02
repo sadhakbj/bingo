@@ -7,29 +7,28 @@ namespace App\Services;
 use App\DTOs\CreateUserDTO;
 use App\DTOs\User\UserDTO;
 use App\Models\User;
+use App\Repositories\IUserRepository;
 use Bingo\Exceptions\Http\ConflictException;
 use Bingo\Exceptions\Http\NotFoundException;
 use Psr\Log\LoggerInterface;
 
-class UserService
+readonly class UserService
 {
-    public function __construct(private readonly LoggerInterface $logger) {}
+    public function __construct(private LoggerInterface $logger, private IUserRepository $userRepo)
+    {
+    }
 
     public function createUser(CreateUserDTO $dto): UserDTO
     {
         $this->logger->debug('Creating user', ['email' => $dto->email]);
 
-        if (User::where('email', $dto->email)->exists()) {
+
+        if ($this->userRepo->exists('email', $dto->email)) {
             $this->logger->warning('Duplicate email on user creation', ['email' => $dto->email]);
             throw new ConflictException('Email already exists');
         }
 
-        $user = User::create([
-            'name'  => $dto->name,
-            'email' => $dto->email,
-            'age'   => $dto->age ?? null,
-            'bio'   => $dto->bio ?? null,
-        ]);
+        $user = $this->userRepo->create($dto);
 
         $this->logger->info('User created', ['id' => $user->id, 'email' => $user->email]);
 
