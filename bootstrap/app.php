@@ -116,7 +116,7 @@ if (PHP_SAPI === 'cli-server') {
 |
 */
 
-$app->exceptionHandler(new \App\Exceptions\Handler($app->isDebug()));
+$app->exceptionHandler(new \App\Exceptions\Handler($app->debug));
 
 /*
 |--------------------------------------------------------------------------

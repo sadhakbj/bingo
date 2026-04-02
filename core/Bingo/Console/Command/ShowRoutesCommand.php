@@ -26,7 +26,7 @@ class ShowRoutesCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $router = $this->app->getRouter();
+        $router = $this->app.router;
         $routes = $router->getRoutes();
 
         if (empty($routes)) {

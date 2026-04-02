@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bingo;
 
 use Bingo\Bootstrap\ProviderBootstrapper;
+use Bingo\Config\ConfigLoader;
 use Bingo\Container\Container;
 use Bingo\Contracts\ExceptionHandlerInterface;
 use Bingo\Contracts\HttpResponse;
@@ -15,7 +16,6 @@ use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use Bingo\Http\StreamedResponse as BingoStreamedResponse;
-use Bingo\Config\ConfigLoader;
 use Config\AppConfig;
 use Dotenv\Dotenv;
 use Psr\Log\LoggerInterface;
@@ -24,19 +24,25 @@ use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse
 
 class Application
 {
+    public readonly string $basePath;
+    public private(set) Router $router;
+
+    public string $environment { get => $this->appConfig->env; }
+    public bool   $debug       { get => $this->appConfig->debug; }
+
     private Container $container;
-    private Router $router;
     private MiddlewarePipeline $pipeline;
     private array $controllers = [];
-    private string $basePath;
-
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
     private array $discoveredCommands = [];
     private AppConfig $appConfig;
 
+    /**
+     * @throws \ReflectionException
+     */
     public function __construct(string $basePath)
     {
-        $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
+        $this->basePath  = rtrim($basePath, DIRECTORY_SEPARATOR);
         $this->loadEnvironmentVariables();
         $this->appConfig = ConfigLoader::load(AppConfig::class);
 
@@ -44,7 +50,6 @@ class Application
         $this->router    = new Router($this->container);
         $this->pipeline  = MiddlewarePipeline::create($this->container);
 
-        // Make router and pipeline injectable so providers can receive them
         $this->container->instance(Router::class, $this->router);
         $this->container->instance(MiddlewarePipeline::class, $this->pipeline);
 
@@ -65,10 +70,6 @@ class Application
         }
     }
 
-    /**
-     * Load the discovery cache (or rebuild in dev when files change).
-     * Returns the full discovered metadata array.
-     */
     private function bootDiscovery(): array
     {
         $manager = new DiscoveryManager(
@@ -86,18 +87,12 @@ class Application
         Dotenv::createImmutable($this->basePath)->load();
     }
 
-    /**
-     * Intuitive use() method to add middleware
-     */
     public function use($middleware): self
     {
         $this->pipeline->use($middleware);
         return $this;
     }
 
-    /**
-     * Register a controller
-     */
     public function controller(string $controllerClass): self
     {
         $this->controllers[] = $controllerClass;
@@ -105,9 +100,6 @@ class Application
         return $this;
     }
 
-    /**
-     * Register multiple controllers
-     */
     public function controllers(array $controllers): self
     {
         foreach ($controllers as $controller) {
@@ -116,9 +108,6 @@ class Application
         return $this;
     }
 
-    /**
-     * Handle HTTP request
-     */
     public function handle(Request $request): HttpResponse
     {
         try {
@@ -151,14 +140,9 @@ class Application
         }
     }
 
-    /**
-     * Override the default exception → JSON mapping (highest priority).
-     * Also accepts container binding: singleton(ExceptionHandlerInterface::class, ...).
-     */
     public function exceptionHandler(ExceptionHandlerInterface $handler): self
     {
         $this->customExceptionHandler = $handler;
-
         return $this;
     }
 
@@ -176,12 +160,9 @@ class Application
             ? $this->container->make(LoggerInterface::class)
             : null;
 
-        return new ExceptionHandler($this->isDebug(), $logger);
+        return new ExceptionHandler($this->debug, $logger);
     }
 
-    /**
-     * Run the application
-     */
     public function run(): void
     {
         $this->container->compile();
@@ -190,83 +171,41 @@ class Application
         $response->send();
     }
 
-    /**
-     * Register a singleton — one shared instance for the entire lifecycle.
-     * $app->singleton(UserService::class);
-     * $app->singleton(CacheInterface::class, RedisCache::class);
-     */
     public function singleton(string $abstract, ?string $concrete = null): self
     {
         $this->container->singleton($abstract, $concrete);
         return $this;
     }
 
-    /**
-     * Register a transient binding — new instance per resolution.
-     * $app->bind(MailerInterface::class, SmtpMailer::class);
-     */
     public function bind(string $abstract, ?string $concrete = null): self
     {
         $this->container->bind($abstract, $concrete);
         return $this;
     }
 
-    /**
-     * Register a pre-built object instance.
-     * $app->instance(Config::class, new Config([...]));
-     */
     public function instance(string $abstract, object $instance): self
     {
         $this->container->instance($abstract, $instance);
         return $this;
     }
 
-    /**
-     * Resolve a class from the container.
-     */
     public function make(string $abstract): mixed
     {
         return $this->container->make($abstract);
     }
 
-    /**
-     * Get the router instance
-     */
-    public function getRouter(): Router
-    {
-        return $this->router;
-    }
-
-    /**
-     * Application factory method
-     */
-    public static function create(string $basePath): self
-    {
-        return new self($basePath);
-    }
-
-    /**
-     * Get the base path of the application
-     */
     public function basePath(string $path = ''): string
     {
         return $this->basePath . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : '');
     }
 
-    /**
-     * Get current environment (e.g. "development", "production").
-     */
-    public function environment(): string
+    public static function create(string $basePath): self
     {
-        return $this->appConfig->env;
+        return new self($basePath);
     }
 
-    /**
-     * Check if application is in debug mode.
-     */
-    public function isDebug(): bool
+    public function getDiscoveredCommands(): array
     {
-        return $this->appConfig->debug;
+        return $this->discoveredCommands;
     }
-
 }
