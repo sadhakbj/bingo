@@ -17,7 +17,13 @@ class UserRepository implements IUserRepository
 
     public function create(CreateUserDTO $dto)
     {
-        return User::query()->create(['password' => 'apple', ...$dto->toArray()]);
+        $data = $dto->toArray();
+
+        if (isset($data['password'])) {
+            $data['password'] = password_hash((string) $data['password'], PASSWORD_BCRYPT);
+        }
+
+        return User::query()->create($data);
     }
 
     public function findById(int $id): ?User
