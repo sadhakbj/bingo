@@ -1,40 +1,78 @@
 # Dependency Injection
 
-Bingo includes a dependency injection container with automatic resolution for concrete classes.
+Bingo's DI container wraps Symfony `ContainerBuilder` with reflection-based fallback autowiring. Concrete classes with typed constructors are resolved automatically with zero configuration.
 
-## Zero-configuration resolution
+---
 
-Classes with type-hinted constructors can be resolved automatically.
+## Automatic Resolution
+
+Any class with a typed constructor can be injected anywhere — controllers, services, middleware, commands:
 
 ```php
-class UsersController
+class ReportsController
 {
     public function __construct(
-        private readonly UserService $userService,
-        private readonly LoggerInterface $logger,
+        private readonly ReportService     $reports,
+        private readonly AppConfig         $config,
+        private readonly LoggerInterface   $logger,
     ) {}
 }
 ```
 
-## Binding interfaces
+The container walks the constructor, resolves each dependency recursively, and caches the result.
 
-Use `#[Bind]` on the interface to associate it with a concrete implementation.
+---
+
+## Interface Bindings
+
+### Using the `#[Bind]` Attribute
+
+Place `#[Bind(ConcreteClass::class)]` on an interface to register the binding automatically during discovery:
 
 ```php
-#[Bind(UserRepository::class)]
+use Bingo\Attributes\Provider\Bind;
+
+#[Bind(EloquentUserRepository::class)]
 interface IUserRepository
 {
     public function findById(int $id): ?User;
+    public function all(): array;
 }
 ```
 
-The framework scans application classes and registers the binding automatically.
+The concrete implementation is then injected wherever `IUserRepository` is type-hinted.
 
-## Service providers
+### Explicit Bindings in `bootstrap/app.php`
 
-Service providers are used for values that need manual construction.
+For one-off or conditional wiring:
 
 ```php
+// Resolve a new instance each time
+$app->bind(ReportBuilderInterface::class, PdfReportBuilder::class);
+
+// Resolve once and share the instance (singleton)
+$app->singleton(MailerInterface::class, SmtpMailer::class);
+
+// Register a pre-built object
+$app->instance(PaymentConfig::class, new PaymentConfig(key: env('STRIPE_KEY')));
+```
+
+---
+
+## Service Providers
+
+Service providers are discovered automatically from `app/` when annotated with `#[ServiceProvider]`. Use them to wire services that need custom construction logic.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers;
+
+use Bingo\Attributes\Provider\ServiceProvider;
+use Bingo\Attributes\Provider\Singleton;
+
 #[ServiceProvider]
 class AppServiceProvider
 {
@@ -43,21 +81,67 @@ class AppServiceProvider
     {
         return new StripeClient(env('STRIPE_KEY'));
     }
+}
+```
 
-    #[Boots]
-    public function boot(StripeClient $stripe): void
+| Attribute | Effect |
+|---|---|
+| `#[ServiceProvider]` | Marks the class for discovery; the framework instantiates it and calls its methods |
+| `#[Singleton]` | The return value is stored and reused for the lifetime of the container |
+
+---
+
+## Container API
+
+The container is available from `bootstrap/app.php` via the `$app` variable:
+
+```php
+// Bind an interface to a concrete class (transient)
+$app->bind(CacheInterface::class, RedisCache::class);
+
+// Bind as singleton (one instance per container lifetime)
+$app->singleton(QueueInterface::class, SqsQueue::class);
+
+// Register a pre-built instance
+$app->instance(HttpClient::class, new HttpClient(base_uri: 'https://api.example.com'));
+```
+
+After `$app->run()` (or `Application::create()`), the container is compiled. Register all services **before** the application runs.
+
+---
+
+## Injecting the Container Itself
+
+If you need to resolve services dynamically at runtime, type-hint `Psr\Container\ContainerInterface`:
+
+```php
+use Psr\Container\ContainerInterface;
+
+class HandlerLocator
+{
+    public function __construct(private readonly ContainerInterface $container) {}
+
+    public function get(string $id): object
     {
-        $stripe->setApiVersion('2024-06-20');
+        return $this->container->get($id);
     }
 }
 ```
 
-## Explicit bindings
+---
 
-For one-off wiring, you can register services in `bootstrap/app.php`.
+## Config Classes
+
+The typed config classes in `config/` (`AppConfig`, `DbConfig`, `LogConfig`, etc.) are pre-registered as singletons and can be injected anywhere:
 
 ```php
-$app->singleton(MailerInterface::class, SmtpMailer::class);
-$app->bind(ReportBuilder::class);
-$app->instance(PaymentConfig::class, new PaymentConfig(key: env('STRIPE_KEY')));
+class SomeService
+{
+    public function __construct(
+        private readonly AppConfig       $app,
+        private readonly RateLimitConfig $rateLimit,
+    ) {}
+}
 ```
+
+See [Configuration](configuration.md) for all available config classes.
