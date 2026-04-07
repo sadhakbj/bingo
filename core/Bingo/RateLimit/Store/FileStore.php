@@ -29,21 +29,54 @@ class FileStore implements RateLimiterStore
         $this->ensureDirectory();
 
         $path = $this->path($key, $windowId);
-        $data = $this->read($path);
+        $handle = fopen($path, 'c+');
+        if ($handle === false) {
+            throw new \RuntimeException("Unable to open rate limit store file: {$path}");
+        }
 
-        $data['count']++;
-        $data['expires_at'] = time() + ($decaySeconds * 2);
+        try {
+            if (!flock($handle, LOCK_EX)) {
+                throw new \RuntimeException("Unable to lock rate limit store file: {$path}");
+            }
 
-        $this->write($path, $data);
+            $data = $this->readFromHandle($handle);
+            $data['count']++;
+            $data['expires_at'] = time() + ($decaySeconds * 2);
 
-        return $data['count'];
+            $this->writeToHandle($handle, $data);
+
+            flock($handle, LOCK_UN);
+
+            return $data['count'];
+        } finally {
+            fclose($handle);
+        }
     }
 
     public function count(string $key, int $windowId): int
     {
-        $data = $this->read($this->path($key, $windowId));
+        $path = $this->path($key, $windowId);
+        if (!file_exists($path)) {
+            return 0;
+        }
 
-        return $data['count'];
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            return 0;
+        }
+
+        try {
+            if (!flock($handle, LOCK_SH)) {
+                return 0;
+            }
+
+            $data = $this->readFromHandle($handle);
+            flock($handle, LOCK_UN);
+
+            return $data['count'];
+        } finally {
+            fclose($handle);
+        }
     }
 
     public function reset(string $key): void
@@ -60,14 +93,12 @@ class FileStore implements RateLimiterStore
         return $this->directory . '/' . hash('sha256', $key) . '_' . $windowId . '.json';
     }
 
-    private function read(string $path): array
+    private function readFromHandle($handle): array
     {
-        if (!file_exists($path)) {
-            return ['count' => 0];
-        }
+        rewind($handle);
+        $raw = stream_get_contents($handle);
 
-        $raw = @file_get_contents($path);
-        if ($raw === false) {
+        if ($raw === false || $raw === '') {
             return ['count' => 0];
         }
 
@@ -76,7 +107,6 @@ class FileStore implements RateLimiterStore
             return ['count' => 0];
         }
 
-        // Treat expired entries as zero — do not delete here to avoid race conditions
         if (isset($data['expires_at']) && $data['expires_at'] < time()) {
             return ['count' => 0];
         }
@@ -84,9 +114,12 @@ class FileStore implements RateLimiterStore
         return $data;
     }
 
-    private function write(string $path, array $data): void
+    private function writeToHandle($handle, array $data): void
     {
-        file_put_contents($path, json_encode($data), LOCK_EX);
+        rewind($handle);
+        ftruncate($handle, 0);
+        fwrite($handle, json_encode($data));
+        fflush($handle);
     }
 
     private function ensureDirectory(): void

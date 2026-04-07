@@ -128,4 +128,19 @@ class FileStoreTest extends TestCase
 
         $this->assertSame(2, (new FileStore($this->dir))->count('key', 1));
     }
+
+    public function test_increment_resets_expired_entry_before_counting_new_hit(): void
+    {
+        $store = $this->store();
+        $store->increment('key', 1, 60);
+
+        $path = (new \ReflectionClass($store))
+            ->getMethod('path')
+            ->invoke($store, 'key', 1);
+
+        file_put_contents($path, json_encode(['count' => 99, 'expires_at' => time() - 1]));
+
+        $this->assertSame(1, $store->increment('key', 1, 60));
+        $this->assertSame(1, $store->count('key', 1));
+    }
 }
