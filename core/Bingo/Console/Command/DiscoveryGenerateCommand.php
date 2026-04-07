@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bingo\Console\Command;
 
+use Bingo\Application;
 use Bingo\Discovery\DiscoveryManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,6 +12,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DiscoveryGenerateCommand extends Command
 {
+    public function __construct(private readonly Application $app)
+    {
+        parent::__construct();
+    }
+
     protected function configure(): void
     {
         $this
@@ -25,8 +31,8 @@ class DiscoveryGenerateCommand extends Command
         $output->writeln('');
 
         $manager = new DiscoveryManager(
-            cacheDir:      base_path('storage/framework/discovery'),
-            appPath:       base_path('app'),
+            cacheDir:      $this->app->frameworkPath('discovery'),
+            appPath:       $this->app->appPath(),
             coreBingoPath: dirname(__DIR__, 2), // core/Bingo/
             isProduction:  false, // Force discovery even if APP_ENV=production
         );

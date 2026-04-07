@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bingo\Providers;
 
+use Bingo\Application;
 use Bingo\Attributes\Provider\ServiceProvider;
 use Bingo\Attributes\Provider\Singleton;
-use Bingo\Config\ConfigLoader;
 use Bingo\Log\RequestContextProcessor;
 use Bingo\Log\SlogTextFormatter;
 use Config\LogConfig;
@@ -27,16 +27,19 @@ class LoggingServiceProvider
     }
 
     #[Singleton]
-    public function logger(RequestContextProcessor $processor): LoggerInterface
+    public function logger(
+        Application $app,
+        LogConfig $cfg,
+        RequestContextProcessor $processor,
+    ): LoggerInterface
     {
-        $cfg    = ConfigLoader::load(LogConfig::class);
         $logger = new Logger('bingo');
 
         $level       = Level::fromName(ucfirst($cfg->level));
         $stderrLevel = Level::fromName(ucfirst($cfg->stderrLevel));
 
         $stderrHandler = new StreamHandler('php://stderr', $stderrLevel);
-        $fileHandler   = new RotatingFileHandler(base_path($cfg->path), 30, $level);
+        $fileHandler   = new RotatingFileHandler($app->resolvePath($cfg->path), 30, $level);
 
         $isTerminal = defined('STDERR') && stream_isatty(\STDERR);
 

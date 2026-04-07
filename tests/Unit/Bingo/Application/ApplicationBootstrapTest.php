@@ -10,6 +10,8 @@ use App\Repositories\IUserRepository;
 use Bingo\Application;
 use Bingo\Http\Request;
 use Bingo\RateLimit\Contracts\RateLimiterStore;
+use Config\AppConfig;
+use Config\RateLimitConfig;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -38,6 +40,15 @@ class ApplicationBootstrapTest extends TestCase
 
         $this->assertSame($app, $app->boot());
         $this->assertSame($app, $app->boot());
+    }
+
+    public function test_make_can_be_called_safely_during_boot(): void
+    {
+        $app = Application::create(dirname(__DIR__, 4));
+
+        $config = $app->make(\Config\SQLiteConfig::class);
+
+        $this->assertInstanceOf(\Config\SQLiteConfig::class, $config);
     }
 
     public function test_structural_registration_is_blocked_after_boot(): void
@@ -71,6 +82,17 @@ class ApplicationBootstrapTest extends TestCase
         $this->assertSame('/tmp/bingo-kernel-test/public', $app->publicPath());
         $this->assertSame('/tmp/bingo-kernel-test/storage', $app->storagePath());
         $this->assertSame('/tmp/bingo-kernel-test/storage/framework/discovery', $app->frameworkPath('discovery'));
+        $this->assertSame('/tmp/bingo-kernel-test/storage/logs/app.log', $app->resolvePath('storage/logs/app.log'));
+        $this->assertSame('/var/log/app.log', $app->resolvePath('/var/log/app.log'));
+    }
+
+    public function test_application_and_core_config_are_registered_in_container(): void
+    {
+        $app = Application::create(dirname(__DIR__, 4));
+
+        $this->assertSame($app, $app->make(Application::class));
+        $this->assertSame('development', $app->make(AppConfig::class)->env);
+        $this->assertInstanceOf(RateLimitConfig::class, $app->make(RateLimitConfig::class));
     }
 
     public function test_explicit_logger_instance_is_not_overwritten_during_boot(): void

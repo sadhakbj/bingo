@@ -16,6 +16,10 @@ use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
 use Bingo\Http\Router\Router;
 use Config\AppConfig;
+use Config\CorsConfig;
+use Config\DbConfig;
+use Config\LogConfig;
+use Config\RateLimitConfig;
 use Dotenv\Dotenv;
 use Psr\Log\LoggerInterface;
 
@@ -34,6 +38,7 @@ class Application
     private AppConfig $appConfig;
     private HttpKernel $httpKernel;
     private bool $booted = false;
+    private bool $booting = false;
 
     /**
      * @throws \ReflectionException
@@ -60,6 +65,50 @@ class Application
         $this->container->instance(Router::class, $this->router);
         $this->container->instance(MiddlewarePipeline::class, $this->pipeline);
         $this->container->instance(HttpKernel::class, $this->httpKernel);
+        $this->container->instance(self::class, $this);
+        $this->registerConfigInstances();
+    }
+
+    /**
+     * Register typed config objects as first-class container instances so core
+     * services can depend on them instead of calling ConfigLoader directly.
+     *
+     * @throws \ReflectionException
+     */
+    private function registerConfigInstances(): void
+    {
+        foreach ($this->loadConfigInstances() as $class => $instance) {
+            $this->container->instance($class, $instance);
+            $this->container->protect($class);
+        }
+    }
+
+    /**
+     * @return array<class-string, object>
+     * @throws \ReflectionException
+     */
+    private function loadConfigInstances(): array
+    {
+        /** @var DbConfig $dbConfig */
+        $dbConfig = ConfigLoader::load(DbConfig::class);
+
+        $instances = [
+            AppConfig::class      => $this->appConfig,
+            CorsConfig::class     => ConfigLoader::load(CorsConfig::class),
+            DbConfig::class       => $dbConfig,
+            LogConfig::class      => ConfigLoader::load(LogConfig::class),
+            RateLimitConfig::class => ConfigLoader::load(RateLimitConfig::class),
+        ];
+
+        foreach ($dbConfig->connections as $driverClass) {
+            if (!class_exists($driverClass)) {
+                continue;
+            }
+
+            $instances[$driverClass] = ConfigLoader::load($driverClass);
+        }
+
+        return $instances;
     }
 
     private function bootFromDiscovery(): void
@@ -78,12 +127,18 @@ class Application
 
     public function boot(): self
     {
-        if ($this->booted) {
+        if ($this->booted || $this->booting) {
             return $this;
         }
 
-        $this->bootFromDiscovery();
-        $this->booted = true;
+        $this->booting = true;
+
+        try {
+            $this->bootFromDiscovery();
+            $this->booted = true;
+        } finally {
+            $this->booting = false;
+        }
 
         return $this;
     }
@@ -214,6 +269,19 @@ class Application
         return $this->basePath . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : '');
     }
 
+    public function resolvePath(string $path): string
+    {
+        if ($path === '') {
+            return $this->basePath();
+        }
+
+        if ($this->isAbsolutePath($path)) {
+            return $path;
+        }
+
+        return $this->basePath($path);
+    }
+
     public function appPath(string $path = ''): string
     {
         return $this->basePath('app' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
@@ -262,5 +330,12 @@ class Application
                 "Cannot call {$method}() after the application has booted."
             );
         }
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, DIRECTORY_SEPARATOR)
+            || str_starts_with($path, '\\\\')
+            || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1;
     }
 }

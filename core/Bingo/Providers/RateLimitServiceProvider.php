@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bingo\Providers;
 
+use Bingo\Application;
 use Bingo\Attributes\Provider\ServiceProvider;
 use Bingo\Attributes\Provider\Singleton;
-use Bingo\Config\ConfigLoader;
 use Bingo\RateLimit\Contracts\RateLimiterStore;
 use Bingo\RateLimit\Store\FileStore;
 use Bingo\RateLimit\Store\RedisStore;
@@ -22,10 +22,8 @@ class RateLimitServiceProvider
      *   RATE_LIMIT_DRIVER=file   → FileStore  (single-process, dev default)
      */
     #[Singleton]
-    public function rateLimiterStore(): RateLimiterStore
+    public function rateLimiterStore(Application $app, RateLimitConfig $config): RateLimiterStore
     {
-        $config = ConfigLoader::load(RateLimitConfig::class);
-
         if ($config->driver === 'redis') {
             if (!extension_loaded('redis')) {
                 throw new \RuntimeException(
@@ -45,6 +43,6 @@ class RateLimitServiceProvider
             return RedisStore::fromConnection($redis);
         }
 
-        return new FileStore(base_path('storage/rate-limit'));
+        return new FileStore($app->storagePath('rate-limit'));
     }
 }

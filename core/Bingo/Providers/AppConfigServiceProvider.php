@@ -6,15 +6,14 @@ namespace Bingo\Providers;
 
 use Bingo\Attributes\Provider\ServiceProvider;
 use Bingo\Attributes\Provider\Singleton;
-use Bingo\Config\ConfigLoader;
 use Config\AppConfig;
 
 #[ServiceProvider]
 class AppConfigServiceProvider
 {
     #[Singleton]
-    public function appConfig(): AppConfig
+    public function appConfig(AppConfig $config): AppConfig
     {
-        return ConfigLoader::load(AppConfig::class);
+        return $config;
     }
 }

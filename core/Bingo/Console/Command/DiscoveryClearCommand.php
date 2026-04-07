@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace Bingo\Console\Command;
 
+use Bingo\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DiscoveryClearCommand extends Command
 {
+    public function __construct(private readonly Application $app)
+    {
+        parent::__construct();
+    }
+
     protected function configure(): void
     {
         $this
@@ -19,7 +25,7 @@ class DiscoveryClearCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $cacheDir = base_path('storage/framework/discovery');
+        $cacheDir = $this->app->frameworkPath('discovery');
 
         if (is_dir($cacheDir)) {
             foreach (glob($cacheDir . '/*.php') as $file) {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bingo\Providers;
 
 use Bingo\Attributes\Provider\ServiceProvider;
-use Bingo\Config\ConfigLoader;
 use Bingo\Http\Middleware\BodyParserMiddleware;
 use Bingo\Http\Middleware\CompressionMiddleware;
 use Bingo\Http\Middleware\CorsMiddleware;
@@ -22,12 +21,17 @@ use Config\RateLimitConfig;
 #[ServiceProvider]
 class MiddlewareServiceProvider
 {
-    public function boot(MiddlewarePipeline $pipeline, RateLimiterStore $store, AppConfig $appConfig): void
+    public function boot(
+        MiddlewarePipeline $pipeline,
+        RateLimiterStore $store,
+        AppConfig $appConfig,
+        RateLimitConfig $rateLimitConfig,
+        CorsConfig $corsConfig,
+    ): void
     {
         $isProduction    = $appConfig->env === 'production';
-        $rateLimitConfig = ConfigLoader::load(RateLimitConfig::class);
 
-        $pipeline->addGlobal(CorsMiddleware::fromConfig(ConfigLoader::load(CorsConfig::class)));
+        $pipeline->addGlobal(CorsMiddleware::fromConfig($corsConfig));
         $pipeline->addGlobal($isProduction ? BodyParserMiddleware::production() : BodyParserMiddleware::json());
         $pipeline->addGlobal(CompressionMiddleware::create());
         $pipeline->addGlobal($isProduction ? SecurityHeadersMiddleware::production() : SecurityHeadersMiddleware::create());
