@@ -8,12 +8,19 @@ use Bingo\Container\Container;
 use Bingo\Contracts\HttpResponse;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
+use Bingo\Http\ResponseNormalizer;
 
 class MiddlewarePipeline
 {
     private array $middleware = [];
     private array $globalMiddleware = [];
     private ?Container $container = null;
+    private ResponseNormalizer $responseNormalizer;
+
+    public function __construct()
+    {
+        $this->responseNormalizer = new ResponseNormalizer();
+    }
 
     /**
      * Add global middleware that runs on all requests.
@@ -43,7 +50,9 @@ class MiddlewarePipeline
         $middlewareStack = array_merge($this->globalMiddleware, $this->middleware);
 
         if (empty($middlewareStack)) {
-            return $finalHandler ? $finalHandler($request) : Response::json(['message' => 'OK']);
+            return $this->normalizeResult(
+                $finalHandler ? $finalHandler($request) : Response::json(['message' => 'OK']),
+            );
         }
 
         return $this->executeMiddleware($middlewareStack, 0, $request, $finalHandler);
@@ -56,7 +65,9 @@ class MiddlewarePipeline
     {
         // If we've reached the end of middleware stack, call the final handler
         if ($index >= count($middlewareStack)) {
-            return $finalHandler ? $finalHandler($request) : Response::json(['message' => 'OK']);
+            return $this->normalizeResult(
+                $finalHandler ? $finalHandler($request) : Response::json(['message' => 'OK']),
+            );
         }
 
         // Resolve lazily so DI container bindings are available at request time
@@ -69,11 +80,11 @@ class MiddlewarePipeline
 
         // Execute current middleware — let exceptions propagate to Application::handle()
         if (is_callable($middleware)) {
-            return $middleware($request, $next);
+            return $this->normalizeResult($middleware($request, $next));
         }
 
         if (is_object($middleware) && method_exists($middleware, 'handle')) {
-            return $middleware->handle($request, $next);
+            return $this->normalizeResult($middleware->handle($request, $next));
         }
 
         throw new \InvalidArgumentException('Middleware must be callable or have a handle method');
@@ -104,16 +115,25 @@ class MiddlewarePipeline
     /**
      * Create a new middleware pipeline
      */
-    public static function create(?Container $container = null): self
+    public static function create(?Container $container = null, ?ResponseNormalizer $responseNormalizer = null): self
     {
         $instance = new self();
         $instance->container = $container;
+        if ($responseNormalizer !== null) {
+            $instance->responseNormalizer = $responseNormalizer;
+        }
         return $instance;
     }
 
     public function setContainer(?Container $container): self
     {
         $this->container = $container;
+        return $this;
+    }
+
+    public function setResponseNormalizer(ResponseNormalizer $responseNormalizer): self
+    {
+        $this->responseNormalizer = $responseNormalizer;
         return $this;
     }
 
@@ -159,5 +179,10 @@ class MiddlewarePipeline
     public function use($middleware): self
     {
         return $this->addGlobal($middleware);
+    }
+
+    private function normalizeResult(mixed $result): HttpResponse
+    {
+        return $this->responseNormalizer->normalize($result);
     }
 }

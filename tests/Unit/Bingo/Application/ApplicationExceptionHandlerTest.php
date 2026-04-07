@@ -71,6 +71,41 @@ class ApplicationExceptionHandlerTest extends TestCase
         $this->assertSame('raw symfony', $response->getContent());
         $this->assertSame('yes', $response->headers->get('X-Symfony'));
     }
+
+    public function test_handle_converts_boot_failure_into_exception_handler_response(): void
+    {
+        $previousAppEnv = getenv('APP_ENV');
+        $_ENV['APP_ENV'] = 'production';
+        putenv('APP_ENV=production');
+
+        $basePath = sys_get_temp_dir() . '/bingo-boot-failure-' . bin2hex(random_bytes(8));
+        mkdir($basePath, 0755, true);
+
+        try {
+            $app = Application::create($basePath);
+            $app->exceptionHandler(new class implements ExceptionHandlerInterface {
+                public function handle(\Throwable $e): Response
+                {
+                    return Response::json(['handled' => $e::class], 503);
+                }
+            });
+
+            $response = $app->handle(Request::create('/boot-fail', 'GET'));
+
+            $this->assertSame(503, $response->getStatusCode());
+            $this->assertSame(\RuntimeException::class, json_decode($response->getContent(), true)['handled']);
+        } finally {
+            if ($previousAppEnv === false) {
+                putenv('APP_ENV');
+                unset($_ENV['APP_ENV']);
+            } else {
+                putenv('APP_ENV=' . $previousAppEnv);
+                $_ENV['APP_ENV'] = $previousAppEnv;
+            }
+
+            @rmdir($basePath);
+        }
+    }
 }
 
 final class InstanceHandler implements ExceptionHandlerInterface

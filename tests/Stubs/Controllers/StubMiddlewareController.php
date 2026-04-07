@@ -8,6 +8,7 @@ use Bingo\Attributes\Middleware;
 use Bingo\Attributes\Route\ApiController;
 use Bingo\Attributes\Route\Get;
 use Bingo\Http\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Tests\Stubs\Middleware\BlockingMiddlewareStub;
 use Tests\Stubs\Middleware\TrackingMiddlewareStub;
 
@@ -36,5 +37,12 @@ class StubMiddlewareController
     public function withMethodMiddleware(): Response
     {
         return Response::json(['should' => 'not reach here']);
+    }
+
+    #[Get('/symfony-tracked')]
+    #[Middleware([TrackingMiddlewareStub::class])]
+    public function symfonyTracked(): SymfonyResponse
+    {
+        return new SymfonyResponse('middleware symfony', 202, ['X-Symfony' => 'tracked']);
     }
 }

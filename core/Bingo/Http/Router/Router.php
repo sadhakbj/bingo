@@ -21,6 +21,7 @@ use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Middleware\RateLimitMiddleware;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
+use Bingo\Http\ResponseNormalizer;
 use Bingo\RateLimit\RateLimiter;
 use Bingo\RateLimit\Store\FileStore;
 use Bingo\Http\Router\RouteResponseMetadata;
@@ -41,11 +42,14 @@ class Router
     private array $middlewares = [];
     /** @var array<string, Throttle[]> */
     private array $throttles = [];
+    private ResponseNormalizer $responseNormalizer;
 
     public function __construct(
-        private readonly ?Container $container = null
+        private readonly ?Container $container = null,
+        ?ResponseNormalizer $responseNormalizer = null,
     ) {
         $this->routes = new RouteCollection();
+        $this->responseNormalizer = $responseNormalizer ?? new ResponseNormalizer();
     }
 
     public function registerController(string $controllerClass): void
@@ -432,7 +436,7 @@ class Router
         $allRouteMiddlewares = array_merge($throttleMiddlewares, $routeMiddlewares);
 
         if (!empty($allRouteMiddlewares)) {
-            $pipeline = MiddlewarePipeline::create($this->container);
+            $pipeline = MiddlewarePipeline::create($this->container, $this->responseNormalizer);
             foreach ($allRouteMiddlewares as $mw) {
                 $pipeline->add($mw);
             }

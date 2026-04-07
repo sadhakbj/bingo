@@ -14,6 +14,7 @@ use Bingo\Exceptions\ExceptionHandler;
 use Bingo\Http\HttpKernel;
 use Bingo\Http\Middleware\MiddlewarePipeline;
 use Bingo\Http\Request;
+use Bingo\Http\ResponseNormalizer;
 use Bingo\Http\Router\Router;
 use Config\AppConfig;
 use Config\CorsConfig;
@@ -33,6 +34,7 @@ class Application
 
     private Container $container;
     private MiddlewarePipeline $pipeline;
+    private ResponseNormalizer $responseNormalizer;
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
     private array $discoveredCommands = [];
     private AppConfig $appConfig;
@@ -54,16 +56,20 @@ class Application
     private function initializeCoreServices(): void
     {
         $this->container = new Container();
-        $this->router    = new Router($this->container);
-        $this->pipeline  = MiddlewarePipeline::create($this->container);
+        $this->responseNormalizer = new ResponseNormalizer();
+        $this->router    = new Router($this->container, $this->responseNormalizer);
+        $this->pipeline  = MiddlewarePipeline::create($this->container, $this->responseNormalizer);
         $this->httpKernel = new HttpKernel(
             $this->pipeline,
             $this->router,
+            $this->boot(...),
             $this->resolveExceptionHandler(...),
+            $this->responseNormalizer,
         );
 
         $this->container->instance(Router::class, $this->router);
         $this->container->instance(MiddlewarePipeline::class, $this->pipeline);
+        $this->container->instance(ResponseNormalizer::class, $this->responseNormalizer);
         $this->container->instance(HttpKernel::class, $this->httpKernel);
         $this->container->instance(self::class, $this);
         $this->registerConfigInstances();
@@ -135,6 +141,7 @@ class Application
 
         try {
             $this->bootFromDiscovery();
+            $this->container->compile();
             $this->booted = true;
         } finally {
             $this->booting = false;
@@ -198,7 +205,6 @@ class Application
 
     public function handle(Request $request): HttpResponse
     {
-        $this->boot();
         return $this->httpKernel->handle($request);
     }
 
@@ -227,8 +233,6 @@ class Application
 
     public function run(): void
     {
-        $this->boot();
-        $this->container->compile();
         $request  = Request::createFromGlobals();
         $response = $this->handle($request);
         $response->send();
