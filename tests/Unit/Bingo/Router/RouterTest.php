@@ -9,6 +9,7 @@ use Bingo\Exceptions\Http\NotFoundException;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
+use Bingo\Validation\ValidationException;
 use PHPUnit\Framework\TestCase;
 use Tests\Stubs\Controllers\StubApiController;
 use Tests\Stubs\Controllers\StubClassStatusController;
@@ -104,6 +105,16 @@ class RouterTest extends TestCase
 
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(201, $response->getStatusCode());
+    }
+
+    public function test_dispatch_rethrows_validation_exception_for_invalid_body_binding(): void
+    {
+        $this->router->registerController(StubApiController::class);
+        $request = Request::create('/stub/invalid-body', 'POST', ['name' => '']);
+
+        $this->expectException(ValidationException::class);
+
+        $this->router->dispatch($request);
     }
 
     // -------------------------------------------------------------------------

@@ -290,11 +290,7 @@ class Router
                             try {
                                 $value = $dtoClass::fromRequest($req);
                             } catch (ValidationException $e) {
-                                if ($isApiController) {
-                                    throw $e;
-                                }
-
-                                return "422 - Validation Failed: " . implode(', ', array_keys($e->errors));
+                                throw $e;
                             }
                         }
                     }
@@ -382,11 +378,7 @@ class Router
                         try {
                             $value = $typeName::createFromRequest($req);
                         } catch (ValidationException $e) {
-                            if ($isApiController) {
-                                throw $e;
-                            }
-
-                            return "422 - Validation Failed: " . implode(', ', array_keys($e->errors));
+                            throw $e;
                         }
                     } else {
                         $value = $parameters[$param->getName()] ?? null;
