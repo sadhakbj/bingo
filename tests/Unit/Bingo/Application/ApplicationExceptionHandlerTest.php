@@ -6,6 +6,7 @@ namespace Tests\Unit\Bingo\Application;
 
 use Bingo\Application;
 use Bingo\Contracts\ExceptionHandlerInterface;
+use Bingo\Contracts\HttpResponse;
 use Bingo\Http\Request;
 use Bingo\Http\Response;
 use PHPUnit\Framework\TestCase;
@@ -56,6 +57,19 @@ class ApplicationExceptionHandlerTest extends TestCase
         $response = $app->handle(Request::create('/stub/missing', 'GET'));
 
         $this->assertSame(420, $response->getStatusCode());
+    }
+
+    public function test_handle_normalizes_plain_symfony_response_into_framework_http_response(): void
+    {
+        $app = $this->makeApp();
+        $app->controllers([StubApiController::class]);
+
+        $response = $app->handle(Request::create('/stub/symfony-response', 'GET'));
+
+        $this->assertInstanceOf(HttpResponse::class, $response);
+        $this->assertSame(202, $response->getStatusCode());
+        $this->assertSame('raw symfony', $response->getContent());
+        $this->assertSame('yes', $response->headers->get('X-Symfony'));
     }
 }
 

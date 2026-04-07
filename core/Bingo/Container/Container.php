@@ -21,6 +21,9 @@ class Container implements ContainerInterface
     /** IDs registered via singleton() or bind() — used to route to Symfony. */
     private array $bindings = [];
 
+    /** IDs explicitly protected from framework/discovery overwrites. */
+    private array $protected = [];
+
     /** Circular dependency detection stack. */
     private array $resolving = [];
 
@@ -126,6 +129,19 @@ class Container implements ContainerInterface
     public function make(string $id): mixed
     {
         return $this->get($id);
+    }
+
+    /**
+     * Mark an ID as an explicit application override that framework boot should not overwrite.
+     */
+    public function protect(string $id): void
+    {
+        $this->protected[$id] = true;
+    }
+
+    public function isProtected(string $id): bool
+    {
+        return isset($this->protected[$id]);
     }
 
     // -------------------------------------------------------------------------

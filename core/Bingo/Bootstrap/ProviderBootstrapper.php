@@ -41,6 +41,10 @@ readonly class ProviderBootstrapper
     private function registerBindings(): void
     {
         foreach ($this->bindings as $interface => $binding) {
+            if ($this->container->isProtected($interface)) {
+                continue;
+            }
+
             if ($binding['singleton']) {
                 $this->container->singleton($interface, $binding['concrete']);
             } else {
@@ -87,6 +91,10 @@ readonly class ProviderBootstrapper
                 $returnType = $method->getReturnType();
 
                 if (!$returnType instanceof \ReflectionNamedType || $returnType->getName() === 'void') {
+                    continue;
+                }
+
+                if ($this->container->isProtected($returnType->getName())) {
                     continue;
                 }
 
