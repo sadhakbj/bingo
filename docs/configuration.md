@@ -4,6 +4,29 @@ Bingo uses typed PHP objects for configuration instead of configuration arrays. 
 
 All config classes live in `config/` and are automatically resolved and injected anywhere in the application.
 
+In local development, these values usually come from `.env`. In Docker or Kubernetes,
+they can come directly from the process environment, so a `.env` file is not required
+in those deployments.
+
+---
+
+## Resolution Order
+
+Configuration values are resolved in this order:
+
+1. Environment variables already present in the process (`$_ENV` / `getenv()`).
+2. Values loaded from `.env` when that file exists.
+3. Defaults declared in `#[Env(..., default: ...)]`.
+
+If no value is available from any of those sources and the target config property is
+required, Bingo throws a configuration error during boot.
+
+That means all of these are valid:
+
+- local development with a `.env` file
+- local development using shell environment variables only
+- Docker or Kubernetes injecting environment variables directly
+
 ---
 
 ## How It Works

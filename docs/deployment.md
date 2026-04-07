@@ -199,6 +199,9 @@ Never store secrets in source code or Docker images. Use:
 - **HashiCorp Vault** → dynamic secrets injection
 - **`.env` file** on managed servers (restrict file permissions: `chmod 600 .env`)
 
+Bingo will read environment variables directly from the process, so Kubernetes-style
+`env:` / `envFrom:` injection works without a `.env` file in the container image.
+
 ---
 
 ## Health Check

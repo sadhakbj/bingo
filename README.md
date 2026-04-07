@@ -56,6 +56,10 @@ curl http://127.0.0.1:8000/api/hello
 
 The route is discovered automatically — no registration needed.
 
+For local development, copying `.env.example` to `.env` is the easiest path. Bingo
+can also read variables from the shell environment directly, and in containers or
+Kubernetes a physical `.env` file is optional because the platform can inject env vars.
+
 ---
 
 ## Requirements

@@ -8,7 +8,7 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 |
 | The Application boots automatically:
-|   - Loads .env (optional — Docker/K8s inject vars directly)
+|   - Loads .env when present (Docker/K8s can inject vars directly)
 |   - Builds typed AppConfig and DatabaseConfig from environment
 |   - Boots Eloquent with all configured connections
 |   - Wires DI container, router, and middleware pipeline

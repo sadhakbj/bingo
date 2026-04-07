@@ -84,7 +84,9 @@ class Application
 
     private function loadEnvironmentVariables(): void
     {
-        Dotenv::createImmutable($this->basePath)->load();
+        // Local development typically uses a .env file, but container platforms
+        // like Docker and Kubernetes inject process env vars directly.
+        Dotenv::createImmutable($this->basePath)->safeLoad();
     }
 
     public function use($middleware): self
