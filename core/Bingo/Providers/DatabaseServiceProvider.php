@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bingo\Providers;
 
+use Bingo\Application;
 use Bingo\Attributes\Provider\ServiceProvider;
 use Bingo\Attributes\Provider\Singleton;
-use Bingo\Config\ConfigLoader;
 use Bingo\Config\DatabaseConfig;
 use Bingo\Database\Database;
 use Config\DbConfig;
@@ -18,15 +18,13 @@ class DatabaseServiceProvider
      * @throws \ReflectionException
      */
     #[Singleton]
-    public function databaseConfig(): DatabaseConfig
+    public function databaseConfig(Application $app, DbConfig $dbConfig): DatabaseConfig
     {
-        /** @var DbConfig $dbConfig */
-        $dbConfig    = ConfigLoader::load(DbConfig::class);
         $defaultName = $dbConfig->default;
 
         $connections = [];
         foreach ($dbConfig->connections as $name => $driverClass) {
-            $connections[$name] = ConfigLoader::load($driverClass);
+            $connections[$name] = $app->make($driverClass);
         }
 
         if (!isset($connections[$defaultName])) {

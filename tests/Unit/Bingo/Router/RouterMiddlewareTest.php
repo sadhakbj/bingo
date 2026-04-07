@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Bingo\Router;
 
 use Bingo\Http\Request;
+use Bingo\Http\Response;
 use Bingo\Http\Router\Router;
 use PHPUnit\Framework\TestCase;
 use Tests\Stubs\Controllers\StubMiddlewareController;
@@ -83,5 +84,17 @@ class RouterMiddlewareTest extends TestCase
         $response = $this->router->dispatch($request);
 
         $this->assertSame(200, $response->getStatusCode());
+    }
+
+    public function test_route_middleware_normalizes_plain_symfony_response(): void
+    {
+        $request  = $this->makeRequest('/mw-test/symfony-tracked', 'GET');
+        $response = $this->router->dispatch($request);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(202, $response->getStatusCode());
+        $this->assertSame('middleware symfony', $response->getContent());
+        $this->assertSame('yes', $response->headers->get('X-Tracked'));
+        $this->assertSame('tracked', $response->headers->get('X-Symfony'));
     }
 }

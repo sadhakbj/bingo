@@ -13,6 +13,7 @@ use Bingo\Attributes\Route\Param;
 use Bingo\Attributes\Route\Post;
 use Bingo\Attributes\Route\Query;
 use Bingo\Http\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Tests\Stubs\DTOs\InvalidBodyDTOStub;
 
 #[ApiController('/stub')]
@@ -81,6 +82,12 @@ class StubApiController
     public function metaHeaders(): Response
     {
         return Response::json(['ok' => true], 200, ['X-Stub-Method' => 'method-only']);
+    }
+
+    #[Get('/symfony-response')]
+    public function symfonyResponse(): SymfonyResponse
+    {
+        return new SymfonyResponse('raw symfony', 202, ['X-Symfony' => 'yes']);
     }
 
     #[Get('/meta-header-controller-wins')]
