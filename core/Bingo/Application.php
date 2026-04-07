@@ -62,7 +62,9 @@ class Application
         $this->httpKernel = new HttpKernel(
             $this->pipeline,
             $this->router,
-            $this->boot(...),
+            function (): void {
+                $this->boot();
+            },
             $this->resolveExceptionHandler(...),
             $this->responseNormalizer,
         );
