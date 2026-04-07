@@ -10,7 +10,7 @@ Before deploying to any environment:
 
 - [ ] `composer install --no-dev --optimize-autoloader` run successfully
 - [ ] `php bin/bingo discovery:generate` has been run
-- [ ] `storage/framework/discovery.php` is present in the image / deployment artifact
+- [ ] `storage/framework/discovery/` is present in the image / deployment artifact
 - [ ] `APP_ENV=production` is set
 - [ ] `APP_DEBUG=false` is set
 - [ ] Database credentials are configured via environment variables
@@ -46,7 +46,7 @@ server {
     }
 
     location ~ \.php$ {
-        fastcgi_pass  unix:/run/php/php8.5-fpm.sock;
+        fastcgi_pass  unix:/run/php/php8.4-fpm.sock;
         fastcgi_index index.php;
         include       fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
@@ -66,7 +66,7 @@ server {
 ## Docker
 
 ```dockerfile
-FROM php:8.5-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 WORKDIR /var/www
 
@@ -198,6 +198,9 @@ Never store secrets in source code or Docker images. Use:
 - **AWS Secrets Manager / Parameter Store** → fetched at startup
 - **HashiCorp Vault** → dynamic secrets injection
 - **`.env` file** on managed servers (restrict file permissions: `chmod 600 .env`)
+
+Bingo will read environment variables directly from the process, so Kubernetes-style
+`env:` / `envFrom:` injection works without a `.env` file in the container image.
 
 ---
 

@@ -1,6 +1,6 @@
 {
     "name": "sadhakbj/bingo",
-    "description": "Bingo - A PHP 8.5+ API-first microservice framework with attribute-based routing",
+    "description": "Bingo - A PHP 8.4+ API-first microservice framework with attribute-based routing",
     "type": "project",
     "license": "MIT",
     "autoload": {

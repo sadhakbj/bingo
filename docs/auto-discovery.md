@@ -21,7 +21,7 @@ Bingo automatically finds controllers and CLI commands from your `app/` director
 
 ## Discovery Cache
 
-Discovered metadata is serialised to `storage/framework/discovery.php`. This file is loaded on every request.
+Discovered metadata is written to `storage/framework/discovery/` as one cache file per discovered type plus a `meta.php` file. These files are loaded on every request.
 
 ### Development Mode
 
@@ -35,7 +35,7 @@ In production, the cache must be built before deployment and must not be stale:
 php bin/bingo discovery:generate
 ```
 
-If the cache file is missing in production, the application throws a `RuntimeException` immediately on boot. Pre-building the cache during your CI/CD pipeline or Docker image build is strongly recommended.
+If the cache metadata is missing in production, the application throws a `RuntimeException` immediately on boot. Pre-building the cache during your CI/CD pipeline or Docker image build is strongly recommended.
 
 ---
 
@@ -67,10 +67,10 @@ $app->controller(SomeSpecialController::class);
 
 ## Git and the Cache
 
-Add the discovery cache to `.gitignore`:
+Add the discovery cache directory to `.gitignore`:
 
 ```gitignore
-storage/framework/discovery.php
+storage/framework/discovery/
 ```
 
 Rebuild it as part of your deployment pipeline rather than committing it to source control.
@@ -88,4 +88,4 @@ Discovery is orchestrated by `Bingo\Discovery\DiscoveryManager` using four disco
 | `BindingDiscoverer` | `#[Bind]` interface-to-concrete mappings |
 | `ProviderDiscoverer` | `#[ServiceProvider]` classes |
 
-Each discoverer scans the configured directories using PHP reflection and writes structured metadata to the cache file.
+Each discoverer scans the configured directories using PHP reflection and writes structured metadata into the cache directory.

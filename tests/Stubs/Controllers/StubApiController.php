@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Stubs\Controllers;
 
 use Bingo\Attributes\Route\ApiController;
+use Bingo\Attributes\Route\Body;
 use Bingo\Attributes\Route\Get;
 use Bingo\Attributes\Route\Header;
 use Bingo\Attributes\Route\HttpCode;
@@ -12,6 +13,7 @@ use Bingo\Attributes\Route\Param;
 use Bingo\Attributes\Route\Post;
 use Bingo\Attributes\Route\Query;
 use Bingo\Http\Response;
+use Tests\Stubs\DTOs\InvalidBodyDTOStub;
 
 #[ApiController('/stub')]
 class StubApiController
@@ -38,6 +40,12 @@ class StubApiController
     public function create(): Response
     {
         return Response::json(['created' => true], 201);
+    }
+
+    #[Post('/invalid-body')]
+    public function invalidBody(#[Body] InvalidBodyDTOStub $dto): Response
+    {
+        return Response::json(['name' => $dto->name]);
     }
 
     #[Get('/search')]

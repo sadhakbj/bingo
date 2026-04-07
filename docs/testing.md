@@ -54,18 +54,21 @@ namespace Tests\Unit\App\Services;
 
 use App\Services\UserService;
 use App\Repositories\IUserRepository;
+use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
 class UserServiceTest extends TestCase
 {
     private IUserRepository&MockObject $repository;
+    private LoggerInterface&MockObject $logger;
     private UserService $service;
 
     protected function setUp(): void
     {
         $this->repository = $this->createMock(IUserRepository::class);
-        $this->service    = new UserService($this->repository);
+        $this->logger     = $this->createMock(LoggerInterface::class);
+        $this->service    = new UserService($this->logger, $this->repository);
     }
 
     public function test_create_user_returns_dto(): void

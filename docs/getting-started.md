@@ -6,7 +6,7 @@
 
 | Requirement | Minimum version |
 |---|---|
-| PHP | 8.5 |
+| PHP | 8.4 |
 | Composer | 2.x |
 | Database | SQLite 3, MySQL 8+, or PostgreSQL 14+ |
 
@@ -25,6 +25,10 @@ cp .env.example .env
 ```
 
 Edit `.env` to match your local environment (see [Configuration](configuration.md) for all available keys).
+If you prefer, you can also export the same variables in your shell instead of using a `.env` file.
+
+For Docker or Kubernetes deployments, you can inject environment variables directly
+through the platform instead of shipping a `.env` file.
 
 ---
 

@@ -1,6 +1,6 @@
 # Introduction
 
-Bingo is a PHP 8.5+ framework for building API-first applications.
+Bingo is a PHP 8.4+ framework for building API-first applications.
 
 It is designed for projects that need modern developer ergonomics — attribute-based routing, typed configuration, automatic discovery, and built-in validation — without pulling in a full application framework.
 

@@ -30,7 +30,7 @@ app/
 │   └── AppServiceProvider.php
 ├── Repositories/           # Repository interfaces and implementations
 │   ├── IUserRepository.php
-│   └── EloquentUserRepository.php
+│   └── UserRepository.php
 └── Services/               # Business logic
     └── UserService.php
 
@@ -63,7 +63,7 @@ public/
 
 storage/
 ├── framework/
-│   └── discovery.php       # Generated discovery cache (gitignored)
+│   └── discovery/          # Generated discovery cache files (gitignored)
 ├── logs/
 │   └── bingo.log           # Rotating application log
 └── rate-limit/             # File-based rate-limit counters (dev only)
@@ -88,7 +88,7 @@ composer.lock
 |---|---|---|
 | Controllers | `PascalCase` + `Controller` suffix | `UsersController` |
 | Services | `PascalCase` + `Service` suffix | `UserService` |
-| Repositories | Interface: `I` prefix; Implementation: `Eloquent` prefix | `IUserRepository`, `EloquentUserRepository` |
+| Repositories | Interface: `I` prefix; Implementation: descriptive concrete class | `IUserRepository`, `UserRepository` |
 | DTOs | Prefixed with action for inputs, noun for outputs | `CreateUserDTO`, `UserDTO` |
 | Middleware | `PascalCase` + `Middleware` suffix | `AuthMiddleware` |
 | Commands | `PascalCase` + `Command` suffix | `SendDigestEmailCommand` |
@@ -117,4 +117,4 @@ composer.lock
 | `bootstrap/console.php` | Console kernel — `require`s `app.php` but does not call `run()` |
 | `app/Exceptions/Handler.php` | Customise JSON error responses |
 | `config/DbConfig.php` | Add or remove database connections |
-| `storage/framework/discovery.php` | Generated cache — do not commit to Git |
+| `storage/framework/discovery/` | Generated cache directory — do not commit to Git |

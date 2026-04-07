@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\DTOs\CreateUserDTO;
 use App\DTOs\User\UserDTO;
-use App\Models\User;
 use App\Repositories\IUserRepository;
 use Bingo\Exceptions\Http\ConflictException;
 use Bingo\Exceptions\Http\NotFoundException;
@@ -39,7 +38,7 @@ readonly class UserService
     {
         $this->logger->debug('Fetching user', ['id' => $id]);
 
-        $user = User::with('posts')->find($id);
+        $user = $this->userRepo->findById($id);
 
         if (!$user) {
             $this->logger->info('User not found', ['id' => $id]);

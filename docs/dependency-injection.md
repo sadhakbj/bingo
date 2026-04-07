@@ -32,7 +32,7 @@ Place `#[Bind(ConcreteClass::class)]` on an interface to register the binding au
 ```php
 use Bingo\Attributes\Provider\Bind;
 
-#[Bind(EloquentUserRepository::class)]
+#[Bind(UserRepository::class)]
 interface IUserRepository
 {
     public function findById(int $id): ?User;
