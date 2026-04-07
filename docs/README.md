@@ -1,6 +1,6 @@
 # Bingo Documentation
 
-Bingo is a PHP 8.5+ framework for API-first applications built on Symfony components and Eloquent ORM.
+Bingo is a PHP 8.4+ framework for API-first applications built on Symfony components and Eloquent ORM.
 
 ---
 

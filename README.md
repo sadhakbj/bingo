@@ -1,6 +1,6 @@
 # Bingo
 
-Bingo is a PHP 8.5+ framework for building API-first applications.
+Bingo is a PHP 8.4+ framework for building API-first applications.
 
 It combines attribute-based routing, automatic controller discovery, typed configuration, dependency injection, request validation, Eloquent ORM, rate limiting, structured logging, and SSE streaming — all built on top of Symfony components.
 
@@ -66,7 +66,7 @@ Kubernetes a physical `.env` file is optional because the platform can inject en
 
 | Requirement | Version |
 |---|---|
-| PHP | 8.5+ |
+| PHP | 8.4+ |
 | Composer | 2.x |
 | Database | SQLite 3, MySQL 8+, or PostgreSQL 14+ |
 

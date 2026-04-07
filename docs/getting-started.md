@@ -6,7 +6,7 @@
 
 | Requirement | Minimum version |
 |---|---|
-| PHP | 8.5 |
+| PHP | 8.4 |
 | Composer | 2.x |
 | Database | SQLite 3, MySQL 8+, or PostgreSQL 14+ |
 

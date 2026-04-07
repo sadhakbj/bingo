@@ -28,7 +28,7 @@ class UserRepository implements IUserRepository
 
     public function findById(int $id): ?User
     {
-        return User::query()->find($id);
+        return User::query()->with('posts')->find($id);
     }
 
     public function exists(string $key, string $value): bool
