@@ -93,6 +93,7 @@ Optional: `ext-redis` (phpredis) for distributed rate limiting in production.
 - [Dependency Injection](docs/dependency-injection.md) — auto-resolution, bindings, service providers
 - [Auto-Discovery](docs/auto-discovery.md) — how controllers and commands are found at runtime
 - [Eloquent ORM](docs/eloquent-orm.md) — models, relationships, migrations, read replicas
+- [Doctrine ORM Plan](docs/doctrine-orm-plan.md) — proposed architecture and phased migration strategy
 - [Rate Limiting](docs/rate-limiting.md) — sliding-window throttling with Redis or file store
 - [Logging](docs/logging.md) — structured Monolog logger, formats, and injection
 - [Server-Sent Events](docs/server-sent-events.md) — SSE streaming and raw chunked responses

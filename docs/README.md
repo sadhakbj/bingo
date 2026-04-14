@@ -24,6 +24,7 @@ Bingo is a PHP 8.4+ framework for API-first applications built on Symfony compon
 - [Dependency Injection](dependency-injection.md) — auto-resolution, bindings, service providers
 - [Auto-Discovery](auto-discovery.md) — how controllers and commands are found at runtime
 - [Eloquent ORM](eloquent-orm.md) — models, relationships, migrations, read replicas
+- [Doctrine ORM Plan](doctrine-orm-plan.md) — proposed architecture and phased migration strategy
 - [Rate Limiting](rate-limiting.md) — sliding-window throttling with Redis or file store
 - [Logging](logging.md) — structured Monolog logger, formats, and injection
 - [Server-Sent Events](server-sent-events.md) — SSE streaming and raw chunked responses
