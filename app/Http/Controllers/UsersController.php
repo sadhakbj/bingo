@@ -44,9 +44,12 @@ readonly class UsersController
 
     #[Get('/search')]
     public function search(
-        #[Query('q')] ?string $query = '',
-        #[Query('limit')] ?int    $limit = 10,
-        #[Query('page')] ?int    $page = 1,
+        #[Query('q')]
+        ?string $query = '',
+        #[Query('limit')]
+        ?int    $limit = 10,
+        #[Query('page')]
+        ?int    $page = 1,
     ): Response {
         return Response::json([
             'message' => 'Search users',
@@ -105,9 +108,12 @@ readonly class UsersController
 
     #[Post('/upload')]
     public function upload(
-        #[ReqAttr] Request $request,
-        #[Headers('x-api-version')] ?string $apiVersion = null,
-        #[UploadedFile('avatar')] ?File   $avatar = null,
+        #[ReqAttr]
+        Request $request,
+        #[Headers('x-api-version')]
+        ?string $apiVersion = null,
+        #[UploadedFile('avatar')]
+        ?File   $avatar = null,
     ): Response {
         return Response::json([
             'api_version'    => $apiVersion,
@@ -127,9 +133,12 @@ readonly class UsersController
 
     #[Post('/upload-multiple')]
     public function uploadMultiple(
-        #[Body] CreateUserDTO $dto,
-        #[Headers('x-api-version')] ?string       $apiVersion = null,
-        #[UploadedFiles] array         $files = [],
+        #[Body]
+        CreateUserDTO $dto,
+        #[Headers('x-api-version')]
+        ?string       $apiVersion = null,
+        #[UploadedFiles]
+        array         $files = [],
     ): Response {
         $fileInfos = [];
         /** @var File $file */

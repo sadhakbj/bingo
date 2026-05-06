@@ -23,7 +23,6 @@ preserve-breaking-attribute-list = true
 preserve-breaking-conditional-expression = true
 preserve-breaking-condition-expression = true
 preserve-redundant-logical-binary-expression-parentheses = true
-parameter-attribute-on-new-line = false
 align-assignment-like = true
 align-named-arguments = true
 align-parameters = true

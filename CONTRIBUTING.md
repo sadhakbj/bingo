@@ -332,7 +332,6 @@ The project's `mago.toml` tunes the `default` preset to keep code compact and al
 
 | Key | Value | Effect |
 |---|---|---|
-| `parameter-attribute-on-new-line` | `false` | Keeps `#[Attr] Type $param` on one line instead of breaking the attribute onto its own line |
 | `align-assignment-like` | `true` | Column-aligns `=>` in multiline arrays and `=` in consecutive assignments / class properties / constants |
 | `align-named-arguments` | `true` | Column-aligns `:` across named arguments in a call |
 | `align-parameters` | `true` | Column-aligns the variable column in multiline parameter lists (especially promoted constructor properties) |
