@@ -24,16 +24,16 @@ class Response extends SymfonyResponse implements HttpResponse
      * @param callable(): iterable<int|string|array|object|StreamedEvent> $producer
      */
     public static function eventStream(
-        callable $producer,
+        callable       $producer,
         ?StreamedEvent $endStreamWith = null,
-        int $status = 200,
-        array $headers = [],
+        int            $status = 200,
+        array          $headers = [],
     ): StreamedResponse {
         $headers = array_merge([
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
+            'Content-Type'      => 'text/event-stream',
+            'Cache-Control'     => 'no-cache',
             'X-Accel-Buffering' => 'no',
-            'Connection' => 'keep-alive',
+            'Connection'        => 'keep-alive',
         ], $headers);
 
         $callback = static function () use ($producer, $endStreamWith): void {

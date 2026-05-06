@@ -17,7 +17,7 @@ final class DatabaseConfig
 
     public function __construct(
         private readonly string $defaultName,
-        array $connections,
+        array                   $connections,
     ) {
         $this->connections = $connections;
     }

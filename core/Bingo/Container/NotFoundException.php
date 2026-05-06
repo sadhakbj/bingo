@@ -13,7 +13,7 @@ class NotFoundException extends ContainerException implements NotFoundExceptionI
         parent::__construct(
             "No binding found for '{$id}' and it cannot be auto-resolved.",
             0,
-            $previous
+            $previous,
         );
     }
 }

@@ -17,6 +17,5 @@ final class HttpCode
 {
     public function __construct(
         public readonly int $code,
-    ) {
-    }
+    ) {}
 }

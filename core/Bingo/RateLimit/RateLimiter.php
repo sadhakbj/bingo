@@ -20,7 +20,9 @@ use Bingo\RateLimit\Contracts\RateLimiterStore;
  */
 readonly class RateLimiter
 {
-    public function __construct(private RateLimiterStore $store) {}
+    public function __construct(
+        private RateLimiterStore $store,
+    ) {}
 
     /**
      * Record a hit and return the result.
@@ -31,41 +33,41 @@ readonly class RateLimiter
      */
     public function attempt(string $key, int $limit, int $windowSeconds): RateLimitResult
     {
-        $now           = time();
-        $currentWinId  = (int) floor($now / $windowSeconds);
-        $prevWinId     = $currentWinId - 1;
+        $now          = time();
+        $currentWinId = (int) floor($now / $windowSeconds);
+        $prevWinId    = $currentWinId - 1;
 
-        $prevCount  = $this->store->count($key, $prevWinId);
-        $currCount  = $this->store->count($key, $currentWinId);
+        $prevCount = $this->store->count($key, $prevWinId);
+        $currCount = $this->store->count($key, $currentWinId);
 
         // How far we are through the current window (0.0 → 1.0)
-        $elapsedFraction = ($now - $currentWinId * $windowSeconds) / $windowSeconds;
+        $elapsedFraction = ($now - ($currentWinId * $windowSeconds)) / $windowSeconds;
 
         // Weighted estimate: previous window contributes less as we move through current window
-        $estimated = (int) floor($prevCount * (1.0 - $elapsedFraction) + $currCount);
+        $estimated = (int) floor(($prevCount * (1.0 - $elapsedFraction)) + $currCount);
 
         $resetAt = ($currentWinId + 1) * $windowSeconds;
 
         if ($estimated >= $limit) {
             return new RateLimitResult(
-                allowed:    false,
-                limit:      $limit,
-                remaining:  0,
-                resetAt:    $resetAt,
+                allowed   : false,
+                limit     : $limit,
+                remaining : 0,
+                resetAt   : $resetAt,
                 retryAfter: max(1, $resetAt - $now),
             );
         }
 
         $newCurrCount = $this->store->increment($key, $currentWinId, $windowSeconds * 2);
 
-        $newEstimated = (int) floor($prevCount * (1.0 - $elapsedFraction) + $newCurrCount);
+        $newEstimated = (int) floor(($prevCount * (1.0 - $elapsedFraction)) + $newCurrCount);
         $remaining    = max(0, $limit - $newEstimated);
 
         return new RateLimitResult(
-            allowed:    true,
-            limit:      $limit,
-            remaining:  $remaining,
-            resetAt:    $resetAt,
+            allowed   : true,
+            limit     : $limit,
+            remaining : $remaining,
+            resetAt   : $resetAt,
             retryAfter: 0,
         );
     }
@@ -81,9 +83,9 @@ readonly class RateLimiter
 
         $prevCount       = $this->store->count($key, $prevWinId);
         $currCount       = $this->store->count($key, $currentWinId);
-        $elapsedFraction = ($now - $currentWinId * $windowSeconds) / $windowSeconds;
+        $elapsedFraction = ($now - ($currentWinId * $windowSeconds)) / $windowSeconds;
 
-        return (int) floor($prevCount * (1.0 - $elapsedFraction) + $currCount) >= $limit;
+        return (int) floor(($prevCount * (1.0 - $elapsedFraction)) + $currCount) >= $limit;
     }
 
     /**

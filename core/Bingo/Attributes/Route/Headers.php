@@ -15,6 +15,6 @@ use Attribute;
 class Headers
 {
     public function __construct(
-        public readonly ?string $key = null
+        public readonly ?string $key = null,
     ) {}
 }

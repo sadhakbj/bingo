@@ -24,7 +24,7 @@ abstract class ValidatedRequest extends Request
             $request->cookies->all(),
             $request->files->all(),
             $request->server->all(),
-            $request->getContent()
+            $request->getContent(),
         );
 
         $instance->populate($request);
@@ -38,7 +38,7 @@ abstract class ValidatedRequest extends Request
         $contentType = $request->headers->get('Content-Type', '');
         if (str_contains($contentType, 'application/json')) {
             $content = $request->getContent();
-            $data = json_decode($content, true) ?: [];
+            $data    = json_decode($content, true) ?: [];
         } else {
             // Handle form data (query + request parameters)
             $data = $request->all();

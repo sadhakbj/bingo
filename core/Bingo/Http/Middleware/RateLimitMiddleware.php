@@ -19,12 +19,11 @@ class RateLimitMiddleware implements MiddlewareInterface
 
     public function __construct(
         private readonly RateLimiter $limiter,
-        private readonly int         $limit         = 1_000,
+        private readonly int         $limit = 1_000,
         private readonly int         $windowSeconds = 60,
-        ?callable                    $keyResolver   = null,
+        ?callable                    $keyResolver = null,
     ) {
-        $this->keyResolver = $keyResolver ?? static fn(Request $r): string
-            => 'rl:' . ($r->getClientIp() ?? 'unknown');
+        $this->keyResolver = $keyResolver ?? static fn(Request $r): string => 'rl:' . ($r->getClientIp() ?? 'unknown');
     }
 
     public function handle(Request $request, callable $next): Response
@@ -70,10 +69,10 @@ class RateLimitMiddleware implements MiddlewareInterface
      * when no DI container is available yet (static factory context).
      */
     public static function create(
-        ?RateLimiter $limiter       = null,
-        int          $limit         = 1_000,
+        ?RateLimiter $limiter = null,
+        int          $limit = 1_000,
         int          $windowSeconds = 60,
-        ?callable    $keyResolver   = null,
+        ?callable    $keyResolver = null,
     ): self {
         return new self($limiter ?? self::defaultLimiter(), $limit, $windowSeconds, $keyResolver);
     }
@@ -88,8 +87,7 @@ class RateLimitMiddleware implements MiddlewareInterface
         int         $per,
         string      $routeName,
     ): self {
-        $resolver = static fn(Request $r): string
-            => 'throttle:' . $routeName . ':' . ($r->getClientIp() ?? 'unknown');
+        $resolver = static fn(Request $r): string => 'throttle:' . $routeName . ':' . ($r->getClientIp() ?? 'unknown');
 
         return new self($limiter, $requests, $per, $resolver);
     }
@@ -100,9 +98,9 @@ class RateLimitMiddleware implements MiddlewareInterface
 
     private function addHeaders(Response $response, RateLimitResult $result): void
     {
-        $response->headers->set('X-RateLimit-Limit',     (string) $result->limit);
+        $response->headers->set('X-RateLimit-Limit', (string) $result->limit);
         $response->headers->set('X-RateLimit-Remaining', (string) $result->remaining);
-        $response->headers->set('X-RateLimit-Reset',     (string) $result->resetAt);
+        $response->headers->set('X-RateLimit-Reset', (string) $result->resetAt);
     }
 
     private static function defaultLimiter(): RateLimiter

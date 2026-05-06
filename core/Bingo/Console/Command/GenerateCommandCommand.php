@@ -11,15 +11,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateCommandCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this
-            ->setName('generate:command')
+        $this->setName('generate:command')
             ->setAliases(['g:command'])
             ->setDescription('Generate a new console command')
             ->addArgument('name', InputArgument::REQUIRED, 'Command class name (e.g. SendEmails)');
@@ -46,7 +46,7 @@ class GenerateCommandCommand extends Command
 
         $output->writeln("<info>  CREATE</info> app/Console/Commands/{$className}.php");
         $output->writeln('');
-        $output->writeln("  Register in <comment>bootstrap/console.php</comment>:");
+        $output->writeln('  Register in <comment>bootstrap/console.php</comment>:');
         $output->writeln("    \$kernel->command(\\App\\Console\\Commands\\{$className}::class);");
 
         return Command::SUCCESS;
@@ -55,39 +55,39 @@ class GenerateCommandCommand extends Command
     private function stub(string $className, string $cmdName): string
     {
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        namespace App\Console\Commands;
+            namespace App\Console\Commands;
 
-        use Symfony\Component\Console\Command\Command;
-        use Symfony\Component\Console\Input\InputInterface;
-        use Symfony\Component\Console\Output\OutputInterface;
+            use Symfony\Component\Console\Command\Command;
+            use Symfony\Component\Console\Input\InputInterface;
+            use Symfony\Component\Console\Output\OutputInterface;
 
-        class {$className} extends Command
-        {
-            // Inject services via constructor — the DI container resolves them automatically.
-            // public function __construct(private readonly UserService \$users)
-            // {
-            //     parent::__construct();
-            // }
-
-            protected function configure(): void
+            class {$className} extends Command
             {
-                \$this
-                    ->setName('{$cmdName}')
-                    ->setDescription('Describe what this command does');
-            }
+                // Inject services via constructor — the DI container resolves them automatically.
+                // public function __construct(private readonly UserService \$users)
+                // {
+                //     parent::__construct();
+                // }
 
-            protected function execute(InputInterface \$input, OutputInterface \$output): int
-            {
-                \$output->writeln('Running {$cmdName}...');
+                protected function configure(): void
+                {
+                    \$this
+                        ->setName('{$cmdName}')
+                        ->setDescription('Describe what this command does');
+                }
 
-                return Command::SUCCESS;
+                protected function execute(InputInterface \$input, OutputInterface \$output): int
+                {
+                    \$output->writeln('Running {$cmdName}...');
+
+                    return Command::SUCCESS;
+                }
             }
-        }
-        PHP;
+            PHP;
     }
 
     private function normalize(string $name, string $suffix): string
@@ -99,7 +99,7 @@ class GenerateCommandCommand extends Command
     /** SendEmailsCommand → app:send-emails */
     private function toCommandName(string $className): string
     {
-        $base = str_replace('Command', '', $className);
+        $base  = str_replace('Command', '', $className);
         $snake = strtolower(preg_replace('/[A-Z]/', '-$0', lcfirst($base)));
         return 'app:' . ltrim($snake, '-');
     }

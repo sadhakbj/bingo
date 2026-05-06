@@ -8,13 +8,12 @@ use App\Http\Middleware\AuthMiddleware;
 use App\Models\User;
 use Bingo\Attributes\Middleware;
 use Bingo\Attributes\Route\Route;
-use Bingo\Http\Response;
 use Bingo\Attributes\Route\Throttle;
+use Bingo\Http\Response;
 
 final class HomeController
 {
     public function __construct() {}
-
 
     #[Route('/', 'GET')]
     #[Throttle(requests: 1, per: 60)]
@@ -28,12 +27,12 @@ final class HomeController
     #[Middleware([AuthMiddleware::class])]
     public function about(): string
     {
-        return "About us page";
+        return 'About us page';
     }
 
     #[Route('/contact', 'POST')]
     public function contact(): string
     {
-        return "Contact form submitted";
+        return 'Contact form submitted';
     }
 }

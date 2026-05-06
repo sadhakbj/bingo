@@ -15,11 +15,14 @@ class RequestIdMiddleware implements MiddlewareInterface
 
     public function __construct(array $config = [])
     {
-        $this->config = array_merge([
-            'header_name' => 'X-Request-ID',
-            'response_header' => 'X-Request-ID',
-            'generator' => 'uuid4', // uuid4, uniqid, or callable
-        ], $config);
+        $this->config = array_merge(
+            [
+                'header_name'     => 'X-Request-ID',
+                'response_header' => 'X-Request-ID',
+                'generator'       => 'uuid4', // uuid4, uniqid, or callable
+            ],
+            $config,
+        );
     }
 
     public function handle(Request $request, callable $next): HttpResponse
@@ -62,9 +65,9 @@ class RequestIdMiddleware implements MiddlewareInterface
 
     private function generateUuid4(): string
     {
-        $data = random_bytes(16);
-        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // Set version to 0100
-        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // Set bits 6-7 to 10
+        $data    = random_bytes(16);
+        $data[6] = chr((ord($data[6]) & 0x0f) | 0x40); // Set version to 0100
+        $data[8] = chr((ord($data[8]) & 0x3f) | 0x80); // Set bits 6-7 to 10
 
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }

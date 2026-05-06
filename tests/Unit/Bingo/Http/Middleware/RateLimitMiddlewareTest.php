@@ -151,9 +151,9 @@ class RateLimitMiddlewareTest extends TestCase
         $limiter    = $this->limiter();
         $middleware = new RateLimitMiddleware(
             $limiter,
-            limit:         1,
+            limit: 1,
             windowSeconds: 60,
-            keyResolver:   fn(Request $r) => 'fixed-key',
+            keyResolver: fn(Request $r) => 'fixed-key',
         );
         $next = $this->okNext();
 

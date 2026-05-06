@@ -10,6 +10,6 @@ use Attribute;
 class Query
 {
     public function __construct(
-        public readonly ?string $key = null
+        public readonly ?string $key = null,
     ) {}
 }

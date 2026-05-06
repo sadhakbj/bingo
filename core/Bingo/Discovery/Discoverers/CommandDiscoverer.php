@@ -14,7 +14,9 @@ use Symfony\Component\Console\Command\Command;
  */
 class CommandDiscoverer implements DiscovererInterface
 {
-    public function __construct(private readonly string $appPath) {}
+    public function __construct(
+        private readonly string $appPath,
+    ) {}
 
     public function type(): string
     {
@@ -23,7 +25,7 @@ class CommandDiscoverer implements DiscovererInterface
 
     public function discover(): array
     {
-        $commands = [];
+        $commands    = [];
         $commandPath = $this->appPath . '/Console/Commands';
 
         if (!is_dir($commandPath)) {

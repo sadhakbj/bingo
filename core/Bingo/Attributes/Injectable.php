@@ -10,6 +10,6 @@ use Attribute;
 final class Injectable
 {
     public function __construct(
-        public readonly string $scope = 'transient'
+        public readonly string $scope = 'transient',
     ) {}
 }

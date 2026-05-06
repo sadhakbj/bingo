@@ -14,7 +14,12 @@ class CreateUserDTO extends DataTransferObject
     public readonly string $email;
 
     #[Assert\NotBlank(message: 'Name is required')]
-    #[Assert\Length(min: 2, max: 50, minMessage: 'Name must be at least 2 characters', maxMessage: 'Name cannot exceed 50 characters')]
+    #[Assert\Length(
+        min       : 2,
+        max       : 50,
+        minMessage: 'Name must be at least 2 characters',
+        maxMessage: 'Name cannot exceed 50 characters',
+    )]
     public readonly string $name;
 
     #[Assert\Range(notInRangeMessage: 'Age must be between 18 and 120', min: 18, max: 120)]

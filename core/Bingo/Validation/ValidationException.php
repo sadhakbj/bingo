@@ -13,7 +13,7 @@ class ValidationException extends Exception
     public function __construct(array $errors)
     {
         $this->errors = $errors;
-        $message = 'Validation failed: ' . implode(', ', array_keys($errors));
+        $message      = 'Validation failed: ' . implode(', ', array_keys($errors));
         parent::__construct($message);
     }
 }

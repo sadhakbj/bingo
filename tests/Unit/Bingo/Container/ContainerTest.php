@@ -74,7 +74,7 @@ class ContainerTest extends TestCase
 
     public function test_instance_returns_prebuilt_object(): void
     {
-        $obj = new StubService();
+        $obj        = new StubService();
         $obj->value = 42;
 
         $this->container->instance(StubService::class, $obj);
@@ -131,7 +131,7 @@ class ContainerTest extends TestCase
 
         $this->assertSame(
             $this->container->get(StubService::class),
-            $this->container->make(StubService::class)
+            $this->container->make(StubService::class),
         );
     }
 
@@ -244,13 +244,13 @@ interface StubUnresolvableInterface {} // no binding — triggers nullable fallb
 class StubServiceWithOptional
 {
     public function __construct(
-        public readonly string $name = 'default'
+        public readonly string $name = 'default',
     ) {}
 }
 
 class StubServiceWithNullable
 {
     public function __construct(
-        public readonly ?StubUnresolvableInterface $dep = null
+        public readonly ?StubUnresolvableInterface $dep = null,
     ) {}
 }

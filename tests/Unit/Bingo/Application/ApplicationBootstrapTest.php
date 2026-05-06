@@ -73,7 +73,7 @@ class ApplicationBootstrapTest extends TestCase
     public function test_application_owns_core_path_resolution(): void
     {
         $basePath = '/tmp/bingo-kernel-test';
-        $app = Application::create($basePath);
+        $app      = Application::create($basePath);
 
         $this->assertSame('/tmp/bingo-kernel-test', $app->basePath());
         $this->assertSame('/tmp/bingo-kernel-test/app', $app->appPath());
@@ -97,7 +97,7 @@ class ApplicationBootstrapTest extends TestCase
 
     public function test_explicit_logger_instance_is_not_overwritten_during_boot(): void
     {
-        $app = Application::create(dirname(__DIR__, 4));
+        $app    = Application::create(dirname(__DIR__, 4));
         $logger = new NullLogger();
 
         $app->instance(LoggerInterface::class, $logger);
@@ -118,7 +118,7 @@ class ApplicationBootstrapTest extends TestCase
 
     public function test_explicit_rate_limit_store_is_not_overwritten_during_boot(): void
     {
-        $app = Application::create(dirname(__DIR__, 4));
+        $app   = Application::create(dirname(__DIR__, 4));
         $store = new class implements RateLimiterStore {
             public function increment(string $key, int $windowId, int $decaySeconds): int
             {
@@ -130,9 +130,7 @@ class ApplicationBootstrapTest extends TestCase
                 return 0;
             }
 
-            public function reset(string $key): void
-            {
-            }
+            public function reset(string $key): void {}
         };
 
         $app->instance(RateLimiterStore::class, $store);

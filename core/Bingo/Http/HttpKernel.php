@@ -17,9 +17,9 @@ final readonly class HttpKernel
      */
     public function __construct(
         private MiddlewarePipeline $pipeline,
-        private Router $router,
-        private \Closure $bootResolver,
-        private \Closure $exceptionHandlerResolver,
+        private Router             $router,
+        private \Closure           $bootResolver,
+        private \Closure           $exceptionHandlerResolver,
         private ResponseNormalizer $responseNormalizer,
     ) {}
 

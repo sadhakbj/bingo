@@ -10,8 +10,8 @@ use Iterator;
 
 class DTOCollection implements ArrayAccess, Countable, Iterator
 {
-    private array $items = [];
-    private int $position = 0;
+    private array $items    = [];
+    private int   $position = 0;
 
     public function __construct(array $items = [], ?string $dtoClass = null)
     {
@@ -65,7 +65,7 @@ class DTOCollection implements ArrayAccess, Countable, Iterator
 
     public function toArray(): array
     {
-        return array_map(function($item) {
+        return array_map(function ($item) {
             return $item instanceof DataTransferObject ? $item->toArray() : $item;
         }, $this->items);
     }

@@ -10,9 +10,9 @@ use RuntimeException;
 class HttpException extends RuntimeException
 {
     public function __construct(
-        private readonly int $statusCode,
-        string $message = '',
-        ?\Throwable $previous = null,
+        private readonly int     $statusCode,
+        string                   $message = '',
+        ?\Throwable              $previous = null,
         private readonly ?string $description = null,
     ) {
         $code = $this->statusCode;

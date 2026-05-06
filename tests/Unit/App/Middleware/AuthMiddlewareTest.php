@@ -27,9 +27,16 @@ class AuthMiddlewareTest extends TestCase
 
     private function requestWithToken(string $token): Request
     {
-        return Request::create('/test', 'GET', [], [], [], [
-            'HTTP_AUTHORIZATION' => "Bearer $token",
-        ]);
+        return Request::create(
+            '/test',
+            'GET',
+            [],
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => "Bearer $token",
+            ],
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -48,7 +55,7 @@ class AuthMiddlewareTest extends TestCase
     public function test_valid_bearer_token_calls_next(): void
     {
         $called = false;
-        $next = function (Request $req) use (&$called) {
+        $next   = function (Request $req) use (&$called) {
             $called = true;
             return Response::json(['ok' => true]);
         };
@@ -62,7 +69,7 @@ class AuthMiddlewareTest extends TestCase
     public function test_token_is_attached_to_request_attributes(): void
     {
         $capturedRequest = null;
-        $next = function (Request $req) use (&$capturedRequest) {
+        $next            = function (Request $req) use (&$capturedRequest) {
             $capturedRequest = $req;
             return Response::json([]);
         };
@@ -76,7 +83,7 @@ class AuthMiddlewareTest extends TestCase
     {
         $response = $this->middleware->handle(
             $this->requestWithToken('abc'),
-            fn($req) => Response::json(['data' => 'secret'], 200)
+            fn($req) => Response::json(['data' => 'secret'], 200),
         );
 
         $this->assertSame(200, $response->getStatusCode());
@@ -98,9 +105,16 @@ class AuthMiddlewareTest extends TestCase
     {
         $this->expectException(UnauthorizedException::class);
 
-        $request = Request::create('/test', 'GET', [], [], [], [
-            'HTTP_AUTHORIZATION' => 'Basic dXNlcjpwYXNz',
-        ]);
+        $request = Request::create(
+            '/test',
+            'GET',
+            [],
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => 'Basic dXNlcjpwYXNz',
+            ],
+        );
         $this->middleware->handle($request, $this->next());
     }
 
@@ -108,9 +122,16 @@ class AuthMiddlewareTest extends TestCase
     {
         $this->expectException(UnauthorizedException::class);
 
-        $request = Request::create('/test', 'GET', [], [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer    ',
-        ]);
+        $request = Request::create(
+            '/test',
+            'GET',
+            [],
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => 'Bearer    ',
+            ],
+        );
         $this->middleware->handle($request, $this->next());
     }
 

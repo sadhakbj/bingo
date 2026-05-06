@@ -28,11 +28,10 @@ class LoggingServiceProvider
 
     #[Singleton]
     public function logger(
-        Application $app,
-        LogConfig $cfg,
+        Application             $app,
+        LogConfig               $cfg,
         RequestContextProcessor $processor,
-    ): LoggerInterface
-    {
+    ): LoggerInterface {
         $logger = new Logger('bingo');
 
         $level       = Level::fromName(ucfirst($cfg->level));

@@ -18,19 +18,22 @@ class CompressionMiddleware implements MiddlewareInterface
 
     public function __construct(array $config = [])
     {
-        $this->config = array_merge([
-            'level' => 6, // Compression level 1-9
-            'threshold' => 1024, // Minimum bytes to compress
-            'types' => [
-                'application/json',
-                'application/xml',
-                'text/html',
-                'text/plain',
-                'text/css',
-                'text/javascript',
-                'application/javascript'
-            ]
-        ], $config);
+        $this->config = array_merge(
+            [
+                'level' => 6, // Compression level 1-9
+                'threshold' => 1024, // Minimum bytes to compress
+                'types' => [
+                    'application/json',
+                    'application/xml',
+                    'text/html',
+                    'text/plain',
+                    'text/css',
+                    'text/javascript',
+                    'application/javascript',
+                ],
+            ],
+            $config,
+        );
     }
 
     public function handle(Request $request, callable $next): HttpResponse

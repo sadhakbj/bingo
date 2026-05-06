@@ -12,9 +12,9 @@ use Bingo\Http\ResponseNormalizer;
 
 class MiddlewarePipeline
 {
-    private array $middleware = [];
-    private array $globalMiddleware = [];
-    private ?Container $container = null;
+    private array      $middleware       = [];
+    private array      $globalMiddleware = [];
+    private ?Container $container        = null;
     private ResponseNormalizer $responseNormalizer;
 
     public function __construct()
@@ -61,8 +61,12 @@ class MiddlewarePipeline
     /**
      * Execute middleware recursively
      */
-    private function executeMiddleware(array $middlewareStack, int $index, Request $request, ?callable $finalHandler): HttpResponse
-    {
+    private function executeMiddleware(
+        array     $middlewareStack,
+        int       $index,
+        Request   $request,
+        ?callable $finalHandler,
+    ): HttpResponse {
         // If we've reached the end of middleware stack, call the final handler
         if ($index >= count($middlewareStack)) {
             return $this->normalizeResult(
@@ -74,7 +78,7 @@ class MiddlewarePipeline
         $middleware = $this->resolveMiddleware($middlewareStack[$index]);
 
         // Create next function that calls the next middleware in the stack
-        $next = function(Request $req) use ($middlewareStack, $index, $finalHandler) {
+        $next = function (Request $req) use ($middlewareStack, $index, $finalHandler) {
             return $this->executeMiddleware($middlewareStack, $index + 1, $req, $finalHandler);
         };
 
@@ -117,7 +121,7 @@ class MiddlewarePipeline
      */
     public static function create(?Container $container = null, ?ResponseNormalizer $responseNormalizer = null): self
     {
-        $instance = new self();
+        $instance            = new self();
         $instance->container = $container;
         if ($responseNormalizer !== null) {
             $instance->responseNormalizer = $responseNormalizer;
@@ -168,7 +172,7 @@ class MiddlewarePipeline
      */
     public function clear(): self
     {
-        $this->middleware = [];
+        $this->middleware       = [];
         $this->globalMiddleware = [];
         return $this;
     }

@@ -22,13 +22,15 @@ use Bingo\RateLimit\Contracts\RateLimiterStore;
  */
 class FileStore implements RateLimiterStore
 {
-    public function __construct(private readonly string $directory) {}
+    public function __construct(
+        private readonly string $directory,
+    ) {}
 
     public function increment(string $key, int $windowId, int $decaySeconds): int
     {
         $this->ensureDirectory();
 
-        $path = $this->path($key, $windowId);
+        $path   = $this->path($key, $windowId);
         $handle = fopen($path, 'c+');
         if ($handle === false) {
             throw new \RuntimeException("Unable to open rate limit store file: {$path}");

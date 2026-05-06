@@ -22,8 +22,8 @@ readonly class ProviderBootstrapper
      */
     public function __construct(
         private Container $container,
-        private array $bindings,
-        private array $providers,
+        private array     $bindings,
+        private array     $providers,
     ) {}
 
     public function boot(): void

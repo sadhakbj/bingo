@@ -26,8 +26,9 @@ class Kernel
     /** @var string[] */
     private array $userCommands = [];
 
-    public function __construct(private readonly Application $app)
-    {
+    public function __construct(
+        private readonly Application $app,
+    ) {
         $this->console = new ConsoleApplication('Bingo', '1.0.0');
     }
 

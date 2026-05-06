@@ -12,15 +12,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class DiscoveryGenerateCommand extends Command
 {
-    public function __construct(private readonly Application $app)
-    {
+    public function __construct(
+        private readonly Application $app,
+    ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this
-            ->setName('discovery:generate')
+        $this->setName('discovery:generate')
             ->setAliases(['discovery:cache'])
             ->setDescription('Generate discovery cache for production');
     }
@@ -31,10 +31,10 @@ class DiscoveryGenerateCommand extends Command
         $output->writeln('');
 
         $manager = new DiscoveryManager(
-            cacheDir:      $this->app->frameworkPath('discovery'),
-            appPath:       $this->app->appPath(),
+            cacheDir     : $this->app->frameworkPath('discovery'),
+            appPath      : $this->app->appPath(),
             coreBingoPath: dirname(__DIR__, 2), // core/Bingo/
-            isProduction:  false, // Force discovery even if APP_ENV=production
+            isProduction : false, // Force discovery even if APP_ENV=production
         );
 
         $discovered = $manager->rebuild();

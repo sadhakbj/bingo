@@ -181,7 +181,7 @@ class CreateUserDTOTest extends TestCase
 
     public function test_dto_properties_are_readonly(): void
     {
-        $dto = CreateUserDTO::fromRequest($this->validPayload());
+        $dto        = CreateUserDTO::fromRequest($this->validPayload());
         $reflection = new \ReflectionClass($dto);
 
         foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {

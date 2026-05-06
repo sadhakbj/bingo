@@ -11,15 +11,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateControllerCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this
-            ->setName('generate:controller')
+        $this->setName('generate:controller')
             ->setAliases(['g:controller'])
             ->setDescription('Generate a new controller')
             ->addArgument('name', InputArgument::REQUIRED, 'Controller name (e.g. Posts)');
@@ -40,9 +40,6 @@ class GenerateControllerCommand extends Command
         file_put_contents($path, $this->stub($className, $prefix));
 
         $output->writeln("<info>  CREATE</info> app/Http/Controllers/{$className}.php");
-        $output->writeln('');
-        $output->writeln("  Register in <comment>bootstrap/app.php</comment>:");
-        $output->writeln("    \$app->controller(\\App\\Http\\Controllers\\{$className}::class);");
 
         return Command::SUCCESS;
     }
@@ -50,24 +47,25 @@ class GenerateControllerCommand extends Command
     private function stub(string $className, string $prefix): string
     {
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        namespace App\Http\Controllers;
+            namespace App\Http\Controllers;
 
-        use Bingo\Attributes\Route\ApiController;use Bingo\Http\Response;
+            use Bingo\Attributes\Route\{ApiController, Get};
+            use Bingo\Http\Response;
 
-        #[ApiController('{$prefix}')]
-        class {$className}
-        {
-            #[Get('/')]
-            public function index(): Response
+            #[ApiController('{$prefix}')]
+            final class {$className}
             {
-                return Response::json([]);
+                #[Get('/')]
+                public function index(): Response
+                {
+                    return Response::json(['message' => "Hello from {$className}!"]);
+                }
             }
-        }
-        PHP;
+            PHP;
     }
 
     private function normalize(string $name, string $suffix): string

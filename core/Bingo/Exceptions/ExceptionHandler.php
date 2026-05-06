@@ -17,7 +17,7 @@ use Psr\Log\LoggerInterface;
 class ExceptionHandler implements ExceptionHandlerInterface
 {
     public function __construct(
-        private readonly bool $debug = false,
+        private readonly bool             $debug = false,
         private readonly ?LoggerInterface $logger = null,
     ) {}
 
@@ -27,8 +27,8 @@ class ExceptionHandler implements ExceptionHandlerInterface
 
         return match (true) {
             $e instanceof ValidationException => $this->handleValidation($e),
-            $e instanceof HttpException       => $this->handleHttp($e),
-            default                           => $this->handleGeneric($e),
+            $e instanceof HttpException => $this->handleHttp($e),
+            default => $this->handleGeneric($e),
         };
     }
 
@@ -63,8 +63,8 @@ class ExceptionHandler implements ExceptionHandlerInterface
 
     private function handleHttp(HttpException $e): Response
     {
-        $status = $e->getStatusCode();
-        $error  = $e->getDescription() ?? HttpException::phraseForStatusCode($status);
+        $status   = $e->getStatusCode();
+        $error    = $e->getDescription() ?? HttpException::phraseForStatusCode($status);
         $response = $this->errorEnvelope(
             $status,
             $e->getMessage(),
@@ -105,8 +105,12 @@ class ExceptionHandler implements ExceptionHandlerInterface
      * @param string|array<string, string> $message String or field map (validation)
      * @param array<string, mixed>|null    $details Only when debug / extended payloads
      */
-    private function errorEnvelope(int $statusCode, string|array $message, string $error, ?array $details = null): Response
-    {
+    private function errorEnvelope(
+        int          $statusCode,
+        string|array $message,
+        string       $error,
+        ?array       $details = null,
+    ): Response {
         $body = [
             'statusCode' => $statusCode,
             'message'    => $message,
@@ -127,9 +131,9 @@ class ExceptionHandler implements ExceptionHandlerInterface
             return;
         }
 
-        $response->headers->set('X-RateLimit-Limit',     (string) $result->limit);
+        $response->headers->set('X-RateLimit-Limit', (string) $result->limit);
         $response->headers->set('X-RateLimit-Remaining', (string) $result->remaining);
-        $response->headers->set('X-RateLimit-Reset',     (string) $result->resetAt);
-        $response->headers->set('Retry-After',           (string) $result->retryAfter);
+        $response->headers->set('X-RateLimit-Reset', (string) $result->resetAt);
+        $response->headers->set('Retry-After', (string) $result->retryAfter);
     }
 }

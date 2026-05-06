@@ -11,15 +11,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateMigrationCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this
-            ->setName('generate:migration')
+        $this->setName('generate:migration')
             ->setAliases(['g:migration'])
             ->setDescription('Generate a new migration file')
             ->addArgument('name', InputArgument::REQUIRED, 'Migration name (e.g. create_posts_table)');
@@ -49,20 +49,20 @@ class GenerateMigrationCommand extends Command
         $table = $this->extractTableName($name);
 
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        use Illuminate\Database\Capsule\Manager as Capsule;
-        use Illuminate\Database\Schema\Blueprint;
+            use Illuminate\Database\Capsule\Manager as Capsule;
+            use Illuminate\Database\Schema\Blueprint;
 
-        if (!Capsule::schema()->hasTable('{$table}')) {
-            Capsule::schema()->create('{$table}', function (Blueprint \$table) {
-                \$table->id();
-                \$table->timestamps();
-            });
-        }
-        PHP;
+            if (!Capsule::schema()->hasTable('{$table}')) {
+                Capsule::schema()->create('{$table}', function (Blueprint \$table) {
+                    \$table->id();
+                    \$table->timestamps();
+                });
+            }
+            PHP;
     }
 
     /** create_posts_table → posts, add_bio_to_users → users */

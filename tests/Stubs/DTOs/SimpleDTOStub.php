@@ -13,7 +13,7 @@ use Bingo\Data\DataTransferObject;
 class SimpleDTOStub extends DataTransferObject
 {
     public string $name;
-    public ?int $age = null;
-    public ?string $bio = null;
-    public ?array $tags = null;
+    public ?int    $age  = null;
+    public ?string $bio  = null;
+    public ?array  $tags = null;
 }

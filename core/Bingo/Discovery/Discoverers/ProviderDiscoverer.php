@@ -44,7 +44,7 @@ class ProviderDiscoverer implements DiscovererInterface
                     continue;
                 }
 
-                $attrs = (new \ReflectionClass($className))->getAttributes(ServiceProviderAttribute::class);
+                $attrs = new \ReflectionClass($className)->getAttributes(ServiceProviderAttribute::class);
 
                 if (empty($attrs)) {
                     continue;

@@ -23,7 +23,7 @@ class MiddlewarePipelineTest extends TestCase
     public function test_empty_pipeline_calls_final_handler(): void
     {
         $pipeline = MiddlewarePipeline::create();
-        $called = false;
+        $called   = false;
 
         $pipeline->process($this->makeRequest(), function (Request $req) use (&$called) {
             $called = true;
@@ -48,7 +48,7 @@ class MiddlewarePipelineTest extends TestCase
     public function test_middleware_runs_before_final_handler(): void
     {
         $pipeline = MiddlewarePipeline::create();
-        $order = [];
+        $order    = [];
 
         $pipeline->addGlobal(function (Request $req, callable $next) use (&$order) {
             $order[] = 'middleware';
@@ -66,7 +66,7 @@ class MiddlewarePipelineTest extends TestCase
     public function test_multiple_middleware_run_in_registration_order(): void
     {
         $pipeline = MiddlewarePipeline::create();
-        $order = [];
+        $order    = [];
 
         $pipeline->addGlobal(function (Request $req, callable $next) use (&$order) {
             $order[] = 'first';
@@ -112,7 +112,7 @@ class MiddlewarePipelineTest extends TestCase
 
     public function test_middleware_can_short_circuit_without_calling_next(): void
     {
-        $pipeline = MiddlewarePipeline::create();
+        $pipeline      = MiddlewarePipeline::create();
         $handlerCalled = false;
 
         $pipeline->addGlobal(function (Request $req, callable $next) {
@@ -139,7 +139,9 @@ class MiddlewarePipelineTest extends TestCase
         $executed = false;
 
         $middleware = new class($executed) {
-            public function __construct(private bool &$executed) {}
+            public function __construct(
+                private bool &$executed,
+            ) {}
 
             public function handle(Request $request, callable $next): \Bingo\Contracts\HttpResponse
             {
@@ -161,7 +163,7 @@ class MiddlewarePipelineTest extends TestCase
     public function test_count_reflects_total_middleware(): void
     {
         $pipeline = MiddlewarePipeline::create();
-        $noop = fn($req, $next) => $next($req);
+        $noop     = fn($req, $next) => $next($req);
 
         $pipeline->addGlobal($noop);
         $pipeline->addGlobal($noop);
@@ -172,7 +174,7 @@ class MiddlewarePipelineTest extends TestCase
     public function test_clear_removes_all_middleware(): void
     {
         $pipeline = MiddlewarePipeline::create();
-        $noop = fn($req, $next) => $next($req);
+        $noop     = fn($req, $next) => $next($req);
 
         $pipeline->addGlobal($noop)->addGlobal($noop);
         $pipeline->clear();
@@ -183,7 +185,7 @@ class MiddlewarePipelineTest extends TestCase
     public function test_use_method_is_alias_for_add_global(): void
     {
         $pipeline = MiddlewarePipeline::create();
-        $noop = fn($req, $next) => $next($req);
+        $noop     = fn($req, $next) => $next($req);
 
         $pipeline->use($noop);
 

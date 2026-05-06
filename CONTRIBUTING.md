@@ -326,7 +326,22 @@ test: add integration tests for full request cycle
 
 **Strict types:** `declare(strict_types=1)` in every file.
 
-**Formatting:** PSR-12. Run your editor's formatter before committing. A CI formatter check is planned but not yet wired.
+**Formatting:** Enforced via [Mago](https://mago.carthage.software). Run `mago format` before committing. A CI formatter check is planned but not yet wired.
+
+The project's `mago.toml` tunes the `default` preset to keep code compact and aligned. The non-default formatter keys are:
+
+| Key | Value | Effect |
+|---|---|---|
+| `parameter-attribute-on-new-line` | `false` | Keeps `#[Attr] Type $param` on one line instead of breaking the attribute onto its own line |
+| `align-assignment-like` | `true` | Column-aligns `=>` in multiline arrays and `=` in consecutive assignments / class properties / constants |
+| `align-named-arguments` | `true` | Column-aligns `:` across named arguments in a call |
+| `align-parameters` | `true` | Column-aligns the variable column in multiline parameter lists (especially promoted constructor properties) |
+| `trailing-comma` | `true` | Re-adds the trailing comma the preset would otherwise strip from multiline lists |
+| `preserve-breaking-*` (chains, args, arrays, params, attrs, conditionals) | `true` | If you broke a construct across lines on purpose, mago keeps it broken instead of collapsing back to one line |
+
+**Known limitation.** `align-parameters` aligns the variable column but does **not** align `=` defaults in promoted constructor properties. If you want that, declare the properties in the class body instead — `align-assignment-like` covers regular properties fully.
+
+If you disagree with one of these settings, open an issue before changing it — the choices are deliberate and apply repo-wide.
 
 **Namespaces:**
 - Framework code: `Bingo\` → `core/Bingo/`

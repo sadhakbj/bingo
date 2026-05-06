@@ -10,6 +10,6 @@ use Attribute;
 class Body
 {
     public function __construct(
-        public readonly ?string $dtoClass = null
+        public readonly ?string $dtoClass = null,
     ) {}
 }

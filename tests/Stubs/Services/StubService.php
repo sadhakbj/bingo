@@ -14,7 +14,7 @@ class StubService
 class StubServiceWithDep
 {
     public function __construct(
-        public readonly StubService $service
+        public readonly StubService $service,
     ) {}
 }
 
@@ -22,7 +22,7 @@ class StubServiceWithDep
 class StubServiceWithPrimitive
 {
     public function __construct(
-        public readonly string $name
+        public readonly string $name,
     ) {}
 }
 
@@ -30,7 +30,7 @@ class StubServiceWithPrimitive
 class StubCircularA
 {
     public function __construct(
-        public readonly StubCircularB $b
+        public readonly StubCircularB $b,
     ) {}
 }
 
@@ -38,6 +38,6 @@ class StubCircularA
 class StubCircularB
 {
     public function __construct(
-        public readonly StubCircularA $a
+        public readonly StubCircularA $a,
     ) {}
 }

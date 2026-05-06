@@ -19,39 +19,39 @@ class ApiResponse extends DataTransferObject
     public function __construct(array $data = [])
     {
         $data['timestamp'] = $data['timestamp'] ?? date('c');
-        $data['success'] = $data['success'] ?? ($data['status_code'] ?? 200) < 400;
+        $data['success']   = $data['success'] ?? ($data['status_code'] ?? 200) < 400;
         parent::__construct($data);
     }
 
     public static function success(
-        mixed $data = null,
+        mixed  $data = null,
         string $message = 'Success',
-        int $statusCode = 200,
-        ?array $meta = null
+        int    $statusCode = 200,
+        ?array $meta = null,
     ): self {
         return new self([
-            'success' => true,
-            'message' => $message,
-            'data' => $data,
-            'errors' => null,
-            'meta' => $meta,
-            'status_code' => $statusCode
+            'success'     => true,
+            'message'     => $message,
+            'data'        => $data,
+            'errors'      => null,
+            'meta'        => $meta,
+            'status_code' => $statusCode,
         ]);
     }
 
     public static function error(
         string $message = 'An error occurred',
         ?array $errors = null,
-        int $statusCode = 400,
-        mixed $data = null
+        int    $statusCode = 400,
+        mixed  $data = null,
     ): self {
         return new self([
-            'success' => false,
-            'message' => $message,
-            'data' => $data,
-            'errors' => $errors,
-            'meta' => null,
-            'status_code' => $statusCode
+            'success'     => false,
+            'message'     => $message,
+            'data'        => $data,
+            'errors'      => $errors,
+            'meta'        => null,
+            'status_code' => $statusCode,
         ]);
     }
 
