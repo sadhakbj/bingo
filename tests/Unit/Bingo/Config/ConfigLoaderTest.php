@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Config;
 
@@ -45,7 +45,7 @@ class ConfigLoaderTest extends TestCase
     public function test_bool_false_string_cast(): void
     {
         $_ENV['CL_BOOL'] = 'false';
-        $obj = ConfigLoader::load(StubBoolConfig::class);
+        $obj             = ConfigLoader::load(StubBoolConfig::class);
         $this->assertFalse($obj->debug);
     }
 
@@ -69,7 +69,7 @@ class ConfigLoaderTest extends TestCase
     public function test_env_value_overrides_default(): void
     {
         $_ENV['CL_MISSING'] = 'override';
-        $obj = ConfigLoader::load(StubWithDefaultConfig::class);
+        $obj                = ConfigLoader::load(StubWithDefaultConfig::class);
         $this->assertSame('override', $obj->name);
     }
 
@@ -121,45 +121,45 @@ class ConfigLoaderTest extends TestCase
 final readonly class StubStringConfig
 {
     public function __construct(
-        #[Env('CL_STR')]
-        public string $value,
-    ) {}
+        #[Env('CL_STR')] public string $value,
+    ) {
+    }
 }
 
 #[Config]
 final readonly class StubIntConfig
 {
     public function __construct(
-        #[Env('CL_INT')]
-        public int $port,
-    ) {}
+        #[Env('CL_INT')] public int $port,
+    ) {
+    }
 }
 
 #[Config]
 final readonly class StubBoolConfig
 {
     public function __construct(
-        #[Env('CL_BOOL')]
-        public bool $debug,
-    ) {}
+        #[Env('CL_BOOL')] public bool $debug,
+    ) {
+    }
 }
 
 #[Config]
 final readonly class StubFloatConfig
 {
     public function __construct(
-        #[Env('CL_FLOAT')]
-        public float $ratio,
-    ) {}
+        #[Env('CL_FLOAT')] public float $ratio,
+    ) {
+    }
 }
 
 #[Config]
 final readonly class StubWithDefaultConfig
 {
     public function __construct(
-        #[Env('CL_MISSING', default: 'fallback')]
-        public string $name,
-    ) {}
+        #[Env('CL_MISSING', default: 'fallback')] public string $name,
+    ) {
+    }
 }
 
 #[Config]
@@ -167,26 +167,29 @@ final readonly class StubPhpDefaultConfig
 {
     public function __construct(
         public string $tag = 'php-default',
-    ) {}
+    ) {
+    }
 }
 
 #[Config]
 final readonly class StubNullableConfig
 {
     public function __construct(
-        #[Env('CL_OPT')]
-        public ?string $optional,
-    ) {}
+        #[Env('CL_OPT')] public ?string $optional,
+    ) {
+    }
 }
 
 #[Config]
 final readonly class StubRequiredConfig
 {
     public function __construct(
-        #[Env('CL_STR')]
-        public string $required,
-    ) {}
+        #[Env('CL_STR')] public string $required,
+    ) {
+    }
 }
 
 #[Config]
-class StubNoConstructorConfig {}
+class StubNoConstructorConfig
+{
+}

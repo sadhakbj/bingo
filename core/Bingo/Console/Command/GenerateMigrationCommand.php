@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Console\Command;
 
@@ -11,8 +11,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateMigrationCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
@@ -49,20 +50,29 @@ class GenerateMigrationCommand extends Command
         $table = $this->extractTableName($name);
 
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        use Illuminate\Database\Capsule\Manager as Capsule;
-        use Illuminate\Database\Schema\Blueprint;
+            use Illuminate\Database\Capsule\Manager as Capsule;
+            use Illuminate\Database\Schema\Blueprint;
 
-        if (!Capsule::schema()->hasTable('{$table}')) {
-            Capsule::schema()->create('{$table}', function (Blueprint \$table) {
-                \$table->id();
-                \$table->timestamps();
-            });
-        }
-        PHP;
+            return new class {
+                public function up(): void
+                {
+                    Capsule::schema()->create('{$table}', static function (Blueprint \$table) {
+                        \$table->id();
+                        \$table->timestamps();
+                    });
+                }
+
+                public function down(): void
+                {
+                    Capsule::schema()->dropIfExists('{$table}');
+                }
+            };
+
+            PHP;
     }
 
     /** create_posts_table → posts, add_bio_to_users → users */

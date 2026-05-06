@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Log;
 
@@ -15,16 +15,16 @@ class RequestContextProcessorTest extends TestCase
     {
         return new LogRecord(
             datetime: new \DateTimeImmutable(),
-            channel: 'test',
-            level: Level::Info,
-            message: 'test message',
+            channel : 'test',
+            level   : Level::Info,
+            message : 'test message',
         );
     }
 
     public function test_no_extra_added_when_request_id_not_set(): void
     {
         $processor = new RequestContextProcessor();
-        $record    = ($processor)($this->makeRecord());
+        $record    = $processor($this->makeRecord());
 
         $this->assertArrayNotHasKey('request_id', $record->extra);
         $this->assertArrayNotHasKey('trace_id', $record->extra);
@@ -35,7 +35,7 @@ class RequestContextProcessorTest extends TestCase
     {
         $processor = new RequestContextProcessor();
         $processor->setRequestId('abc-123');
-        $record = ($processor)($this->makeRecord());
+        $record = $processor($this->makeRecord());
 
         $this->assertSame('abc-123', $record->extra['request_id']);
     }
@@ -45,7 +45,7 @@ class RequestContextProcessorTest extends TestCase
         $processor = new RequestContextProcessor();
         $processor->setRequestId('first');
         $processor->setRequestId('second');
-        $record = ($processor)($this->makeRecord());
+        $record = $processor($this->makeRecord());
 
         $this->assertSame('second', $record->extra['request_id']);
     }
@@ -56,7 +56,7 @@ class RequestContextProcessorTest extends TestCase
         $processor->setRequestId('req-1');
         $base = $this->makeRecord()->with(extra: ['custom_key' => 'custom_value']);
 
-        $record = ($processor)($base);
+        $record = $processor($base);
 
         $this->assertSame('custom_value', $record->extra['custom_key']);
         $this->assertSame('req-1', $record->extra['request_id']);

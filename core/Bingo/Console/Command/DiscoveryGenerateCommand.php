@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Console\Command;
 
@@ -25,10 +25,10 @@ class DiscoveryGenerateCommand extends Command
         $output->writeln('');
 
         $manager = new DiscoveryManager(
-            cacheDir:      base_path('storage/framework/discovery'),
-            appPath:       base_path('app'),
+            cacheDir     : base_path('storage/framework/discovery'),
+            appPath      : base_path('app'),
             coreBingoPath: dirname(__DIR__, 2), // core/Bingo/
-            isProduction:  false, // Force discovery even if APP_ENV=production
+            isProduction : false, // Force discovery even if APP_ENV=production
         );
 
         $discovered = $manager->rebuild();

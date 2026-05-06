@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Validation;
 
@@ -24,7 +24,7 @@ abstract class ValidatedRequest extends Request
             $request->cookies->all(),
             $request->files->all(),
             $request->server->all(),
-            $request->getContent()
+            $request->getContent(),
         );
 
         $instance->populate($request);
@@ -38,7 +38,7 @@ abstract class ValidatedRequest extends Request
         $contentType = $request->headers->get('Content-Type', '');
         if (str_contains($contentType, 'application/json')) {
             $content = $request->getContent();
-            $data = json_decode($content, true) ?: [];
+            $data    = json_decode($content, true) ?: [];
         } else {
             // Handle form data (query + request parameters)
             $data = $request->all();
@@ -57,9 +57,7 @@ abstract class ValidatedRequest extends Request
     private function validate(): void
     {
         if (self::$validator === null) {
-            self::$validator = Validation::createValidatorBuilder()
-                ->enableAttributeMapping()
-                ->getValidator();
+            self::$validator = Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator();
         }
 
         $violations = self::$validator->validate($this);

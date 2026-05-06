@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Providers;
 
@@ -31,7 +31,7 @@ class DatabaseServiceProvider
 
         if (!isset($connections[$defaultName])) {
             throw new \InvalidArgumentException(
-                "DB_CONNECTION is set to '{$defaultName}' but it is not listed in DbConfig::\$connections."
+                "DB_CONNECTION is set to '{$defaultName}' but it is not listed in DbConfig::\$connections.",
             );
         }
 

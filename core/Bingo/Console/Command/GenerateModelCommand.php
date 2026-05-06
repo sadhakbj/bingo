@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Console\Command;
 
@@ -11,8 +11,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateModelCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
@@ -47,22 +48,22 @@ class GenerateModelCommand extends Command
         $table = strtolower($className) . 's';
 
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        namespace App\Models;
+            namespace App\Models;
 
-        use Illuminate\Database\Eloquent\Model;
+            use Illuminate\Database\Eloquent\Model;
 
-        class {$className} extends Model
-        {
-            protected \$table = '{$table}';
+            class {$className} extends Model
+            {
+                protected \$table = '{$table}';
 
-            protected \$fillable = [];
+                protected \$fillable = [];
 
-            protected \$hidden = [];
-        }
-        PHP;
+                protected \$hidden = [];
+            }
+            PHP;
     }
 }

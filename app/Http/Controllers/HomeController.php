@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace App\Http\Controllers;
 
@@ -13,8 +13,9 @@ use Bingo\Attributes\Route\Throttle;
 
 final class HomeController
 {
-    public function __construct() {}
-
+    public function __construct()
+    {
+    }
 
     #[Route('/', 'GET')]
     #[Throttle(requests: 1, per: 60)]
@@ -28,12 +29,12 @@ final class HomeController
     #[Middleware([AuthMiddleware::class])]
     public function about(): string
     {
-        return "About us page";
+        return 'About us page';
     }
 
     #[Route('/contact', 'POST')]
     public function contact(): string
     {
-        return "Contact form submitted";
+        return 'Contact form submitted';
     }
 }

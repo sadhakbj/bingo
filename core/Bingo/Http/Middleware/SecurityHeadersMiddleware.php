@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Http\Middleware;
 
@@ -15,19 +15,22 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
 
     public function __construct(array $config = [])
     {
-        $this->config = array_merge([
-            'hsts' => [
-                'max_age' => 31536000, // 1 year
-                'include_subdomains' => true,
-                'preload' => false
+        $this->config = array_merge(
+            [
+                'hsts'                   => [
+                    'max_age' => 31536000, // 1 year
+                    'include_subdomains' => true,
+                    'preload'            => false,
+                ],
+                'csp'                    => "default-src 'self'",
+                'x_frame_options'        => 'DENY',
+                'x_content_type_options' => 'nosniff',
+                'x_xss_protection'       => '1; mode=block',
+                'referrer_policy'        => 'strict-origin-when-cross-origin',
+                'permissions_policy'     => 'geolocation=(), microphone=(), camera=()',
             ],
-            'csp' => "default-src 'self'",
-            'x_frame_options' => 'DENY',
-            'x_content_type_options' => 'nosniff',
-            'x_xss_protection' => '1; mode=block',
-            'referrer_policy' => 'strict-origin-when-cross-origin',
-            'permissions_policy' => 'geolocation=(), microphone=(), camera=()'
-        ], $config);
+            $config,
+        );
     }
 
     public function handle(Request $request, callable $next): HttpResponse
@@ -87,12 +90,12 @@ class SecurityHeadersMiddleware implements MiddlewareInterface
     public static function production(): self
     {
         return new self([
-            'csp' => "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+            'csp'  => "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
             'hsts' => [
                 'max_age' => 63072000, // 2 years
                 'include_subdomains' => true,
-                'preload' => true
-            ]
+                'preload'            => true,
+            ],
         ]);
     }
 }

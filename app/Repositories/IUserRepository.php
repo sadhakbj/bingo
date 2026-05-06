@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace App\Repositories;
 
@@ -12,6 +12,7 @@ use Bingo\Attributes\Provider\Bind;
 interface IUserRepository
 {
     public function findById(int $id): ?User;
+
     public function all(): iterable;
 
     public function exists(string $key, string $value): bool;

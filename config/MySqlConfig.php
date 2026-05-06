@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Config;
 
@@ -22,4 +22,6 @@ namespace Config;
  *       return $config;
  *   }
  */
-class MySqlConfig extends \Bingo\Config\Driver\MySqlConfig {}
+class MySqlConfig extends \Bingo\Config\Driver\MySqlConfig
+{
+}

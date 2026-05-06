@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Console\Command;
 
@@ -12,27 +12,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ShowRoutesCommand extends Command
 {
-    public function __construct(private readonly Application $app)
-    {
+    public function __construct(
+        private readonly Application $app,
+    ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this
-            ->setName('show:routes')
-            ->setDescription('List all registered routes');
+        $this->setName('show:routes')->setDescription('List all registered routes');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $router = $this->app.router;
+        $router = $this->app->router;
         $routes = $router->getRoutes();
-
-        if (empty($routes)) {
-            $output->writeln('<comment>No routes registered.</comment>');
-            return Command::SUCCESS;
-        }
 
         $table = new Table($output);
         $table->setHeaders(['Method', 'Path', 'Controller', 'Action', 'Middleware']);
@@ -45,7 +39,7 @@ class ShowRoutesCommand extends Command
                 implode('|', $route->getMethods()),
                 $route->getPath(),
                 $defaults['_controller'] ?? '',
-                $defaults['_action']     ?? '',
+                $defaults['_action'] ?? '',
                 implode(', ', $middleware),
             ]);
         }

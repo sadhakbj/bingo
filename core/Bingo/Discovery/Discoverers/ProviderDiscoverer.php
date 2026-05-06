@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Discovery\Discoverers;
 
@@ -16,7 +16,8 @@ class ProviderDiscoverer implements DiscovererInterface
     public function __construct(
         private readonly string $coreBingoPath,
         private readonly string $appPath,
-    ) {}
+    ) {
+    }
 
     public function type(): string
     {
@@ -44,7 +45,7 @@ class ProviderDiscoverer implements DiscovererInterface
                     continue;
                 }
 
-                $attrs = (new \ReflectionClass($className))->getAttributes(ServiceProviderAttribute::class);
+                $attrs = new \ReflectionClass($className)->getAttributes(ServiceProviderAttribute::class);
 
                 if (empty($attrs)) {
                     continue;

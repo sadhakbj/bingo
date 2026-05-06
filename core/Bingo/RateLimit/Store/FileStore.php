@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\RateLimit\Store;
 
@@ -22,7 +22,10 @@ use Bingo\RateLimit\Contracts\RateLimiterStore;
  */
 class FileStore implements RateLimiterStore
 {
-    public function __construct(private readonly string $directory) {}
+    public function __construct(
+        private readonly string $directory,
+    ) {
+    }
 
     public function increment(string $key, int $windowId, int $decaySeconds): int
     {
@@ -32,7 +35,7 @@ class FileStore implements RateLimiterStore
         $data = $this->read($path);
 
         $data['count']++;
-        $data['expires_at'] = time() + ($decaySeconds * 2);
+        $data['expires_at'] = time() + ( $decaySeconds * 2 );
 
         $this->write($path, $data);
 

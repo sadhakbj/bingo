@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Config;
 
@@ -10,4 +10,6 @@ namespace Config;
  * All env vars are wired in the parent class — this file exists so you
  * can override behaviour without touching the framework.
  */
-class PgSqlConfig extends \Bingo\Config\Driver\PgSqlConfig {}
+class PgSqlConfig extends \Bingo\Config\Driver\PgSqlConfig
+{
+}

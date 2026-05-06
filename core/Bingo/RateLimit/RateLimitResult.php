@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\RateLimit;
 
@@ -28,7 +28,8 @@ final readonly class RateLimitResult
          * Sent as the Retry-After header on 429 responses (RFC 6585).
          */
         public int $retryAfter,
-    ) {}
+    ) {
+    }
 
     public function isAllowed(): bool
     {

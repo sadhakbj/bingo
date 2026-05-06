@@ -326,7 +326,18 @@ test: add integration tests for full request cycle
 
 **Strict types:** `declare(strict_types=1)` in every file.
 
-**Formatting:** PSR-12. Run your editor's formatter before committing. A CI formatter check is planned but not yet wired.
+**Formatting:** PSR-12, enforced via [Mago](https://mago.carthage.software). Run `mago format` before committing. A CI formatter check is planned but not yet wired.
+
+The project's `mago.toml` tunes a few PSR-12 defaults to keep code compact and aligned:
+
+| Key | Value | Effect |
+|---|---|---|
+| `parameter-attribute-on-new-line` | `false` | Keeps `#[Attr] Type $param` on one line instead of breaking the attribute onto its own line |
+| `align-assignment-like` | `true` | Column-aligns `=>` in multiline arrays and `=` in consecutive assignments / properties |
+| `align-named-arguments` | `true` | Column-aligns `:` across named arguments in a call |
+| `trailing-comma` | `true` | Re-adds the trailing comma the `psr-12` preset would otherwise strip from multiline lists |
+
+If you disagree with one of these, open an issue before changing it — the choices are deliberate and apply repo-wide.
 
 **Namespaces:**
 - Framework code: `Bingo\` → `core/Bingo/`

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Config\Driver;
 
@@ -15,11 +15,11 @@ use Bingo\Attributes\Config\Env;
 class SQLiteConfig implements DatabaseDriver
 {
     public function __construct(
-        #[Env('DB_DATABASE', default: 'database/database.sqlite')]
-        public string $database = 'database/database.sqlite',
+        #[Env('DB_DATABASE', default: 'database/database.sqlite')] public string $database = 'database/database.sqlite',
 
         public string $prefix = '',
-    ) {}
+    ) {
+    }
 
     public function toArray(): array
     {

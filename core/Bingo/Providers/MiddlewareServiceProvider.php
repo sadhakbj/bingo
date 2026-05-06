@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Providers;
 
@@ -30,13 +30,15 @@ class MiddlewareServiceProvider
         $pipeline->addGlobal(CorsMiddleware::fromConfig(ConfigLoader::load(CorsConfig::class)));
         $pipeline->addGlobal($isProduction ? BodyParserMiddleware::production() : BodyParserMiddleware::json());
         $pipeline->addGlobal(CompressionMiddleware::create());
-        $pipeline->addGlobal($isProduction ? SecurityHeadersMiddleware::production() : SecurityHeadersMiddleware::create());
+        $pipeline->addGlobal(
+            $isProduction ? SecurityHeadersMiddleware::production() : SecurityHeadersMiddleware::create(),
+        );
         $pipeline->addGlobal(RequestIdMiddleware::create());
 
         if ($rateLimitConfig->enabled) {
             $pipeline->addGlobal(RateLimitMiddleware::create(
-                limiter:       new RateLimiter($store),
-                limit:         $rateLimitConfig->maxRequests,
+                limiter      : new RateLimiter($store),
+                limit        : $rateLimitConfig->maxRequests,
                 windowSeconds: $rateLimitConfig->window,
             ));
         }

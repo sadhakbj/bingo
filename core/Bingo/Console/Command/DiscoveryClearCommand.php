@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Console\Command;
 
@@ -12,9 +12,7 @@ class DiscoveryClearCommand extends Command
 {
     protected function configure(): void
     {
-        $this
-            ->setName('discovery:clear')
-            ->setDescription('Clear the discovery cache');
+        $this->setName('discovery:clear')->setDescription('Clear the discovery cache');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

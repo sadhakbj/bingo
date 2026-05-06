@@ -1,0 +1,39 @@
+# Welcome to Mago!
+# For full documentation, see https://mago.carthage.software/tools/overview
+php-version = "8.4.0"
+
+[source]
+workspace = "."
+paths = ["app/", "config/", "core/Bingo/", "tests/"]
+includes = ["vendor"]
+excludes = []
+
+[formatter]
+preset = "psr-12"
+parameter-attribute-on-new-line = false
+align-assignment-like = true
+align-named-arguments = true
+trailing-comma = true
+
+[linter]
+integrations = ["symfony", "phpunit"]
+
+[linter.rules]
+ambiguous-function-call = { enabled = false }
+literal-named-argument = { enabled = false }
+halstead = { effort-threshold = 7000 }
+
+[analyzer]
+plugins = []
+find-unused-definitions = true
+find-unused-expressions = true
+analyze-dead-code = true
+memoize-properties = true
+allow-possibly-undefined-array-keys = false
+check-throws = true
+check-missing-override = true
+find-unused-parameters = true
+strict-list-index-checks = true
+no-boolean-literal-comparison = true
+check-missing-type-hints = true
+register-super-globals = true

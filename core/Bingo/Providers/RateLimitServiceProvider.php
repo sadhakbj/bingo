@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Providers;
 
@@ -28,9 +28,7 @@ class RateLimitServiceProvider
 
         if ($config->driver === 'redis') {
             if (!extension_loaded('redis')) {
-                throw new \RuntimeException(
-                    'RATE_LIMIT_DRIVER=redis requires the ext-redis PHP extension.',
-                );
+                throw new \RuntimeException('RATE_LIMIT_DRIVER=redis requires the ext-redis PHP extension.');
             }
 
             $redis = new \Redis();

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Attributes\Provider;
 
@@ -24,5 +24,6 @@ final readonly class Bind
     public function __construct(
         public string $concrete,
         public bool $singleton = true,
-    ) {}
+    ) {
+    }
 }

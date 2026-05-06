@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\App\DTOs;
 
@@ -25,14 +25,14 @@ class UserDTOTest extends TestCase
         $data = array_merge($defaults, $overrides);
 
         return new UserDTO(
-            id:         $data['id'],
-            email:      $data['email'],
-            name:       $data['name'],
-            age:        $data['age'],
-            bio:        $data['bio'],
+            id        : $data['id'],
+            email     : $data['email'],
+            name      : $data['name'],
+            age       : $data['age'],
+            bio       : $data['bio'],
             created_at: $data['created_at'],
             updated_at: $data['updated_at'],
-            posts:      $data['posts'],
+            posts     : $data['posts'],
         );
     }
 

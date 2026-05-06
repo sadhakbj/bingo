@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Exceptions;
 
@@ -19,7 +19,8 @@ class ExceptionHandler implements ExceptionHandlerInterface
     public function __construct(
         private readonly bool $debug = false,
         private readonly ?LoggerInterface $logger = null,
-    ) {}
+    ) {
+    }
 
     public function handle(\Throwable $e): Response
     {
@@ -27,8 +28,8 @@ class ExceptionHandler implements ExceptionHandlerInterface
 
         return match (true) {
             $e instanceof ValidationException => $this->handleValidation($e),
-            $e instanceof HttpException       => $this->handleHttp($e),
-            default                           => $this->handleGeneric($e),
+            $e instanceof HttpException => $this->handleHttp($e),
+            default => $this->handleGeneric($e),
         };
     }
 
@@ -54,22 +55,14 @@ class ExceptionHandler implements ExceptionHandlerInterface
 
     private function handleValidation(ValidationException $e): Response
     {
-        return $this->errorEnvelope(
-            422,
-            $e->errors,
-            HttpException::phraseForStatusCode(422),
-        );
+        return $this->errorEnvelope(422, $e->errors, HttpException::phraseForStatusCode(422));
     }
 
     private function handleHttp(HttpException $e): Response
     {
-        $status = $e->getStatusCode();
-        $error  = $e->getDescription() ?? HttpException::phraseForStatusCode($status);
-        $response = $this->errorEnvelope(
-            $status,
-            $e->getMessage(),
-            $error,
-        );
+        $status   = $e->getStatusCode();
+        $error    = $e->getDescription() ?? HttpException::phraseForStatusCode($status);
+        $response = $this->errorEnvelope($status, $e->getMessage(), $error);
 
         if ($e instanceof TooManyRequestsException) {
             $this->applyRateLimitHeaders($response, $e);
@@ -81,32 +74,27 @@ class ExceptionHandler implements ExceptionHandlerInterface
     private function handleGeneric(\Throwable $e): Response
     {
         if ($this->debug) {
-            return $this->errorEnvelope(
-                500,
-                $e->getMessage(),
-                'Internal Server Error',
-                [
-                    'exception' => $e::class,
-                    'file'      => $e->getFile(),
-                    'line'      => $e->getLine(),
-                    'trace'     => explode("\n", $e->getTraceAsString()),
-                ],
-            );
+            return $this->errorEnvelope(500, $e->getMessage(), 'Internal Server Error', [
+                'exception' => $e::class,
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => explode("\n", $e->getTraceAsString()),
+            ]);
         }
 
-        return $this->errorEnvelope(
-            500,
-            'Internal Server Error',
-            'Internal Server Error',
-        );
+        return $this->errorEnvelope(500, 'Internal Server Error', 'Internal Server Error');
     }
 
     /**
      * @param string|array<string, string> $message String or field map (validation)
      * @param array<string, mixed>|null    $details Only when debug / extended payloads
      */
-    private function errorEnvelope(int $statusCode, string|array $message, string $error, ?array $details = null): Response
-    {
+    private function errorEnvelope(
+        int $statusCode,
+        string|array $message,
+        string $error,
+        ?array $details = null,
+    ): Response {
         $body = [
             'statusCode' => $statusCode,
             'message'    => $message,
@@ -127,9 +115,9 @@ class ExceptionHandler implements ExceptionHandlerInterface
             return;
         }
 
-        $response->headers->set('X-RateLimit-Limit',     (string) $result->limit);
+        $response->headers->set('X-RateLimit-Limit', (string) $result->limit);
         $response->headers->set('X-RateLimit-Remaining', (string) $result->remaining);
-        $response->headers->set('X-RateLimit-Reset',     (string) $result->resetAt);
-        $response->headers->set('Retry-After',           (string) $result->retryAfter);
+        $response->headers->set('X-RateLimit-Reset', (string) $result->resetAt);
+        $response->headers->set('Retry-After', (string) $result->retryAfter);
     }
 }

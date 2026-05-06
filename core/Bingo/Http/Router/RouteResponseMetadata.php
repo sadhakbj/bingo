@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Http\Router;
 
@@ -54,11 +54,11 @@ final class RouteResponseMetadata
         $merged = [];
 
         foreach ($class->getAttributes(Header::class) as $attr) {
-            $h = $attr->newInstance();
+            $h                = $attr->newInstance();
             $merged[$h->name] = $h->value;
         }
         foreach ($method->getAttributes(Header::class) as $attr) {
-            $h = $attr->newInstance();
+            $h                = $attr->newInstance();
             $merged[$h->name] = $h->value;
         }
 

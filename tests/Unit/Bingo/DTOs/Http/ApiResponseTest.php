@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\DTOs\Http;
 
@@ -71,7 +71,7 @@ class ApiResponseTest extends TestCase
 
     public function test_error_with_errors_array(): void
     {
-        $errors = ['field' => 'Required'];
+        $errors   = ['field' => 'Required'];
         $response = ApiResponse::error('Validation failed', $errors, 422);
 
         $this->assertSame($errors, $response->errors);
@@ -130,7 +130,7 @@ class ApiResponseTest extends TestCase
 
     public function test_validation_returns_422_with_errors(): void
     {
-        $errors = ['email' => 'Email is required', 'name' => 'Name is too short'];
+        $errors   = ['email' => 'Email is required', 'name' => 'Name is too short'];
         $response = ApiResponse::validation($errors);
 
         $this->assertFalse($response->success);
@@ -153,7 +153,7 @@ class ApiResponseTest extends TestCase
     public function test_to_array_contains_all_expected_keys(): void
     {
         $response = ApiResponse::success(['user' => 'data']);
-        $array = $response->toArray();
+        $array    = $response->toArray();
 
         $this->assertArrayHasKey('success', $array);
         $this->assertArrayHasKey('message', $array);
@@ -166,7 +166,7 @@ class ApiResponseTest extends TestCase
     public function test_to_json_is_valid_json(): void
     {
         $response = ApiResponse::success(['key' => 'value']);
-        $json = $response->toJson();
+        $json     = $response->toJson();
 
         $this->assertJson($json);
         $decoded = json_decode($json, true);

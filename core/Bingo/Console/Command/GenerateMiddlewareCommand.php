@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Console\Command;
 
@@ -11,8 +11,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateMiddlewareCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
@@ -40,10 +41,10 @@ class GenerateMiddlewareCommand extends Command
 
         $output->writeln("<info>  CREATE</info> app/Http/Middleware/{$className}.php");
         $output->writeln('');
-        $output->writeln("  Use globally in <comment>bootstrap/app.php</comment>:");
+        $output->writeln('  Use globally in <comment>bootstrap/app.php</comment>:');
         $output->writeln("    \$app->use(\\App\\Http\\Middleware\\{$className}::class);");
         $output->writeln('');
-        $output->writeln("  Or per-route:");
+        $output->writeln('  Or per-route:');
         $output->writeln("    #[Middleware([\\App\\Http\\Middleware\\{$className}::class])]");
 
         return Command::SUCCESS;
@@ -52,24 +53,24 @@ class GenerateMiddlewareCommand extends Command
     private function stub(string $className): string
     {
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        namespace App\Http\Middleware;
+            namespace App\Http\Middleware;
 
-        use Bingo\Contracts\HttpResponse;
-        use Bingo\Contracts\MiddlewareInterface;
-        use Bingo\Http\Request;
+            use Bingo\Contracts\HttpResponse;
+            use Bingo\Contracts\MiddlewareInterface;
+            use Bingo\Http\Request;
 
-        class {$className} implements MiddlewareInterface
-        {
-            public function handle(Request \$request, callable \$next): HttpResponse
+            class {$className} implements MiddlewareInterface
             {
-                return \$next(\$request);
+                public function handle(Request \$request, callable \$next): HttpResponse
+                {
+                    return \$next(\$request);
+                }
             }
-        }
-        PHP;
+            PHP;
     }
 
     private function normalize(string $name, string $suffix): string

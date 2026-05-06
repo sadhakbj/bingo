@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Router;
 
@@ -26,21 +26,15 @@ class RouterMiddlewareTest extends TestCase
 
     public function test_method_level_middleware_is_registered(): void
     {
-        $middlewares = $this->router->getMiddlewaresForRoute(
-            StubMiddlewareController::class . '@withMethodMiddleware'
-        );
+        $middlewares = $this->router->getMiddlewaresForRoute(StubMiddlewareController::class . '@withMethodMiddleware');
 
         $this->assertNotEmpty($middlewares);
     }
 
     public function test_class_level_middleware_applies_to_all_routes(): void
     {
-        $routeA = $this->router->getMiddlewaresForRoute(
-            StubMiddlewareController::class . '@routeOne'
-        );
-        $routeB = $this->router->getMiddlewaresForRoute(
-            StubMiddlewareController::class . '@routeTwo'
-        );
+        $routeA = $this->router->getMiddlewaresForRoute(StubMiddlewareController::class . '@routeOne');
+        $routeB = $this->router->getMiddlewaresForRoute(StubMiddlewareController::class . '@routeTwo');
 
         // Both routes should carry the class-level middleware
         $this->assertContains(\Tests\Stubs\Middleware\TrackingMiddlewareStub::class, $routeA);
@@ -49,9 +43,7 @@ class RouterMiddlewareTest extends TestCase
 
     public function test_method_middleware_is_merged_after_class_middleware(): void
     {
-        $middlewares = $this->router->getMiddlewaresForRoute(
-            StubMiddlewareController::class . '@withMethodMiddleware'
-        );
+        $middlewares = $this->router->getMiddlewaresForRoute(StubMiddlewareController::class . '@withMethodMiddleware');
 
         // TrackingMiddlewareStub (class-level) should appear before BlockingMiddlewareStub (method-level)
         $classIdx  = array_search(\Tests\Stubs\Middleware\TrackingMiddlewareStub::class, $middlewares);

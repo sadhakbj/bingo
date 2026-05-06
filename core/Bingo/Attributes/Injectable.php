@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Attributes;
 
@@ -10,6 +10,7 @@ use Attribute;
 final class Injectable
 {
     public function __construct(
-        public readonly string $scope = 'transient'
-    ) {}
+        public readonly string $scope = 'transient',
+    ) {
+    }
 }

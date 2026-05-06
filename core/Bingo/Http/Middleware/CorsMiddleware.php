@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Http\Middleware;
 
@@ -17,14 +17,17 @@ class CorsMiddleware implements MiddlewareInterface
 
     public function __construct(array $config = [])
     {
-        $this->config = array_merge([
-            'allowed_origins' => ['*'],
-            'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-            'allowed_headers' => ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-            'exposed_headers' => [],
-            'allow_credentials' => false,
-            'max_age' => 86400, // 24 hours
-        ], $config);
+        $this->config = array_merge(
+            [
+                'allowed_origins'   => ['*'],
+                'allowed_methods'   => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+                'allowed_headers'   => ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+                'exposed_headers'   => [],
+                'allow_credentials' => false,
+                'max_age'           => 86400, // 24 hours
+            ],
+            $config,
+        );
     }
 
     public function handle(Request $request, callable $next): HttpResponse
@@ -139,12 +142,12 @@ class CorsMiddleware implements MiddlewareInterface
     public static function fromConfig(CorsConfig $config): self
     {
         return new self([
-            'allowed_origins'  => $config->getAllowedOrigins(),
-            'allowed_methods'  => array_map('trim', explode(',', $config->allowedMethods)),
-            'allowed_headers'  => $config->allowedHeaders === '*'
+            'allowed_origins'   => $config->getAllowedOrigins(),
+            'allowed_methods'   => array_map('trim', explode(',', $config->allowedMethods)),
+            'allowed_headers'   => $config->allowedHeaders === '*'
                 ? ['*']
                 : array_map('trim', explode(',', $config->allowedHeaders)),
-            'exposed_headers'  => $config->exposedHeaders !== ''
+            'exposed_headers'   => $config->exposedHeaders !== ''
                 ? array_map('trim', explode(',', $config->exposedHeaders))
                 : [],
             'allow_credentials' => $config->supportsCredentials,

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Console\Command;
 
@@ -11,8 +11,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateServiceCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
@@ -46,17 +47,17 @@ class GenerateServiceCommand extends Command
     private function stub(string $className): string
     {
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        namespace App\Services;
+            namespace App\Services;
 
-        class {$className}
-        {
-            //
-        }
-        PHP;
+            class {$className}
+            {
+                //
+            }
+            PHP;
     }
 
     private function normalize(string $name, string $suffix): string

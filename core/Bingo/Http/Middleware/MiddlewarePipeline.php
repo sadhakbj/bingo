@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Http\Middleware;
 
@@ -11,9 +11,9 @@ use Bingo\Http\Response;
 
 class MiddlewarePipeline
 {
-    private array $middleware = [];
-    private array $globalMiddleware = [];
-    private ?Container $container = null;
+    private array      $middleware       = [];
+    private array      $globalMiddleware = [];
+    private ?Container $container        = null;
 
     /**
      * Add global middleware that runs on all requests.
@@ -52,8 +52,12 @@ class MiddlewarePipeline
     /**
      * Execute middleware recursively
      */
-    private function executeMiddleware(array $middlewareStack, int $index, Request $request, ?callable $finalHandler): HttpResponse
-    {
+    private function executeMiddleware(
+        array $middlewareStack,
+        int $index,
+        Request $request,
+        ?callable $finalHandler,
+    ): HttpResponse {
         // If we've reached the end of middleware stack, call the final handler
         if ($index >= count($middlewareStack)) {
             return $finalHandler ? $finalHandler($request) : Response::json(['message' => 'OK']);
@@ -63,7 +67,7 @@ class MiddlewarePipeline
         $middleware = $this->resolveMiddleware($middlewareStack[$index]);
 
         // Create next function that calls the next middleware in the stack
-        $next = function(Request $req) use ($middlewareStack, $index, $finalHandler) {
+        $next = function (Request $req) use ($middlewareStack, $index, $finalHandler) {
             return $this->executeMiddleware($middlewareStack, $index + 1, $req, $finalHandler);
         };
 
@@ -85,9 +89,7 @@ class MiddlewarePipeline
     private function resolveMiddleware($middleware): callable|object
     {
         if (is_string($middleware) && class_exists($middleware)) {
-            return $this->container !== null
-                ? $this->container->make($middleware)
-                : new $middleware();
+            return $this->container !== null ? $this->container->make($middleware) : new $middleware();
         }
 
         if (is_callable($middleware)) {
@@ -106,7 +108,7 @@ class MiddlewarePipeline
      */
     public static function create(?Container $container = null): self
     {
-        $instance = new self();
+        $instance            = new self();
         $instance->container = $container;
         return $instance;
     }
@@ -148,7 +150,7 @@ class MiddlewarePipeline
      */
     public function clear(): self
     {
-        $this->middleware = [];
+        $this->middleware       = [];
         $this->globalMiddleware = [];
         return $this;
     }

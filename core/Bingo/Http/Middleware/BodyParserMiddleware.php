@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Http\Middleware;
 
@@ -17,24 +17,24 @@ class BodyParserMiddleware implements MiddlewareInterface
     public function __construct(array $config = [])
     {
         $this->config = array_merge([
-            'json' => [
-                'limit' => '10mb',
+            'json'       => [
+                'limit'  => '10mb',
                 'strict' => true,
-                'type' => 'application/json',
+                'type'   => 'application/json',
                 'verify' => null,
             ],
             'urlencoded' => [
-                'limit' => '10mb',
+                'limit'    => '10mb',
                 'extended' => true,
-                'type' => 'application/x-www-form-urlencoded',
+                'type'     => 'application/x-www-form-urlencoded',
             ],
-            'raw' => [
+            'raw'        => [
                 'limit' => '10mb',
-                'type' => 'application/octet-stream',
+                'type'  => 'application/octet-stream',
             ],
-            'text' => [
+            'text'       => [
                 'limit' => '10mb',
-                'type' => 'text/plain',
+                'type'  => 'text/plain',
             ],
         ], $config);
     }
@@ -57,7 +57,7 @@ class BodyParserMiddleware implements MiddlewareInterface
     private function parseBody(Request $request): void
     {
         $contentType   = $request->headers->get('Content-Type', '') ?? '';
-        $contentLength = (int) ($request->headers->get('Content-Length') ?? 0);
+        $contentLength = (int) ( $request->headers->get('Content-Length') ?? 0 );
 
         // Check content length limits
         $this->validateContentLength($contentLength);
@@ -115,7 +115,6 @@ class BodyParserMiddleware implements MiddlewareInterface
             if (is_array($data)) {
                 $request->request->replace($data);
             }
-
         } catch (JsonException $e) {
             throw new \Exception('Invalid JSON: ' . $e->getMessage());
         }
@@ -156,7 +155,7 @@ class BodyParserMiddleware implements MiddlewareInterface
         $jsonTypes = [
             'application/json',
             'application/ld+json',
-            'application/vnd.api+json'
+            'application/vnd.api+json',
         ];
 
         foreach ($jsonTypes as $type) {
@@ -186,7 +185,7 @@ class BodyParserMiddleware implements MiddlewareInterface
     private function parseSize(string $size): int
     {
         $units = ['b' => 1, 'kb' => 1024, 'mb' => 1048576, 'gb' => 1073741824];
-        $size = strtolower(trim($size));
+        $size  = strtolower(trim($size));
 
         if (is_numeric($size)) {
             return (int) $size;
@@ -199,13 +198,13 @@ class BodyParserMiddleware implements MiddlewareInterface
         }
 
         $value = (float) $matches[1];
-        $unit = $matches[2] ?? 'b';
+        $unit  = $matches[2] ?? 'b';
 
         if (!isset($units[$unit])) {
             throw new \InvalidArgumentException("Unknown size unit: {$unit}");
         }
 
-        return (int) ($value * $units[$unit]);
+        return (int) ( $value * $units[$unit] );
     }
 
     /**
@@ -223,9 +222,9 @@ class BodyParserMiddleware implements MiddlewareInterface
     {
         return new self([
             'json' => array_merge([
-                'limit' => '10mb',
+                'limit'  => '10mb',
                 'strict' => true,
-            ], $options)
+            ], $options),
         ]);
     }
 
@@ -236,9 +235,9 @@ class BodyParserMiddleware implements MiddlewareInterface
     {
         return new self([
             'urlencoded' => array_merge([
-                'limit' => '10mb',
+                'limit'    => '10mb',
                 'extended' => true,
-            ], $options)
+            ], $options),
         ]);
     }
 
@@ -248,10 +247,10 @@ class BodyParserMiddleware implements MiddlewareInterface
     public static function production(): self
     {
         return new self([
-            'json' => ['limit' => '1mb'],
+            'json'       => ['limit' => '1mb'],
             'urlencoded' => ['limit' => '1mb'],
-            'raw' => ['limit' => '1mb'],
-            'text' => ['limit' => '100kb'],
+            'raw'        => ['limit' => '1mb'],
+            'text'       => ['limit' => '100kb'],
         ]);
     }
 }

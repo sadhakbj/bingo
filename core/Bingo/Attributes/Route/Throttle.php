@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Attributes\Route;
 
@@ -35,5 +35,6 @@ final readonly class Throttle
 
         /** Window length in seconds. */
         public int $per,
-    ) {}
+    ) {
+    }
 }

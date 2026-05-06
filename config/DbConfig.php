@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Config;
 
@@ -33,7 +33,7 @@ final class DbConfig
      */
     public array $connections = [
         'sqlite' => SQLiteConfig::class,
-         'mysql' => MySqlConfig::class,
+        'mysql'  => MySqlConfig::class,
         // 'pgsql' => PgSqlConfig::class,
     ];
 }

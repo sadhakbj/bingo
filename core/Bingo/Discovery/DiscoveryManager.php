@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Discovery;
 
@@ -51,9 +51,7 @@ class DiscoveryManager
     {
         if ($this->isProduction) {
             if (!file_exists($this->metaPath())) {
-                throw new \RuntimeException(
-                    'Discovery cache not found. Run: php bin/bingo discovery:generate',
-                );
+                throw new \RuntimeException('Discovery cache not found. Run: php bin/bingo discovery:generate');
             }
             return $this->loadFromCache();
         }
@@ -104,12 +102,12 @@ class DiscoveryManager
         $discovered = [];
 
         foreach ($this->discoverers as $discoverer) {
-            $type = $discoverer->type();
-            $path = $this->filePath($type);
-            $discovered[$type] = file_exists($path) ? require $path : [];
+            $type              = $discoverer->type();
+            $path              = $this->filePath($type);
+            $discovered[$type] = file_exists($path) ? ( require $path ) : [];
         }
 
-        $discovered['meta'] = file_exists($this->metaPath()) ? require $this->metaPath() : [];
+        $discovered['meta'] = file_exists($this->metaPath()) ? ( require $this->metaPath() ) : [];
 
         return $discovered;
     }
@@ -135,9 +133,10 @@ class DiscoveryManager
         ], 'is_dir');
 
         foreach ($watchedPaths as $path) {
-            $iterator = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
-            );
+            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
+                $path,
+                RecursiveDirectoryIterator::SKIP_DOTS,
+            ));
 
             foreach ($iterator as $file) {
                 if ($file->isFile() && $file->getExtension() === 'php' && $file->getMTime() > $cacheTime) {
@@ -158,9 +157,12 @@ class DiscoveryManager
             mkdir($this->cacheDir, 0755, recursive: true);
         }
 
-        $content = "<?php\n\ndeclare(strict_types=1);\n\n"
+        $content =
+            "<?php\n\ndeclare(strict_types=1);\n\n"
             . "// Auto-generated — DO NOT EDIT. Regenerate: php bin/bingo discovery:generate\n\n"
-            . 'return ' . $this->exportArray($data) . ";\n";
+            . 'return '
+            . $this->exportArray($data)
+            . ";\n";
 
         file_put_contents($this->filePath($type), $content, LOCK_EX);
     }
@@ -184,15 +186,13 @@ class DiscoveryManager
             return '[]';
         }
 
-        $pad   = str_repeat('    ', $depth);
-        $inner = str_repeat('    ', $depth + 1);
+        $pad    = str_repeat('    ', $depth);
+        $inner  = str_repeat('    ', $depth + 1);
         $isList = array_is_list($data);
         $lines  = [];
 
         foreach ($data as $key => $value) {
-            $exportedValue = is_array($value)
-                ? $this->exportArray($value, $depth + 1)
-                : var_export($value, true);
+            $exportedValue = is_array($value) ? $this->exportArray($value, $depth + 1) : var_export($value, true);
 
             $lines[] = $isList
                 ? "{$inner}{$exportedValue},"

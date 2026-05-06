@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Http\Router;
 
@@ -43,7 +43,7 @@ class Router
     private array $throttles = [];
 
     public function __construct(
-        private readonly ?Container $container = null
+        private readonly ?Container $container = null,
     ) {
         $this->routes = new RouteCollection();
     }
@@ -51,14 +51,14 @@ class Router
     public function registerController(string $controllerClass): void
     {
         $reflectionClass = new ReflectionClass($controllerClass);
-        $methods = $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
+        $methods         = $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
 
         // Check for ApiController attribute and get prefix if present
         $apiControllerAttr = $reflectionClass->getAttributes(\Bingo\Attributes\Route\ApiController::class);
-        $prefix = '';
+        $prefix            = '';
         if ($apiControllerAttr) {
             $apiController = $apiControllerAttr[0]->newInstance();
-            $prefix = rtrim($apiController->prefix ?? '', '/');
+            $prefix        = rtrim($apiController->prefix ?? '', '/');
         }
 
         // Collect class-level middleware and throttles — apply to every route in this controller
@@ -66,17 +66,14 @@ class Router
         foreach ($reflectionClass->getAttributes(Middleware::class) as $attr) {
             $classMiddlewares = array_merge($classMiddlewares, $attr->newInstance()->middlewares);
         }
-        $classThrottles = array_map(
-            fn($a) => $a->newInstance(),
-            $reflectionClass->getAttributes(Throttle::class),
-        );
+        $classThrottles = array_map(fn($a) => $a->newInstance(), $reflectionClass->getAttributes(Throttle::class));
 
         foreach ($methods as $method) {
             // Get all attributes for the method
-            $allAttributes = $method->getAttributes();
-            $routeAttributes    = [];
-            $methodMiddlewares  = [];
-            $methodThrottles    = [];
+            $allAttributes     = $method->getAttributes();
+            $routeAttributes   = [];
+            $methodMiddlewares = [];
+            $methodThrottles   = [];
             foreach ($allAttributes as $attr) {
                 $instance = $attr->newInstance();
                 if ($instance instanceof Route) {
@@ -115,14 +112,14 @@ class Router
                     $fullPath,
                     [
                         '_controller' => $controllerClass,
-                        '_action' => $method->getName(),
-                        '_route_name' => $routeName
+                        '_action'     => $method->getName(),
+                        '_route_name' => $routeName,
                     ],
                     [],
                     [],
                     '',
                     [],
-                    [$route->method]
+                    [$route->method],
                 );
                 $this->routes->add($routeName, $symfonyRoute);
             }
@@ -140,9 +137,9 @@ class Router
     public function registerFromCache(array $cachedControllers): void
     {
         foreach ($cachedControllers as $controllerData) {
-            $prefix = $controllerData['prefix'];
+            $prefix           = $controllerData['prefix'];
             $classMiddlewares = $controllerData['class_middleware'];
-            $classThrottles = $controllerData['class_throttles'] ?? [];
+            $classThrottles   = $controllerData['class_throttles'] ?? [];
 
             foreach ($controllerData['routes'] as $routeData) {
                 // Build full path (prefix + route path)
@@ -160,7 +157,7 @@ class Router
                 $routeName = $controllerData['class'] . '@' . $routeData['action'];
 
                 // Merge class-level and method-level middleware
-                $middlewares = array_merge($classMiddlewares, $routeData['middleware']);
+                $middlewares                   = array_merge($classMiddlewares, $routeData['middleware']);
                 $this->middlewares[$routeName] = $middlewares;
 
                 // Merge class-level and method-level throttles (convert to Throttle objects)
@@ -170,10 +167,7 @@ class Router
 
                 $throttles = [];
                 foreach ($allThrottleData as $throttleData) {
-                    $throttles[] = new Throttle(
-                        requests: $throttleData['requests'],
-                        per: $throttleData['per'],
-                    );
+                    $throttles[] = new Throttle(requests: $throttleData['requests'], per: $throttleData['per']);
                 }
                 $this->throttles[$routeName] = $throttles;
 
@@ -182,7 +176,7 @@ class Router
                     $fullPath,
                     [
                         '_controller' => $controllerData['class'],
-                        '_action' => $routeData['action'],
+                        '_action'     => $routeData['action'],
                         '_route_name' => $routeName,
                     ],
                     [],
@@ -218,7 +212,7 @@ class Router
 
         // Normalize path by removing trailing slash (except for root path)
         // This allows both /users and /users/ to match the same route
-        $pathInfo = $request->getPathInfo();
+        $pathInfo       = $request->getPathInfo();
         $normalizedPath = $pathInfo;
         if ($pathInfo !== '/' && str_ends_with($pathInfo, '/')) {
             $normalizedPath = rtrim($pathInfo, '/');
@@ -226,7 +220,7 @@ class Router
 
         try {
             // Try to match with normalized path first
-            $parameters = $matcher->match($normalizedPath);
+            $parameters      = $matcher->match($normalizedPath);
             $controllerClass = $parameters['_controller'] ?? null;
             if ($controllerClass) {
                 $reflectionClass = new ReflectionClass($controllerClass);
@@ -236,7 +230,7 @@ class Router
             // If normalized path didn't match and it's different from original, try original path
             if ($normalizedPath !== $pathInfo) {
                 try {
-                    $parameters = $matcher->match($pathInfo);
+                    $parameters      = $matcher->match($pathInfo);
                     $controllerClass = $parameters['_controller'] ?? null;
                     if ($controllerClass) {
                         $reflectionClass = new ReflectionClass($controllerClass);
@@ -256,145 +250,143 @@ class Router
             throw $e;
         }
 
-        $action = $parameters['_action'];
+        $action    = $parameters['_action'];
         $routeName = $parameters['_route_name'];
         unset($parameters['_controller'], $parameters['_action'], $parameters['_route_name'], $parameters['_route']);
 
         $routeMiddlewares = $this->middlewares[$routeName] ?? [];
-        $controller = $this->container !== null
+        $controller       = $this->container !== null
             ? $this->container->make($controllerClass)
             : new $controllerClass();
-        $reflection       = new \ReflectionMethod($controller, $action);
+        $reflection = new \ReflectionMethod($controller, $action);
 
         // Build the final handler: resolve args then invoke the controller method
-        $finalHandler = function (Request $req) use (
-            $controller, $reflection, $parameters, $isApiController
-        ) {
+        $finalHandler = function (Request $req) use ($controller, $reflection, $parameters, $isApiController) {
             $args = [];
 
             foreach ($reflection->getParameters() as $param) {
-            $value = null;
-            $handled = false;
+                $value   = null;
+                $handled = false;
 
-            // Check for parameter attributes (declarative binding)
-            foreach ($param->getAttributes() as $attr) {
-                $instance = $attr->newInstance();
+                // Check for parameter attributes (declarative binding)
+                foreach ($param->getAttributes() as $attr) {
+                    $instance = $attr->newInstance();
 
-                // #[Body] - Extract DTO from request body
-                if ($instance instanceof Body) {
-                    $handled = true;
+                    // #[Body] - Extract DTO from request body
+                    if ($instance instanceof Body) {
+                        $handled = true;
+                        $type    = $param->getType();
+                        if ($type && $type instanceof \ReflectionNamedType) {
+                            $dtoClass = $type->getName();
+                            if (is_subclass_of($dtoClass, \Bingo\Data\DataTransferObject::class)) {
+                                try {
+                                    $value = $dtoClass::fromRequest($req);
+                                } catch (ValidationException $e) {
+                                    if ($isApiController) {
+                                        throw $e;
+                                    }
+
+                                    return '422 - Validation Failed: ' . implode(', ', array_keys($e->errors));
+                                }
+                            }
+                        }
+                        break;
+                    }
+
+                    // #[Query] - Extract query parameter
+                    if ($instance instanceof Query) {
+                        $handled = true;
+                        $key     = $instance->key ?? $param->getName();
+                        $value   = $req->query->get($key);
+
+                        // Type cast if needed
+                        $type = $param->getType();
+                        if ($type && $type instanceof \ReflectionNamedType && $value !== null) {
+                            $typeName = $type->getName();
+                            if ($typeName === 'int') {
+                                $value = (int) $value;
+                            } elseif ($typeName === 'float') {
+                                $value = (float) $value;
+                            } elseif ($typeName === 'bool') {
+                                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                            }
+                        }
+                        break;
+                    }
+
+                    // #[Param] - Extract route parameter
+                    if ($instance instanceof Param) {
+                        $handled = true;
+                        $value   = $parameters[$instance->key] ?? null;
+
+                        // Type cast if needed
+                        $type = $param->getType();
+                        if ($type && $type instanceof \ReflectionNamedType && $value !== null) {
+                            $typeName = $type->getName();
+                            if ($typeName === 'int') {
+                                $value = (int) $value;
+                            } elseif ($typeName === 'float') {
+                                $value = (float) $value;
+                            }
+                        }
+                        break;
+                    }
+
+                    // #[Headers] - Extract header value
+                    if ($instance instanceof Headers) {
+                        $handled = true;
+                        $key     = $instance->key ?? $param->getName();
+                        $value   = $req->headers->get($key);
+                        break;
+                    }
+
+                    // #[UploadedFile] - Extract single uploaded file
+                    if ($instance instanceof UploadedFile) {
+                        $handled = true;
+                        $key     = $instance->key ?? $param->getName();
+                        $value   = $req->files->get($key);
+                        break;
+                    }
+
+                    // #[UploadedFiles] - Extract all uploaded files
+                    if ($instance instanceof UploadedFiles) {
+                        $handled = true;
+                        $value   = $req->files->all();
+                        break;
+                    }
+
+                    // #[Request] - Inject request object
+                    if ($instance instanceof RequestAttr) {
+                        $handled = true;
+                        $value   = $req;
+                        break;
+                    }
+                }
+
+                // Fallback to existing logic if no attributes
+                if (!$handled) {
                     $type = $param->getType();
                     if ($type && $type instanceof \ReflectionNamedType) {
-                        $dtoClass = $type->getName();
-                        if (is_subclass_of($dtoClass, \Bingo\Data\DataTransferObject::class)) {
+                        $typeName = $type->getName();
+                        if ($typeName === Request::class) {
+                            $value = $req;
+                        } elseif (is_subclass_of($typeName, \Bingo\Validation\ValidatedRequest::class)) {
                             try {
-                                $value = $dtoClass::fromRequest($req);
+                                $value = $typeName::createFromRequest($req);
                             } catch (ValidationException $e) {
                                 if ($isApiController) {
                                     throw $e;
                                 }
 
-                                return "422 - Validation Failed: " . implode(', ', array_keys($e->errors));
+                                return '422 - Validation Failed: ' . implode(', ', array_keys($e->errors));
                             }
-                        }
-                    }
-                    break;
-                }
-
-                // #[Query] - Extract query parameter
-                if ($instance instanceof Query) {
-                    $handled = true;
-                    $key = $instance->key ?? $param->getName();
-                    $value = $req->query->get($key);
-
-                    // Type cast if needed
-                    $type = $param->getType();
-                    if ($type && $type instanceof \ReflectionNamedType && $value !== null) {
-                        $typeName = $type->getName();
-                        if ($typeName === 'int') {
-                            $value = (int) $value;
-                        } elseif ($typeName === 'float') {
-                            $value = (float) $value;
-                        } elseif ($typeName === 'bool') {
-                            $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-                        }
-                    }
-                    break;
-                }
-
-                // #[Param] - Extract route parameter
-                if ($instance instanceof Param) {
-                    $handled = true;
-                    $value = $parameters[$instance->key] ?? null;
-
-                    // Type cast if needed
-                    $type = $param->getType();
-                    if ($type && $type instanceof \ReflectionNamedType && $value !== null) {
-                        $typeName = $type->getName();
-                        if ($typeName === 'int') {
-                            $value = (int) $value;
-                        } elseif ($typeName === 'float') {
-                            $value = (float) $value;
-                        }
-                    }
-                    break;
-                }
-
-                // #[Headers] - Extract header value
-                if ($instance instanceof Headers) {
-                    $handled = true;
-                    $key = $instance->key ?? $param->getName();
-                    $value = $req->headers->get($key);
-                    break;
-                }
-
-                // #[UploadedFile] - Extract single uploaded file
-                if ($instance instanceof UploadedFile) {
-                    $handled = true;
-                    $key = $instance->key ?? $param->getName();
-                    $value = $req->files->get($key);
-                    break;
-                }
-
-                // #[UploadedFiles] - Extract all uploaded files
-                if ($instance instanceof UploadedFiles) {
-                    $handled = true;
-                    $value = $req->files->all();
-                    break;
-                }
-
-                // #[Request] - Inject request object
-                if ($instance instanceof RequestAttr) {
-                    $handled = true;
-                    $value = $req;
-                    break;
-                }
-            }
-
-            // Fallback to existing logic if no attributes
-            if (!$handled) {
-                $type = $param->getType();
-                if ($type && $type instanceof \ReflectionNamedType) {
-                    $typeName = $type->getName();
-                    if ($typeName === Request::class) {
-                        $value = $req;
-                    } elseif (is_subclass_of($typeName, \Bingo\Validation\ValidatedRequest::class)) {
-                        try {
-                            $value = $typeName::createFromRequest($req);
-                        } catch (ValidationException $e) {
-                            if ($isApiController) {
-                                throw $e;
-                            }
-
-                            return "422 - Validation Failed: " . implode(', ', array_keys($e->errors));
+                        } else {
+                            $value = $parameters[$param->getName()] ?? null;
                         }
                     } else {
                         $value = $parameters[$param->getName()] ?? null;
                     }
-                } else {
-                    $value = $parameters[$param->getName()] ?? null;
                 }
-            }
 
                 $args[] = $value;
             }
@@ -412,7 +404,7 @@ class Router
             // Enforce explicit Symfony HTTP response for ApiController (includes StreamedResponse)
             if ($isApiController && !$result instanceof SymfonyResponse) {
                 throw new \RuntimeException(
-                    'ApiController methods must return a Symfony HTTP response. Use Response::json(), Response::eventStream(), or Response::stream().'
+                    'ApiController methods must return a Symfony HTTP response. Use Response::json(), Response::eventStream(), or Response::stream().',
                 );
             }
 
@@ -425,7 +417,7 @@ class Router
         // Build throttle middlewares from any #[Throttle] attributes on this route
         $throttleMiddlewares = [];
         foreach ($this->throttles[$routeName] ?? [] as $throttle) {
-            $rateLimiter           = $this->container !== null
+            $rateLimiter = $this->container !== null
                 ? $this->container->make(RateLimiter::class)
                 : new RateLimiter(new FileStore(sys_get_temp_dir() . '/bingo-rate-limit'));
             $throttleMiddlewares[] = RateLimitMiddleware::fromThrottle(

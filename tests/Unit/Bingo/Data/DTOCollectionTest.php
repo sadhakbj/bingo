@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Data;
 
@@ -40,7 +40,7 @@ class DTOCollectionTest extends TestCase
 
     public function test_collection_accepts_dto_instances_directly(): void
     {
-        $dto = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30]);
+        $dto        = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30]);
         $collection = new DTOCollection([$dto]);
 
         $this->assertCount(1, $collection);
@@ -62,7 +62,7 @@ class DTOCollectionTest extends TestCase
     public function test_add_appends_dto_to_collection(): void
     {
         $collection = new DTOCollection();
-        $dto = SimpleDTOStub::from(['name' => 'Bijaya']);
+        $dto        = SimpleDTOStub::from(['name' => 'Bijaya']);
         $collection->add($dto);
 
         $this->assertCount(1, $collection);
@@ -75,7 +75,7 @@ class DTOCollectionTest extends TestCase
     public function test_first_returns_first_dto(): void
     {
         $collection = $this->makeCollection(3);
-        $first = $collection->first();
+        $first      = $collection->first();
 
         $this->assertInstanceOf(SimpleDTOStub::class, $first);
         $this->assertSame('User 1', $first->name);
@@ -84,7 +84,7 @@ class DTOCollectionTest extends TestCase
     public function test_last_returns_last_dto(): void
     {
         $collection = $this->makeCollection(3);
-        $last = $collection->last();
+        $last       = $collection->last();
 
         $this->assertInstanceOf(SimpleDTOStub::class, $last);
         $this->assertSame('User 3', $last->name);
@@ -113,7 +113,7 @@ class DTOCollectionTest extends TestCase
     public function test_filter_returns_new_collection_instance(): void
     {
         $collection = $this->makeCollection(3);
-        $filtered = $collection->filter(fn() => true);
+        $filtered   = $collection->filter(fn() => true);
 
         $this->assertNotSame($collection, $filtered);
         $this->assertInstanceOf(DTOCollection::class, $filtered);
@@ -122,7 +122,7 @@ class DTOCollectionTest extends TestCase
     public function test_filter_with_no_matches_returns_empty_collection(): void
     {
         $collection = $this->makeCollection(3);
-        $filtered = $collection->filter(fn() => false);
+        $filtered   = $collection->filter(fn() => false);
 
         $this->assertTrue($filtered->isEmpty());
     }
@@ -134,7 +134,7 @@ class DTOCollectionTest extends TestCase
     public function test_map_transforms_items_to_array(): void
     {
         $collection = $this->makeCollection(3);
-        $names = $collection->map(fn(SimpleDTOStub $dto) => $dto->name);
+        $names      = $collection->map(fn(SimpleDTOStub $dto) => $dto->name);
 
         $this->assertSame(['User 1', 'User 2', 'User 3'], $names);
     }
@@ -146,7 +146,7 @@ class DTOCollectionTest extends TestCase
     public function test_to_array_converts_all_dtos(): void
     {
         $collection = $this->makeCollection(2);
-        $array = $collection->toArray();
+        $array      = $collection->toArray();
 
         $this->assertIsArray($array);
         $this->assertCount(2, $array);
@@ -156,7 +156,7 @@ class DTOCollectionTest extends TestCase
     public function test_to_json_is_valid_json(): void
     {
         $collection = $this->makeCollection(2);
-        $json = $collection->toJson();
+        $json       = $collection->toJson();
 
         $this->assertJson($json);
         $decoded = json_decode($json, true);
@@ -186,8 +186,8 @@ class DTOCollectionTest extends TestCase
 
     public function test_array_access_offset_set(): void
     {
-        $collection = new DTOCollection();
-        $dto = SimpleDTOStub::from(['name' => 'New']);
+        $collection   = new DTOCollection();
+        $dto          = SimpleDTOStub::from(['name' => 'New']);
         $collection[] = $dto;
 
         $this->assertCount(1, $collection);
@@ -200,7 +200,7 @@ class DTOCollectionTest extends TestCase
     public function test_foreach_iterates_all_items(): void
     {
         $collection = $this->makeCollection(3);
-        $names = [];
+        $names      = [];
 
         foreach ($collection as $dto) {
             $names[] = $dto->name;

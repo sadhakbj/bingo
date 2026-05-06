@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Attributes\Route;
 
@@ -14,5 +14,6 @@ class Route
         public string $method = 'GET' {
             set => strtoupper($value);
         },
-    ) {}
+    ) {
+    }
 }

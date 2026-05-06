@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Http;
 
@@ -26,15 +26,18 @@ class Request extends SymfonyRequest
 
         return $data;
     }
+
     public function input(string $key, $default = null)
     {
         return $this->request->get($key, $this->query->get($key, $default));
     }
+
     public function only(array $keys): array
     {
         $data = $this->all();
         return array_intersect_key($data, array_flip($keys));
     }
+
     public function except(array $keys): array
     {
         $data = $this->all();

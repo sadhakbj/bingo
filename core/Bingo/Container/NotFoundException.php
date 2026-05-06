@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Container;
 
@@ -10,10 +10,6 @@ class NotFoundException extends ContainerException implements NotFoundExceptionI
 {
     public function __construct(string $id, ?\Throwable $previous = null)
     {
-        parent::__construct(
-            "No binding found for '{$id}' and it cannot be auto-resolved.",
-            0,
-            $previous
-        );
+        parent::__construct("No binding found for '{$id}' and it cannot be auto-resolved.", 0, $previous);
     }
 }

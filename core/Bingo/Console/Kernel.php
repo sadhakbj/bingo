@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Console;
 
@@ -26,8 +26,9 @@ class Kernel
     /** @var string[] */
     private array $userCommands = [];
 
-    public function __construct(private readonly Application $app)
-    {
+    public function __construct(
+        private readonly Application $app,
+    ) {
         $this->console = new ConsoleApplication('Bingo', '1.0.0');
     }
 
@@ -55,7 +56,7 @@ class Kernel
         $builtin = [
             new ServeCommand($basePath, $this->app),
             new ShowRoutesCommand($this->app),
-            new MigrateCommand($basePath, $this->app),
+            new MigrateCommand($basePath),
             new DiscoveryGenerateCommand(),
             new DiscoveryClearCommand(),
             new GenerateControllerCommand($basePath),
@@ -69,10 +70,7 @@ class Kernel
 
         // Resolve each user command through the DI container so their
         // typed constructor dependencies are injected automatically.
-        $userCommands = array_map(
-            fn(string $class) => $this->app->make($class),
-            $this->userCommands,
-        );
+        $userCommands = array_map(fn(string $class) => $this->app->make($class), $this->userCommands);
 
         return array_merge($builtin, $userCommands);
     }

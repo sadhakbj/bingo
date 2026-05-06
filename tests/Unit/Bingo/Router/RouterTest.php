@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Router;
 
@@ -90,7 +90,7 @@ class RouterTest extends TestCase
         $request = $this->makeRequest('/stub/users/42', 'GET');
 
         $response = $this->router->dispatch($request);
-        $body = json_decode($response->getContent(), true);
+        $body     = json_decode($response->getContent(), true);
 
         $this->assertSame(42, $body['id']);
     }

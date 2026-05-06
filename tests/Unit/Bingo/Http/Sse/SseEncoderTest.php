@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Http\Sse;
 
@@ -59,10 +59,7 @@ class SseEncoderTest extends TestCase
 
     public function test_custom_end_stream_with_replaces_default(): void
     {
-        $response = Response::eventStream(
-            static fn (): array => [],
-            new StreamedEvent('done', '[END]'),
-        );
+        $response = Response::eventStream(static fn(): array => [], new StreamedEvent('done', '[END]'));
 
         $out = $this->captureStreamedBody($response);
 

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Data;
 
@@ -83,7 +83,7 @@ abstract class DataTransferObject
     public function toArray(): array
     {
         $reflection = new ReflectionClass($this);
-        $result = [];
+        $result     = [];
 
         foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
             // Check if property is initialized (for readonly properties)
@@ -96,7 +96,7 @@ abstract class DataTransferObject
             if ($value instanceof DataTransferObject) {
                 $result[$property->getName()] = $value->toArray();
             } elseif (is_array($value)) {
-                $result[$property->getName()] = array_map(function($item) {
+                $result[$property->getName()] = array_map(function ($item) {
                     return $item instanceof DataTransferObject ? $item->toArray() : $item;
                 }, $value);
             } else {
@@ -135,9 +135,7 @@ abstract class DataTransferObject
     protected function validate(): void
     {
         if (self::$validator === null) {
-            self::$validator = Validation::createValidatorBuilder()
-                ->enableAttributeMapping()
-                ->getValidator();
+            self::$validator = Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator();
         }
 
         $violations = self::$validator->validate($this);

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo;
 
@@ -27,14 +27,18 @@ class Application
     public readonly string $basePath;
     public private(set) Router $router;
 
-    public string $environment { get => $this->appConfig->env; }
-    public bool   $debug       { get => $this->appConfig->debug; }
+    public string $environment {
+        get => $this->appConfig->env;
+    }
+    public bool $debug {
+        get => $this->appConfig->debug;
+    }
 
     private Container $container;
     private MiddlewarePipeline $pipeline;
-    private array $controllers = [];
+    private array                      $controllers            = [];
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
-    private array $discoveredCommands = [];
+    private array                      $discoveredCommands     = [];
     private AppConfig $appConfig;
 
     /**
@@ -42,7 +46,7 @@ class Application
      */
     public function __construct(string $basePath)
     {
-        $this->basePath  = rtrim($basePath, DIRECTORY_SEPARATOR);
+        $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
         $this->loadEnvironmentVariables();
         $this->appConfig = ConfigLoader::load(AppConfig::class);
 
@@ -57,7 +61,7 @@ class Application
 
         new ProviderBootstrapper(
             container: $this->container,
-            bindings:  $discovered['bindings']  ?? [],
+            bindings : $discovered['bindings'] ?? [],
             providers: $discovered['providers'] ?? [],
         )->boot();
 
@@ -73,10 +77,10 @@ class Application
     private function bootDiscovery(): array
     {
         $manager = new DiscoveryManager(
-            cacheDir:      base_path('storage/framework/discovery'),
-            appPath:       base_path('app'),
+            cacheDir     : base_path('storage/framework/discovery'),
+            appPath      : base_path('app'),
             coreBingoPath: __DIR__,
-            isProduction:  $this->appConfig->env === 'production',
+            isProduction : $this->appConfig->env === 'production',
         );
 
         return $manager->load();
@@ -156,9 +160,7 @@ class Application
             return $this->container->make(ExceptionHandlerInterface::class);
         }
 
-        $logger = $this->container->has(LoggerInterface::class)
-            ? $this->container->make(LoggerInterface::class)
-            : null;
+        $logger = $this->container->has(LoggerInterface::class) ? $this->container->make(LoggerInterface::class) : null;
 
         return new ExceptionHandler($this->debug, $logger);
     }
@@ -196,7 +198,7 @@ class Application
 
     public function basePath(string $path = ''): string
     {
-        return $this->basePath . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : '');
+        return $this->basePath . ( $path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : '' );
     }
 
     public static function create(string $basePath): self

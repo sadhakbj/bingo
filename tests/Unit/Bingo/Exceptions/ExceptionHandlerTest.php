@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Exceptions;
 
@@ -30,9 +30,9 @@ class ExceptionHandlerTest extends TestCase
 
     public function test_validation_exception_returns_422_json_shape(): void
     {
-        $errors = ['email' => 'Required', 'name' => 'Too short'];
+        $errors   = ['email' => 'Required', 'name' => 'Too short'];
         $response = $this->handler()->handle(new ValidationException($errors));
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame(422, $response->getStatusCode());
         $this->assertSame(422, $body['statusCode']);
@@ -43,7 +43,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_not_found_exception_returns_404_error_envelope(): void
     {
         $response = $this->handler()->handle(new NotFoundException('User not found'));
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame(404, $response->getStatusCode());
         $this->assertSame(404, $body['statusCode']);
@@ -54,7 +54,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_unauthorized_exception_returns_401(): void
     {
         $response = $this->handler()->handle(new UnauthorizedException());
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame(401, $response->getStatusCode());
         $this->assertSame(401, $body['statusCode']);
@@ -64,7 +64,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_forbidden_exception_returns_403(): void
     {
         $response = $this->handler()->handle(new ForbiddenException());
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame(403, $response->getStatusCode());
         $this->assertSame('Forbidden', $body['error']);
@@ -73,7 +73,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_bad_request_exception_returns_400(): void
     {
         $response = $this->handler()->handle(new BadRequestException('Invalid input'));
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame(400, $response->getStatusCode());
         $this->assertSame('Invalid input', $body['message']);
@@ -82,9 +82,11 @@ class ExceptionHandlerTest extends TestCase
 
     public function test_http_exception_description_overrides_error_field(): void
     {
-        $response = $this->handler()->handle(
-            new BadRequestException('Something bad happened', null, 'Some error description'),
-        );
+        $response = $this->handler()->handle(new BadRequestException(
+            'Something bad happened',
+            null,
+            'Some error description',
+        ));
         $body = $this->decode($response);
 
         $this->assertSame('Something bad happened', $body['message']);
@@ -94,7 +96,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_conflict_exception_returns_409(): void
     {
         $response = $this->handler()->handle(new ConflictException('Email already taken'));
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame(409, $response->getStatusCode());
         $this->assertSame('Email already taken', $body['message']);
@@ -104,7 +106,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_generic_http_exception_uses_its_status_code(): void
     {
         $response = $this->handler()->handle(new HttpException(418, 'I am a teapot'));
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame(418, $response->getStatusCode());
         $this->assertSame('I am a teapot', $body['message']);
@@ -114,16 +116,14 @@ class ExceptionHandlerTest extends TestCase
     public function test_too_many_requests_sets_rate_limit_headers_when_metadata_present(): void
     {
         $result = new \Bingo\RateLimit\RateLimitResult(
-            allowed:    false,
-            limit:      100,
-            remaining:  0,
-            resetAt:    1_700_000_000,
+            allowed   : false,
+            limit     : 100,
+            remaining : 0,
+            resetAt   : 1_700_000_000,
             retryAfter: 42,
         );
 
-        $response = $this->handler()->handle(
-            new TooManyRequestsException('Slow down', result: $result),
-        );
+        $response = $this->handler()->handle(new TooManyRequestsException('Slow down', result: $result));
 
         $this->assertSame(429, $response->getStatusCode());
         $this->assertSame('100', $response->headers->get('X-RateLimit-Limit'));
@@ -135,7 +135,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_generic_exception_returns_500(): void
     {
         $response = $this->handler()->handle(new \RuntimeException('Something broke'));
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame(500, $response->getStatusCode());
         $this->assertSame(500, $body['statusCode']);
@@ -146,7 +146,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_generic_exception_hides_details_in_production(): void
     {
         $response = $this->handler(debug: false)->handle(new \RuntimeException('Secret internals'));
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertArrayNotHasKey('details', $body);
     }
@@ -154,7 +154,7 @@ class ExceptionHandlerTest extends TestCase
     public function test_generic_exception_exposes_details_in_debug_mode(): void
     {
         $response = $this->handler(debug: true)->handle(new \RuntimeException('Real message'));
-        $body = $this->decode($response);
+        $body     = $this->decode($response);
 
         $this->assertSame('Real message', $body['message']);
         $this->assertArrayHasKey('details', $body);

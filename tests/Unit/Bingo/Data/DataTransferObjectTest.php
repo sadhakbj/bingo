@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Data;
 
@@ -51,7 +51,7 @@ class DataTransferObjectTest extends TestCase
 
     public function test_to_array_returns_all_initialized_properties(): void
     {
-        $dto = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30]);
+        $dto   = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30]);
         $array = $dto->toArray();
 
         $this->assertArrayHasKey('name', $array);
@@ -62,7 +62,7 @@ class DataTransferObjectTest extends TestCase
 
     public function test_to_array_includes_null_values_for_set_properties(): void
     {
-        $dto = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => null]);
+        $dto   = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => null]);
         $array = $dto->toArray();
 
         $this->assertArrayHasKey('age', $array);
@@ -75,7 +75,7 @@ class DataTransferObjectTest extends TestCase
 
     public function test_to_json_returns_valid_json_string(): void
     {
-        $dto = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30]);
+        $dto  = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30]);
         $json = $dto->toJson();
 
         $this->assertJson($json);
@@ -90,7 +90,7 @@ class DataTransferObjectTest extends TestCase
 
     public function test_only_returns_subset_of_keys(): void
     {
-        $dto = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30, 'bio' => 'dev']);
+        $dto    = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30, 'bio' => 'dev']);
         $result = $dto->only(['name', 'age']);
 
         $this->assertArrayHasKey('name', $result);
@@ -100,7 +100,7 @@ class DataTransferObjectTest extends TestCase
 
     public function test_except_excludes_specified_keys(): void
     {
-        $dto = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30, 'bio' => 'dev']);
+        $dto    = SimpleDTOStub::from(['name' => 'Bijaya', 'age' => 30, 'bio' => 'dev']);
         $result = $dto->except(['bio']);
 
         $this->assertArrayHasKey('name', $result);

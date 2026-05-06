@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace App\Exceptions;
 
@@ -52,6 +52,6 @@ final class Handler implements ExceptionHandlerInterface
          *
          *    return (new CoreExceptionHandler($this->debug))->handle($e);
          */
-        return (new CoreExceptionHandler($this->debug))->handle($e);
+        return new CoreExceptionHandler($this->debug)->handle($e);
     }
 }

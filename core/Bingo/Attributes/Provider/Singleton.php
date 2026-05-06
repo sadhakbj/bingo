@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Attributes\Provider;
 
@@ -12,4 +12,6 @@ use Attribute;
  * Method parameters are resolved from the container.
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-final class Singleton {}
+final class Singleton
+{
+}

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Bingo\Log;
 
@@ -20,14 +20,14 @@ use Monolog\LogRecord;
 final class SlogTextFormatter implements FormatterInterface
 {
     // ANSI escape sequences
-    private const RESET  = "\e[0m";
-    private const BOLD   = "\e[1m";
-    private const DIM    = "\e[2m";
-    private const CYAN   = "\e[36m";
-    private const GREEN  = "\e[32m";
-    private const YELLOW = "\e[33m";
-    private const RED    = "\e[31m";
-    private const BLUE   = "\e[34m";
+    private const RESET         = "\e[0m";
+    private const BOLD          = "\e[1m";
+    private const DIM           = "\e[2m";
+    private const CYAN          = "\e[36m";
+    private const GREEN         = "\e[32m";
+    private const YELLOW        = "\e[33m";
+    private const RED           = "\e[31m";
+    private const BLUE          = "\e[34m";
     private const BRIGHT_RED    = "\e[91m";
     private const BRIGHT_YELLOW = "\e[93m";
 
@@ -54,9 +54,10 @@ final class SlogTextFormatter implements FormatterInterface
     ];
 
     public function __construct(
-        private readonly bool   $colors     = false,
+        private readonly bool $colors = false,
         private readonly string $timeFormat = \DateTimeInterface::RFC3339,
-    ) {}
+    ) {
+    }
 
     public function format(LogRecord $record): string
     {
@@ -80,9 +81,9 @@ final class SlogTextFormatter implements FormatterInterface
             }
         } else {
             $parts = [
-                'time='  . $this->value($time),
+                'time=' . $this->value($time),
                 'level=' . $levelName,
-                'msg='   . $this->value($record->message),
+                'msg=' . $this->value($record->message),
             ];
 
             foreach (array_merge($record->context, $record->extra) as $key => $val) {

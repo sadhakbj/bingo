@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Tests\Unit\Bingo\Container;
 
@@ -74,7 +74,7 @@ class ContainerTest extends TestCase
 
     public function test_instance_returns_prebuilt_object(): void
     {
-        $obj = new StubService();
+        $obj        = new StubService();
         $obj->value = 42;
 
         $this->container->instance(StubService::class, $obj);
@@ -129,10 +129,7 @@ class ContainerTest extends TestCase
     {
         $this->container->singleton(StubService::class);
 
-        $this->assertSame(
-            $this->container->get(StubService::class),
-            $this->container->make(StubService::class)
-        );
+        $this->assertSame($this->container->get(StubService::class), $this->container->make(StubService::class));
     }
 
     // -------------------------------------------------------------------------
@@ -237,20 +234,26 @@ class ContainerTest extends TestCase
 // Inline stubs (interface + optional/nullable classes)
 // ---------------------------------------------------------------------------
 
-interface StubServiceInterface {}
+interface StubServiceInterface
+{
+}
 
-interface StubUnresolvableInterface {} // no binding — triggers nullable fallback
+interface StubUnresolvableInterface
+{
+} // no binding — triggers nullable fallback
 
 class StubServiceWithOptional
 {
     public function __construct(
-        public readonly string $name = 'default'
-    ) {}
+        public readonly string $name = 'default',
+    ) {
+    }
 }
 
 class StubServiceWithNullable
 {
     public function __construct(
-        public readonly ?StubUnresolvableInterface $dep = null
-    ) {}
+        public readonly ?StubUnresolvableInterface $dep = null,
+    ) {
+    }
 }
