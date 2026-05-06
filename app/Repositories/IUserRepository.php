@@ -12,6 +12,7 @@ use Bingo\Attributes\Provider\Bind;
 interface IUserRepository
 {
     public function findById(int $id): ?User;
+
     public function all(): iterable;
 
     public function exists(string $key, string $value): bool;

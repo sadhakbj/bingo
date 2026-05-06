@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Bingo\Http\Sse;
 
+use Bingo\Http\Response;
 use Bingo\Http\Sse\SseEncoder;
 use Bingo\Http\Sse\StreamedEvent;
-use Bingo\Http\Response;
 use Bingo\Http\StreamedResponse;
 use PHPUnit\Framework\TestCase;
 
@@ -60,7 +60,7 @@ class SseEncoderTest extends TestCase
     public function test_custom_end_stream_with_replaces_default(): void
     {
         $response = Response::eventStream(
-            static fn (): array => [],
+            static fn(): array => [],
             new StreamedEvent('done', '[END]'),
         );
 

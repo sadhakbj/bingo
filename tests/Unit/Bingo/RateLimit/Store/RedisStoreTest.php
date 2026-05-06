@@ -19,9 +19,9 @@ use Redis;
  */
 class RedisStoreTest extends TestCase
 {
-    private Redis      $redis;
+    private Redis $redis;
     private RedisStore $store;
-    private string     $prefix = 'test_bingo_rl';
+    private string $prefix = 'test_bingo_rl';
 
     protected function setUp(): void
     {
@@ -137,7 +137,7 @@ class RedisStoreTest extends TestCase
 
     public function test_reset_does_not_affect_other_keys(): void
     {
-        $this->store->increment('test:ip8',    6000, 60);
+        $this->store->increment('test:ip8', 6000, 60);
         $this->store->increment('test:ip8alt', 6000, 60);
 
         $this->store->reset('test:ip8');

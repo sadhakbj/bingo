@@ -23,8 +23,7 @@ final class Handler implements ExceptionHandlerInterface
 {
     public function __construct(
         private readonly bool $debug = false,
-    ) {
-    }
+    ) {}
 
     public function handle(\Throwable $e): Response
     {
@@ -52,6 +51,6 @@ final class Handler implements ExceptionHandlerInterface
          *
          *    return (new CoreExceptionHandler($this->debug))->handle($e);
          */
-        return (new CoreExceptionHandler($this->debug))->handle($e);
+        return new CoreExceptionHandler($this->debug)->handle($e);
     }
 }

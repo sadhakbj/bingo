@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ServeCommand extends Command
 {
     public function __construct(
-        private readonly string      $basePath,
+        private readonly string $basePath,
         private readonly Application $app,
     ) {
         parent::__construct();
@@ -21,10 +21,9 @@ class ServeCommand extends Command
 
     protected function configure(): void
     {
-        $this
-            ->setName('serve')
+        $this->setName('serve')
             ->setDescription('Start the Bingo development server')
-            ->addOption('host', 'H', InputOption::VALUE_OPTIONAL, 'Host to bind',    '127.0.0.1')
+            ->addOption('host', 'H', InputOption::VALUE_OPTIONAL, 'Host to bind', '127.0.0.1')
             ->addOption('port', 'p', InputOption::VALUE_OPTIONAL, 'Port to listen on', '8000');
     }
 
@@ -41,7 +40,9 @@ class ServeCommand extends Command
             $methods = implode('|', $route->getMethods());
             $path    = $route->getPath();
             $this->log(
-                $output, 'LOG', 'RouterExplorer',
+                $output,
+                'LOG',
+                'RouterExplorer',
                 "Mapped {<fg=cyan>{$methods}</> <fg=white>{$path}</>} route",
             );
         }
@@ -67,20 +68,26 @@ class ServeCommand extends Command
 
         while (!feof($pipes[2])) {
             $line = fgets($pipes[2]);
-            if ($line === false) break;
+            if ($line === false)
+                break;
             $line = trim($line);
-            if ($line === '') continue;
+            if ($line === '')
+                continue;
 
             // Skip low-level connection chatter
-            if (preg_match('/\bAccepted\b|\bClosing\b/', $line)) continue;
+            if (preg_match('/\bAccepted\b|\bClosing\b/', $line))
+                continue;
 
             // "Development Server (http://...) started" → show our ready message
             if (!$serverReady && str_contains($line, 'Development Server')) {
                 $serverReady = true;
-                $this->log($output, 'LOG', 'Server',
-                    "Application is running on: <comment>http://{$host}:{$port}</comment>");
-                $this->log($output, 'LOG', 'Server',
-                    'Press <comment>Ctrl+C</comment> to stop');
+                $this->log(
+                    $output,
+                    'LOG',
+                    'Server',
+                    "Application is running on: <comment>http://{$host}:{$port}</comment>",
+                );
+                $this->log($output, 'LOG', 'Server', 'Press <comment>Ctrl+C</comment> to stop');
                 continue;
             }
 
@@ -88,30 +95,34 @@ class ServeCommand extends Command
             if (preg_match('/\[.+?\] [\d.]+:\d+ \[(\d+)\]: (\w+) (.+)/', $line, $m)) {
                 [, $status, $method, $path] = $m;
 
-                $level = match(true) {
+                $level = match (true) {
                     $status >= 500 => 'ERROR',
                     $status >= 400 => 'WARN',
-                    default        => 'LOG',
+                    default => 'LOG',
                 };
 
-                $statusColor = match(true) {
+                $statusColor = match (true) {
                     $status >= 500 => 'fg=red',
                     $status >= 400 => 'fg=yellow',
                     $status >= 300 => 'fg=cyan',
-                    default        => 'fg=green',
+                    default => 'fg=green',
                 };
 
-                $methodColor = match($method) {
-                    'GET'              => 'fg=cyan',
-                    'POST'             => 'fg=green',
-                    'PUT', 'PATCH'     => 'fg=yellow',
-                    'DELETE'           => 'fg=red',
-                    default            => 'fg=white',
+                $methodColor = match ($method) {
+                    'GET'          => 'fg=cyan',
+                    'POST'         => 'fg=green',
+                    'PUT', 'PATCH' => 'fg=yellow',
+                    'DELETE'       => 'fg=red',
+                    default        => 'fg=white',
                 };
 
                 $this->log($output, $level, 'HTTP', sprintf(
                     '<%s>%-7s</>  %s  → <%s>%s</>',
-                    $methodColor, $method, $path, $statusColor, $status,
+                    $methodColor,
+                    $method,
+                    $path,
+                    $statusColor,
+                    $status,
                 ));
 
                 continue;
@@ -131,7 +142,7 @@ class ServeCommand extends Command
 
     private function log(OutputInterface $output, string $level, string $context, string $message): void
     {
-        $levelTag = match($level) {
+        $levelTag = match ($level) {
             'LOG'   => '<fg=green>',
             'WARN'  => '<fg=yellow>',
             'ERROR' => '<fg=red>',

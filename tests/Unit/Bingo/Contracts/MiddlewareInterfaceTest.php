@@ -38,7 +38,7 @@ class MiddlewareInterfaceTest extends TestCase
         foreach ($middlewareClasses as $class) {
             $this->assertTrue(
                 is_a($class, MiddlewareInterface::class, allow_string: true),
-                "$class must implement MiddlewareInterface"
+                "$class must implement MiddlewareInterface",
             );
         }
     }
@@ -46,7 +46,7 @@ class MiddlewareInterfaceTest extends TestCase
     public function test_interface_handle_method_signature_is_enforced(): void
     {
         $reflection = new \ReflectionMethod(MiddlewareInterface::class, 'handle');
-        $params = $reflection->getParameters();
+        $params     = $reflection->getParameters();
 
         $this->assertCount(2, $params);
         $this->assertSame('request', $params[0]->getName());

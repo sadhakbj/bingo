@@ -10,6 +10,6 @@ use Attribute;
 class Param
 {
     public function __construct(
-        public readonly string $key
+        public readonly string $key,
     ) {}
 }

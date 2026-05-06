@@ -45,7 +45,7 @@ class ConfigLoaderTest extends TestCase
     public function test_bool_false_string_cast(): void
     {
         $_ENV['CL_BOOL'] = 'false';
-        $obj = ConfigLoader::load(StubBoolConfig::class);
+        $obj             = ConfigLoader::load(StubBoolConfig::class);
         $this->assertFalse($obj->debug);
     }
 
@@ -69,7 +69,7 @@ class ConfigLoaderTest extends TestCase
     public function test_env_value_overrides_default(): void
     {
         $_ENV['CL_MISSING'] = 'override';
-        $obj = ConfigLoader::load(StubWithDefaultConfig::class);
+        $obj                = ConfigLoader::load(StubWithDefaultConfig::class);
         $this->assertSame('override', $obj->name);
     }
 

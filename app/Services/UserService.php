@@ -13,14 +13,14 @@ use Psr\Log\LoggerInterface;
 
 readonly class UserService
 {
-    public function __construct(private LoggerInterface $logger, private IUserRepository $userRepo)
-    {
-    }
+    public function __construct(
+        private LoggerInterface $logger,
+        private IUserRepository $userRepo,
+    ) {}
 
     public function createUser(CreateUserDTO $dto): UserDTO
     {
         $this->logger->debug('Creating user', ['email' => $dto->email]);
-
 
         if ($this->userRepo->exists('email', $dto->email)) {
             $this->logger->warning('Duplicate email on user creation', ['email' => $dto->email]);

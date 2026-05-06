@@ -33,7 +33,7 @@ final class DbConfig
      */
     public array $connections = [
         'sqlite' => SQLiteConfig::class,
-         'mysql' => MySqlConfig::class,
+        'mysql'  => MySqlConfig::class,
         // 'pgsql' => PgSqlConfig::class,
     ];
 }

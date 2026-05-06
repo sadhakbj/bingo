@@ -13,18 +13,22 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateExceptionCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this
-            ->setName('generate:exception')
+        $this->setName('generate:exception')
             ->setAliases(['g:exception'])
             ->setDescription('Generate a new HTTP exception class in app/Exceptions')
-            ->addArgument('name', InputArgument::REQUIRED, 'Exception name (e.g. PaymentRequired, SubscriptionExpiredException)')
+            ->addArgument(
+                'name',
+                InputArgument::REQUIRED,
+                'Exception name (e.g. PaymentRequired, SubscriptionExpiredException)',
+            )
             ->addOption(
                 'status',
                 's',
@@ -60,7 +64,7 @@ class GenerateExceptionCommand extends Command
 
         $output->writeln("<info>  CREATE</info> app/Exceptions/{$className}.php");
         $output->writeln('');
-        $output->writeln("  Throw from services or controllers:");
+        $output->writeln('  Throw from services or controllers:');
         $output->writeln("    throw new \\App\\Exceptions\\{$className}('Optional message');");
 
         return Command::SUCCESS;
@@ -94,19 +98,19 @@ class GenerateExceptionCommand extends Command
         $escapedMessage = addslashes($defaultMessage);
 
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        namespace App\Exceptions;
+            namespace App\Exceptions;
 
-        final class {$className} extends HttpException
-        {
-            public function __construct(string \$message = '{$escapedMessage}', ?\\Throwable \$previous = null, ?string \$description = null)
+            final class {$className} extends HttpException
             {
-                parent::__construct({$status}, \$message, \$previous, \$description);
+                public function __construct(string \$message = '{$escapedMessage}', ?\\Throwable \$previous = null, ?string \$description = null)
+                {
+                    parent::__construct({$status}, \$message, \$previous, \$description);
+                }
             }
-        }
-        PHP;
+            PHP;
     }
 }

@@ -40,7 +40,9 @@ class ControllerDiscoverer implements DiscovererInterface
         Route::class,
     ];
 
-    public function __construct(private readonly string $appPath) {}
+    public function __construct(
+        private readonly string $appPath,
+    ) {}
 
     public function type(): string
     {
@@ -49,7 +51,7 @@ class ControllerDiscoverer implements DiscovererInterface
 
     public function discover(): array
     {
-        $controllers = [];
+        $controllers    = [];
         $controllerPath = $this->appPath . '/Http/Controllers';
 
         if (!is_dir($controllerPath)) {
@@ -87,9 +89,9 @@ class ControllerDiscoverer implements DiscovererInterface
         $reflection = new ReflectionClass($class);
 
         // Get class-level metadata
-        $prefix = $this->getPrefix($reflection);
+        $prefix          = $this->getPrefix($reflection);
         $classMiddleware = $this->getMiddleware($reflection);
-        $classThrottles = $this->getThrottles($reflection);
+        $classThrottles  = $this->getThrottles($reflection);
 
         $routes = [];
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -109,11 +111,11 @@ class ControllerDiscoverer implements DiscovererInterface
         }
 
         return [
-            'class' => $class,
-            'prefix' => $prefix,
+            'class'            => $class,
+            'prefix'           => $prefix,
             'class_middleware' => $classMiddleware,
-            'class_throttles' => $classThrottles,
-            'routes' => $routes,
+            'class_throttles'  => $classThrottles,
+            'routes'           => $routes,
         ];
     }
 
@@ -123,15 +125,15 @@ class ControllerDiscoverer implements DiscovererInterface
     private function analyzeMethod(ReflectionMethod $method): ?array
     {
         $httpMethod = null;
-        $path = null;
+        $path       = null;
 
         // Find route attribute (Get, Post, Put, etc.)
         foreach (self::ROUTE_ATTRIBUTES as $attrClass) {
             $attrs = $method->getAttributes($attrClass);
             if (!empty($attrs)) {
-                $instance = $attrs[0]->newInstance();
+                $instance   = $attrs[0]->newInstance();
                 $httpMethod = $this->getHttpMethod($attrClass, $instance);
-                $path = $instance->path ?? '/';
+                $path       = $instance->path ?? '/';
                 break;
             }
         }
@@ -141,11 +143,11 @@ class ControllerDiscoverer implements DiscovererInterface
         }
 
         return [
-            'method' => $httpMethod,
-            'path' => $path,
-            'action' => $method->getName(),
+            'method'     => $httpMethod,
+            'path'       => $path,
+            'action'     => $method->getName(),
             'middleware' => $this->getMiddleware($method),
-            'throttles' => $this->getThrottles($method),
+            'throttles'  => $this->getThrottles($method),
         ];
     }
 
@@ -190,10 +192,10 @@ class ControllerDiscoverer implements DiscovererInterface
 
         $throttles = [];
         foreach ($attrs as $attr) {
-            $instance = $attr->newInstance();
+            $instance    = $attr->newInstance();
             $throttles[] = [
                 'requests' => $instance->requests,
-                'per' => $instance->per,
+                'per'      => $instance->per,
             ];
         }
 
@@ -206,15 +208,15 @@ class ControllerDiscoverer implements DiscovererInterface
     private function getHttpMethod(string $attrClass, object $instance): string
     {
         return match ($attrClass) {
-            Get::class => 'GET',
-            Post::class => 'POST',
-            Put::class => 'PUT',
-            Patch::class => 'PATCH',
-            Delete::class => 'DELETE',
-            Head::class => 'HEAD',
+            Get::class     => 'GET',
+            Post::class    => 'POST',
+            Put::class     => 'PUT',
+            Patch::class   => 'PATCH',
+            Delete::class  => 'DELETE',
+            Head::class    => 'HEAD',
             Options::class => 'OPTIONS',
-            Route::class => strtoupper($instance->method ?? 'GET'),
-            default => 'GET',
+            Route::class   => strtoupper($instance->method ?? 'GET'),
+            default        => 'GET',
         };
     }
 

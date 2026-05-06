@@ -12,21 +12,22 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ShowRoutesCommand extends Command
 {
-    public function __construct(private readonly Application $app)
-    {
+    public function __construct(
+        private readonly Application $app,
+    ) {
         parent::__construct();
+        $this->app->boot();
     }
 
     protected function configure(): void
     {
-        $this
-            ->setName('show:routes')
+        $this->setName('show:routes')
             ->setDescription('List all registered routes');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $router = $this->app.router;
+        $router = $this->app->router;
         $routes = $router->getRoutes();
 
         if (empty($routes)) {
@@ -45,7 +46,7 @@ class ShowRoutesCommand extends Command
                 implode('|', $route->getMethods()),
                 $route->getPath(),
                 $defaults['_controller'] ?? '',
-                $defaults['_action']     ?? '',
+                $defaults['_action'] ?? '',
                 implode(', ', $middleware),
             ]);
         }

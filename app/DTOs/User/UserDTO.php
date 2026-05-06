@@ -9,27 +9,27 @@ use App\Models\User;
 final readonly class UserDTO
 {
     public function __construct(
-        public int     $id,
-        public string  $email,
-        public string  $name,
-        public ?int    $age        = null,
-        public ?string $bio        = null,
-        public string  $created_at = '',
-        public string  $updated_at = '',
-        public array   $posts      = [],
+        public int $id,
+        public string $email,
+        public string $name,
+        public ?int $age = null,
+        public ?string $bio = null,
+        public string $created_at = '',
+        public string $updated_at = '',
+        public array $posts = [],
     ) {}
 
     public static function fromModel(User $user): self
     {
         return new self(
-            id:         $user->id,
-            email:      $user->email,
-            name:       $user->name,
-            age:        $user->age,
-            bio:        $user->bio,
+            id        : $user->id,
+            email     : $user->email,
+            name      : $user->name,
+            age       : $user->age,
+            bio       : $user->bio,
             created_at: (string) $user->created_at,
             updated_at: (string) $user->updated_at,
-            posts:      $user->relationLoaded('posts') ? $user->posts->toArray() : [],
+            posts     : $user->relationLoaded('posts') ? $user->posts->toArray() : [],
         );
     }
 
@@ -68,9 +68,6 @@ final readonly class UserDTO
 
     private function isProfileComplete(): bool
     {
-        return !empty($this->email)
-            && !empty($this->name)
-            && $this->age !== null
-            && !empty($this->bio);
+        return !empty($this->email) && !empty($this->name) && $this->age !== null && !empty($this->bio);
     }
 }

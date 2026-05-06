@@ -111,8 +111,7 @@ class FileStoreTest extends TestCase
         $store->increment('key', 1, 60);
 
         // Manually expire the file by overwriting with past expires_at
-        $path = (new \ReflectionClass($store))
-            ->getMethod('path')
+        $path = new \ReflectionClass($store)->getMethod('path')
             ->invoke($store, 'key', 1);
 
         file_put_contents($path, json_encode(['count' => 99, 'expires_at' => time() - 1]));
@@ -123,10 +122,10 @@ class FileStoreTest extends TestCase
 
     public function test_data_persists_across_instances(): void
     {
-        (new FileStore($this->dir))->increment('key', 1, 60);
-        (new FileStore($this->dir))->increment('key', 1, 60);
+        new FileStore($this->dir)->increment('key', 1, 60);
+        new FileStore($this->dir)->increment('key', 1, 60);
 
-        $this->assertSame(2, (new FileStore($this->dir))->count('key', 1));
+        $this->assertSame(2, new FileStore($this->dir)->count('key', 1));
     }
 
     public function test_increment_resets_expired_entry_before_counting_new_hit(): void
@@ -134,8 +133,7 @@ class FileStoreTest extends TestCase
         $store = $this->store();
         $store->increment('key', 1, 60);
 
-        $path = (new \ReflectionClass($store))
-            ->getMethod('path')
+        $path = new \ReflectionClass($store)->getMethod('path')
             ->invoke($store, 'key', 1);
 
         file_put_contents($path, json_encode(['count' => 99, 'expires_at' => time() - 1]));

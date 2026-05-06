@@ -53,7 +53,7 @@ class MySqlConfig implements DatabaseDriver
         public string $collation = 'utf8mb4_unicode_ci',
 
         public string $prefix = '',
-        public bool   $strict = true,
+        public bool $strict = true,
 
         // Read replica — optional. When set, Eloquent splits reads/writes.
         #[Env('DB_READ_HOST', default: null)]

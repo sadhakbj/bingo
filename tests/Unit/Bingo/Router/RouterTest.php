@@ -91,7 +91,7 @@ class RouterTest extends TestCase
         $request = $this->makeRequest('/stub/users/42', 'GET');
 
         $response = $this->router->dispatch($request);
-        $body = json_decode($response->getContent(), true);
+        $body     = json_decode($response->getContent(), true);
 
         $this->assertSame(42, $body['id']);
     }

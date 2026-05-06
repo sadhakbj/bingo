@@ -11,15 +11,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateServiceCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+    ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this
-            ->setName('generate:service')
+        $this->setName('generate:service')
             ->setAliases(['g:service'])
             ->setDescription('Generate a new service class')
             ->addArgument('name', InputArgument::REQUIRED, 'Service name (e.g. Users, UserService)');
@@ -46,17 +46,17 @@ class GenerateServiceCommand extends Command
     private function stub(string $className): string
     {
         return <<<PHP
-        <?php
+            <?php
 
-        declare(strict_types=1);
+            declare(strict_types=1);
 
-        namespace App\Services;
+            namespace App\Services;
 
-        class {$className}
-        {
-            //
-        }
-        PHP;
+            class {$className}
+            {
+                //
+            }
+            PHP;
     }
 
     private function normalize(string $name, string $suffix): string

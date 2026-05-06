@@ -10,6 +10,4 @@ use Symfony\Component\HttpFoundation\StreamedResponse as SymfonyStreamedResponse
 /**
  * Bingo-branded streaming response; same behavior as Symfony's StreamedResponse.
  */
-class StreamedResponse extends SymfonyStreamedResponse implements HttpResponse
-{
-}
+class StreamedResponse extends SymfonyStreamedResponse implements HttpResponse {}

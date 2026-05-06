@@ -46,7 +46,7 @@ class PgSqlConfig implements DatabaseDriver
         public string $schema = 'public',
 
         public string $prefix = '',
-        public bool   $strict = true,
+        public bool $strict = true,
 
         // Read replica — optional. When set, Eloquent splits reads/writes.
         #[Env('DB_READ_HOST', default: null)]

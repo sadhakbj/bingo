@@ -82,8 +82,8 @@ final class ConfigLoader
 
                 if ($raw === null && $type instanceof ReflectionNamedType && !$type->allowsNull()) {
                     throw new RuntimeException(
-                        "ConfigLoader: env var '{$env->key}' is not set and '{$class}::\${$name}' " .
-                        "is non-nullable. Set the env var or add a default value to #[Env]."
+                        "ConfigLoader: env var '{$env->key}' is not set and '{$class}::\${$name}' "
+                        . 'is non-nullable. Set the env var or add a default value to #[Env].',
                     );
                 }
 
@@ -105,8 +105,8 @@ final class ConfigLoader
             }
 
             throw new RuntimeException(
-                "ConfigLoader: cannot resolve parameter '\${$name}' of {$class}. " .
-                "Add #[Env('KEY')] or provide a default value."
+                "ConfigLoader: cannot resolve parameter '\${$name}' of {$class}. "
+                . "Add #[Env('KEY')] or provide a default value.",
             );
         }
 
@@ -122,7 +122,8 @@ final class ConfigLoader
         $class    = $reflection->getName();
         $instance = $reflection->newInstanceWithoutConstructor();
 
-        foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED) as $prop) {
+        foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC
+        | ReflectionProperty::IS_PROTECTED) as $prop) {
             $attrs = $prop->getAttributes(Env::class);
 
             if (empty($attrs)) {
@@ -139,8 +140,8 @@ final class ConfigLoader
 
             if ($raw === null && $type instanceof ReflectionNamedType && !$type->allowsNull()) {
                 throw new RuntimeException(
-                    "ConfigLoader: env var '{$env->key}' is not set and '{$class}::\${$name}' " .
-                    "is non-nullable. Set the env var or add a default value to #[Env]."
+                    "ConfigLoader: env var '{$env->key}' is not set and '{$class}::\${$name}' "
+                    . 'is non-nullable. Set the env var or add a default value to #[Env].',
                 );
             }
 

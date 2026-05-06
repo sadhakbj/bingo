@@ -30,10 +30,10 @@ class Response extends SymfonyResponse implements HttpResponse
         array $headers = [],
     ): StreamedResponse {
         $headers = array_merge([
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
+            'Content-Type'      => 'text/event-stream',
+            'Cache-Control'     => 'no-cache',
             'X-Accel-Buffering' => 'no',
-            'Connection' => 'keep-alive',
+            'Connection'        => 'keep-alive',
         ], $headers);
 
         $callback = static function () use ($producer, $endStreamWith): void {

@@ -74,7 +74,7 @@ class ApplicationExceptionHandlerTest extends TestCase
 
     public function test_handle_converts_boot_failure_into_exception_handler_response(): void
     {
-        $previousAppEnv = getenv('APP_ENV');
+        $previousAppEnv  = getenv('APP_ENV');
         $_ENV['APP_ENV'] = 'production';
         putenv('APP_ENV=production');
 

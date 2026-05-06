@@ -21,5 +21,4 @@ final readonly class AppConfig
         #[Env('APP_URL', default: 'http://localhost:8000')]
         public string $url,
     ) {}
-
 }

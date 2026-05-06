@@ -20,8 +20,7 @@ final readonly class StreamedEvent
         public ?string $event,
         public string|array|object $data,
         public ?string $id = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Named constructor matching Laravel-style calls: StreamedEvent::make(event: 'update', data: $x)

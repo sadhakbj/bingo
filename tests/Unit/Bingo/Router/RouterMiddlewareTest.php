@@ -28,7 +28,7 @@ class RouterMiddlewareTest extends TestCase
     public function test_method_level_middleware_is_registered(): void
     {
         $middlewares = $this->router->getMiddlewaresForRoute(
-            StubMiddlewareController::class . '@withMethodMiddleware'
+            StubMiddlewareController::class . '@withMethodMiddleware',
         );
 
         $this->assertNotEmpty($middlewares);
@@ -37,10 +37,10 @@ class RouterMiddlewareTest extends TestCase
     public function test_class_level_middleware_applies_to_all_routes(): void
     {
         $routeA = $this->router->getMiddlewaresForRoute(
-            StubMiddlewareController::class . '@routeOne'
+            StubMiddlewareController::class . '@routeOne',
         );
         $routeB = $this->router->getMiddlewaresForRoute(
-            StubMiddlewareController::class . '@routeTwo'
+            StubMiddlewareController::class . '@routeTwo',
         );
 
         // Both routes should carry the class-level middleware
@@ -51,7 +51,7 @@ class RouterMiddlewareTest extends TestCase
     public function test_method_middleware_is_merged_after_class_middleware(): void
     {
         $middlewares = $this->router->getMiddlewaresForRoute(
-            StubMiddlewareController::class . '@withMethodMiddleware'
+            StubMiddlewareController::class . '@withMethodMiddleware',
         );
 
         // TrackingMiddlewareStub (class-level) should appear before BlockingMiddlewareStub (method-level)

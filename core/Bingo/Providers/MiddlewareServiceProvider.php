@@ -27,20 +27,21 @@ class MiddlewareServiceProvider
         AppConfig $appConfig,
         RateLimitConfig $rateLimitConfig,
         CorsConfig $corsConfig,
-    ): void
-    {
-        $isProduction    = $appConfig->env === 'production';
+    ): void {
+        $isProduction = $appConfig->env === 'production';
 
         $pipeline->addGlobal(CorsMiddleware::fromConfig($corsConfig));
         $pipeline->addGlobal($isProduction ? BodyParserMiddleware::production() : BodyParserMiddleware::json());
         $pipeline->addGlobal(CompressionMiddleware::create());
-        $pipeline->addGlobal($isProduction ? SecurityHeadersMiddleware::production() : SecurityHeadersMiddleware::create());
+        $pipeline->addGlobal(
+            $isProduction ? SecurityHeadersMiddleware::production() : SecurityHeadersMiddleware::create(),
+        );
         $pipeline->addGlobal(RequestIdMiddleware::create());
 
         if ($rateLimitConfig->enabled) {
             $pipeline->addGlobal(RateLimitMiddleware::create(
-                limiter:       new RateLimiter($store),
-                limit:         $rateLimitConfig->maxRequests,
+                limiter      : new RateLimiter($store),
+                limit        : $rateLimitConfig->maxRequests,
                 windowSeconds: $rateLimitConfig->window,
             ));
         }

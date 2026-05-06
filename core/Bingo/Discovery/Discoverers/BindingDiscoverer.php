@@ -14,7 +14,9 @@ class BindingDiscoverer implements DiscovererInterface
 {
     private const NAMESPACE = 'App';
 
-    public function __construct(private readonly string $appPath) {}
+    public function __construct(
+        private readonly string $appPath,
+    ) {}
 
     public function type(): string
     {
@@ -45,14 +47,14 @@ class BindingDiscoverer implements DiscovererInterface
                 continue;
             }
 
-            $attrs = (new \ReflectionClass($fqn))->getAttributes(Bind::class);
+            $attrs = new \ReflectionClass($fqn)->getAttributes(Bind::class);
 
             if (empty($attrs)) {
                 continue;
             }
 
-            $binding          = $attrs[0]->newInstance();
-            $bindings[$fqn]   = [
+            $binding        = $attrs[0]->newInstance();
+            $bindings[$fqn] = [
                 'concrete'  => $binding->concrete,
                 'singleton' => $binding->singleton,
             ];

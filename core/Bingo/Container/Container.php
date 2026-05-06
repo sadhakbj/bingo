@@ -120,7 +120,7 @@ class Container implements ContainerInterface
         }
 
         // Reflection can resolve any existing, non-abstract concrete class.
-        return class_exists($id) && !(new ReflectionClass($id))->isAbstract();
+        return class_exists($id) && !new ReflectionClass($id)->isAbstract();
     }
 
     /**
@@ -182,7 +182,7 @@ class Container implements ContainerInterface
         if (isset($this->resolving[$class])) {
             $chain = implode(' → ', array_keys($this->resolving)) . ' → ' . $class;
             throw new ContainerException(
-                "Circular dependency detected while resolving '{$class}': {$chain}"
+                "Circular dependency detected while resolving '{$class}': {$chain}",
             );
         }
 
@@ -217,11 +217,11 @@ class Container implements ContainerInterface
                             $args[] = null;
                         } else {
                             throw new ContainerException(
-                                "Cannot resolve '{$type->getName()}' for parameter " .
-                                "'\${$param->getName()}' in '{$class}'. " .
-                                "Register it explicitly via singleton() or bind().",
+                                "Cannot resolve '{$type->getName()}' for parameter "
+                                . "'\${$param->getName()}' in '{$class}'. "
+                                . 'Register it explicitly via singleton() or bind().',
                                 0,
-                                $e
+                                $e,
                             );
                         }
                     }
@@ -231,9 +231,11 @@ class Container implements ContainerInterface
                     $args[] = null;
                 } else {
                     throw new ContainerException(
-                        "Cannot auto-resolve parameter '\${$param->getName()}' " .
-                        "(type: " . ($type?->getName() ?? 'mixed') . ") " .
-                        "in class '{$class}'. Register it explicitly via singleton() or bind()."
+                        "Cannot auto-resolve parameter '\${$param->getName()}' "
+                        . '(type: '
+                        . ($type?->getName() ?? 'mixed')
+                        . ') '
+                        . "in class '{$class}'. Register it explicitly via singleton() or bind().",
                     );
                 }
             }
@@ -248,8 +250,8 @@ class Container implements ContainerInterface
     {
         if ($this->isCompiled) {
             throw new ContainerException(
-                "Cannot call {$method}() after the container has been compiled. " .
-                "Register all services before calling \$app->run()."
+                "Cannot call {$method}() after the container has been compiled. "
+                . "Register all services before calling \$app->run().",
             );
         }
     }

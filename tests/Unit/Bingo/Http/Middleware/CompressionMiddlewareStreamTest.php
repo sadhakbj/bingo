@@ -14,13 +14,20 @@ class CompressionMiddlewareStreamTest extends TestCase
     public function test_skips_gzip_for_streamed_response(): void
     {
         $mw     = CompressionMiddleware::create();
-        $stream = Response::eventStream(static fn (): array => []);
+        $stream = Response::eventStream(static fn(): array => []);
 
-        $request = Request::create('/', 'GET', [], [], [], [
-            'HTTP_ACCEPT_ENCODING' => 'gzip',
-        ]);
+        $request = Request::create(
+            '/',
+            'GET',
+            [],
+            [],
+            [],
+            [
+                'HTTP_ACCEPT_ENCODING' => 'gzip',
+            ],
+        );
 
-        $response = $mw->handle($request, static fn () => $stream);
+        $response = $mw->handle($request, static fn() => $stream);
 
         $this->assertSame('', (string) $response->headers->get('Content-Encoding', ''));
     }
@@ -35,11 +42,18 @@ class CompressionMiddlewareStreamTest extends TestCase
             ['Content-Type' => 'text/event-stream; charset=UTF-8'],
         );
 
-        $request = Request::create('/', 'GET', [], [], [], [
-            'HTTP_ACCEPT_ENCODING' => 'gzip',
-        ]);
+        $request = Request::create(
+            '/',
+            'GET',
+            [],
+            [],
+            [],
+            [
+                'HTTP_ACCEPT_ENCODING' => 'gzip',
+            ],
+        );
 
-        $response = $mw->handle($request, static fn () => $plain);
+        $response = $mw->handle($request, static fn() => $plain);
 
         $this->assertSame('', (string) $response->headers->get('Content-Encoding', ''));
     }

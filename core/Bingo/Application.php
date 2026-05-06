@@ -29,17 +29,21 @@ class Application
     public readonly string $basePath;
     public private(set) Router $router;
 
-    public string $environment { get => $this->appConfig->env; }
-    public bool   $debug       { get => $this->appConfig->debug; }
+    public string $environment {
+        get => $this->appConfig->env;
+    }
+    public bool $debug {
+        get => $this->appConfig->debug;
+    }
 
     private Container $container;
     private MiddlewarePipeline $pipeline;
     private ResponseNormalizer $responseNormalizer;
     private ?ExceptionHandlerInterface $customExceptionHandler = null;
-    private array $discoveredCommands = [];
+    private array                      $discoveredCommands     = [];
     private AppConfig $appConfig;
     private HttpKernel $httpKernel;
-    private bool $booted = false;
+    private bool $booted  = false;
     private bool $booting = false;
 
     /**
@@ -47,7 +51,7 @@ class Application
      */
     public function __construct(string $basePath)
     {
-        $this->basePath  = rtrim($basePath, DIRECTORY_SEPARATOR);
+        $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
         $this->loadEnvironmentVariables();
         $this->appConfig = ConfigLoader::load(AppConfig::class);
         $this->initializeCoreServices();
@@ -55,11 +59,11 @@ class Application
 
     private function initializeCoreServices(): void
     {
-        $this->container = new Container();
+        $this->container          = new Container();
         $this->responseNormalizer = new ResponseNormalizer();
-        $this->router    = new Router($this->container, $this->responseNormalizer);
-        $this->pipeline  = MiddlewarePipeline::create($this->container, $this->responseNormalizer);
-        $this->httpKernel = new HttpKernel(
+        $this->router             = new Router($this->container, $this->responseNormalizer);
+        $this->pipeline           = MiddlewarePipeline::create($this->container, $this->responseNormalizer);
+        $this->httpKernel         = new HttpKernel(
             $this->pipeline,
             $this->router,
             function (): void {
@@ -101,10 +105,10 @@ class Application
         $dbConfig = ConfigLoader::load(DbConfig::class);
 
         $instances = [
-            AppConfig::class      => $this->appConfig,
-            CorsConfig::class     => ConfigLoader::load(CorsConfig::class),
-            DbConfig::class       => $dbConfig,
-            LogConfig::class      => ConfigLoader::load(LogConfig::class),
+            AppConfig::class       => $this->appConfig,
+            CorsConfig::class      => ConfigLoader::load(CorsConfig::class),
+            DbConfig::class        => $dbConfig,
+            LogConfig::class       => ConfigLoader::load(LogConfig::class),
             RateLimitConfig::class => ConfigLoader::load(RateLimitConfig::class),
         ];
 
@@ -125,7 +129,7 @@ class Application
 
         new ProviderBootstrapper(
             container: $this->container,
-            bindings:  $discovered['bindings']  ?? [],
+            bindings : $discovered['bindings'] ?? [],
             providers: $discovered['providers'] ?? [],
         )->boot();
 
@@ -167,10 +171,10 @@ class Application
     private function bootDiscovery(): array
     {
         $manager = new DiscoveryManager(
-            cacheDir:      $this->frameworkPath('discovery'),
-            appPath:       $this->appPath(),
+            cacheDir     : $this->frameworkPath('discovery'),
+            appPath      : $this->appPath(),
             coreBingoPath: __DIR__,
-            isProduction:  $this->appConfig->env === 'production',
+            isProduction : $this->appConfig->env === 'production',
         );
 
         return $manager->load();
@@ -315,7 +319,9 @@ class Application
 
     public function frameworkPath(string $path = ''): string
     {
-        return $this->storagePath('framework' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+        return $this->storagePath(
+            'framework' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''),
+        );
     }
 
     public static function create(string $basePath): self
@@ -333,15 +339,17 @@ class Application
     {
         if ($this->booted) {
             throw new \LogicException(
-                "Cannot call {$method}() after the application has booted."
+                "Cannot call {$method}() after the application has booted.",
             );
         }
     }
 
     private function isAbsolutePath(string $path): bool
     {
-        return str_starts_with($path, DIRECTORY_SEPARATOR)
+        return (
+            str_starts_with($path, DIRECTORY_SEPARATOR)
             || str_starts_with($path, '\\\\')
-            || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1;
+            || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1
+        );
     }
 }
