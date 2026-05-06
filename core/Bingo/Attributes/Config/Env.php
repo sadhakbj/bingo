@@ -24,6 +24,6 @@ final readonly class Env
 {
     public function __construct(
         public string $key,
-        public mixed  $default = null,
+        public mixed $default = null,
     ) {}
 }

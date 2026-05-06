@@ -28,8 +28,8 @@ class LoggingServiceProvider
 
     #[Singleton]
     public function logger(
-        Application             $app,
-        LogConfig               $cfg,
+        Application $app,
+        LogConfig $cfg,
         RequestContextProcessor $processor,
     ): LoggerInterface {
         $logger = new Logger('bingo');

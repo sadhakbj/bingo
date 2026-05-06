@@ -102,10 +102,10 @@ final class RedisStore implements RateLimiterStore
      * @throws \RuntimeException    if the phpredis extension is not loaded
      */
     public static function fromConfig(
-        string  $host = '127.0.0.1',
-        int     $port = 6379,
+        string $host = '127.0.0.1',
+        int $port = 6379,
         ?string $password = null,
-        int     $db = 0,
+        int $db = 0,
     ): self {
         if (!extension_loaded('redis')) {
             throw new \RuntimeException(

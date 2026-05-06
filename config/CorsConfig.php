@@ -13,19 +13,19 @@ final readonly class CorsConfig
         public string|array $allowedOrigins,
 
         #[Env('CORS_ALLOWED_METHODS', default: 'GET,POST,PUT,PATCH,DELETE,OPTIONS')]
-        public string       $allowedMethods,
+        public string $allowedMethods,
 
         #[Env('CORS_ALLOWED_HEADERS', default: '*')]
-        public string       $allowedHeaders,
+        public string $allowedHeaders,
 
         #[Env('CORS_EXPOSED_HEADERS', default: '')]
-        public string       $exposedHeaders,
+        public string $exposedHeaders,
 
         #[Env('CORS_MAX_AGE', default: 86400)]
-        public int          $maxAge,
+        public int $maxAge,
 
         #[Env('CORS_SUPPORTS_CREDENTIALS', default: false)]
-        public bool         $supportsCredentials,
+        public bool $supportsCredentials,
     ) {}
 
     /**

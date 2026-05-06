@@ -17,9 +17,9 @@ final readonly class StreamedEvent
      * @param string|null    $id    Optional SSE id field
      */
     public function __construct(
-        public ?string             $event,
+        public ?string $event,
         public string|array|object $data,
-        public ?string             $id = null,
+        public ?string $id = null,
     ) {}
 
     /**

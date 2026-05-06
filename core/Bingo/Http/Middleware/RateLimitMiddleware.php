@@ -19,9 +19,9 @@ class RateLimitMiddleware implements MiddlewareInterface
 
     public function __construct(
         private readonly RateLimiter $limiter,
-        private readonly int         $limit = 1_000,
-        private readonly int         $windowSeconds = 60,
-        ?callable                    $keyResolver = null,
+        private readonly int $limit = 1_000,
+        private readonly int $windowSeconds = 60,
+        ?callable $keyResolver = null,
     ) {
         $this->keyResolver = $keyResolver ?? static fn(Request $r): string => 'rl:' . ($r->getClientIp() ?? 'unknown');
     }
@@ -70,9 +70,9 @@ class RateLimitMiddleware implements MiddlewareInterface
      */
     public static function create(
         ?RateLimiter $limiter = null,
-        int          $limit = 1_000,
-        int          $windowSeconds = 60,
-        ?callable    $keyResolver = null,
+        int $limit = 1_000,
+        int $windowSeconds = 60,
+        ?callable $keyResolver = null,
     ): self {
         return new self($limiter ?? self::defaultLimiter(), $limit, $windowSeconds, $keyResolver);
     }
@@ -83,9 +83,9 @@ class RateLimitMiddleware implements MiddlewareInterface
      */
     public static function fromThrottle(
         RateLimiter $limiter,
-        int         $requests,
-        int         $per,
-        string      $routeName,
+        int $requests,
+        int $per,
+        string $routeName,
     ): self {
         $resolver = static fn(Request $r): string => 'throttle:' . $routeName . ':' . ($r->getClientIp() ?? 'unknown');
 

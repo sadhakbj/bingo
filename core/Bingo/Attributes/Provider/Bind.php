@@ -23,6 +23,6 @@ final readonly class Bind
 {
     public function __construct(
         public string $concrete,
-        public bool   $singleton = true,
+        public bool $singleton = true,
     ) {}
 }

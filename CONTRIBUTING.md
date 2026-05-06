@@ -328,17 +328,28 @@ test: add integration tests for full request cycle
 
 **Formatting:** Enforced via [Mago](https://mago.carthage.software). Run `mago format` before committing. A CI formatter check is planned but not yet wired.
 
-The project's `mago.toml` tunes the `default` preset to keep code compact and aligned. The non-default formatter keys are:
+The project's `mago.toml` builds on the `psr12` preset and layers on alignment, trailing commas, and "preserve-breaking" overrides so intentional line breaks are not collapsed back. The non-preset formatter keys are:
 
 | Key | Value | Effect |
 |---|---|---|
+| `parameter-attribute-on-new-line` | `true` | Forces parameter attributes (`#[Body]`, `#[Query]`, `#[Param]`, `#[Env(...)]`, …) onto their own line above the parameter. Produces a uniform look across short binding attributes and long config attributes alike |
 | `align-assignment-like` | `true` | Column-aligns `=>` in multiline arrays and `=` in consecutive assignments / class properties / constants |
 | `align-named-arguments` | `true` | Column-aligns `:` across named arguments in a call |
-| `align-parameters` | `true` | Column-aligns the variable column in multiline parameter lists (especially promoted constructor properties) |
 | `trailing-comma` | `true` | Re-adds the trailing comma the preset would otherwise strip from multiline lists |
-| `preserve-breaking-*` (chains, args, arrays, params, attrs, conditionals) | `true` | If you broke a construct across lines on purpose, mago keeps it broken instead of collapsing back to one line |
+| `preserve-redundant-logical-binary-expression-parentheses` | `true` | Keeps explicit parentheses around `&&` / `\|\|` mixes even when precedence makes them redundant — clarity over terseness |
+| `preserve-breaking-member-access-chain` | `true` | A method chain you broke across lines stays broken |
+| `preserve-breaking-member-access-chain-first-method-on-same-line` | `true` | The first call in a broken chain stays on the receiver's line (`$query->where(...)` then `\n    ->orderBy(...)`) |
+| `preserve-breaking-argument-list` | `true` | Multiline argument lists are not collapsed back onto one line |
+| `preserve-breaking-array-like` | `true` | Multiline arrays / array-like literals stay multiline |
+| `preserve-breaking-parameter-list` | `true` | Multiline parameter lists (promoted constructors especially) stay multiline |
+| `preserve-breaking-attribute-list` | `true` | Multiple attributes stacked across lines stay stacked |
+| `preserve-breaking-conditional-expression` | `true` | Multiline ternaries stay multiline |
+| `preserve-breaking-condition-expression` | `true` | Multiline `if` / `while` / `match` conditions stay multiline |
 
-**Known limitation.** `align-parameters` aligns the variable column but does **not** align `=` defaults in promoted constructor properties. If you want that, declare the properties in the class body instead — `align-assignment-like` covers regular properties fully.
+**Known limitations.**
+
+- `parameter-attribute-on-new-line = true` adds vertical space to controller signatures even when every binding attribute is short. The trade-off favors consistency with `#[Env(...)]` and other long attributes; if a controller signature looks too tall, prefer fewer parameters over reverting the setting.
+- The `psr12` preset is older than PER-CS (Mago's `default`). If you want to evaluate switching, open an issue first — every PHP file in the repo is currently formatted to this preset and a swap will produce a large diff.
 
 If you disagree with one of these settings, open an issue before changing it — the choices are deliberate and apply repo-wide.
 

@@ -17,7 +17,7 @@ use Psr\Log\LoggerInterface;
 class ExceptionHandler implements ExceptionHandlerInterface
 {
     public function __construct(
-        private readonly bool             $debug = false,
+        private readonly bool $debug = false,
         private readonly ?LoggerInterface $logger = null,
     ) {}
 
@@ -106,10 +106,10 @@ class ExceptionHandler implements ExceptionHandlerInterface
      * @param array<string, mixed>|null    $details Only when debug / extended payloads
      */
     private function errorEnvelope(
-        int          $statusCode,
+        int $statusCode,
         string|array $message,
-        string       $error,
-        ?array       $details = null,
+        string $error,
+        ?array $details = null,
     ): Response {
         $body = [
             'statusCode' => $statusCode,

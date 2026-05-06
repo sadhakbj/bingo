@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ServeCommand extends Command
 {
     public function __construct(
-        private readonly string      $basePath,
+        private readonly string $basePath,
         private readonly Application $app,
     ) {
         parent::__construct();

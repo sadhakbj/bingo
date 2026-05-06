@@ -11,7 +11,7 @@ class Route
 {
     public function __construct(
         public readonly string $path,
-        public string          $method = 'GET' {
+        public string $method = 'GET' {
             set => strtoupper($value);
         },
     ) {}

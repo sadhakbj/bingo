@@ -28,7 +28,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile as File;
 readonly class UsersController
 {
     public function __construct(
-        private UserService     $userService,
+        private UserService $userService,
         private IUserRepository $userRepo,
     ) {}
 
@@ -47,9 +47,9 @@ readonly class UsersController
         #[Query('q')]
         ?string $query = '',
         #[Query('limit')]
-        ?int    $limit = 10,
+        ?int $limit = 10,
         #[Query('page')]
-        ?int    $page = 1,
+        ?int $page = 1,
     ): Response {
         return Response::json([
             'message' => 'Search users',
@@ -113,7 +113,7 @@ readonly class UsersController
         #[Headers('x-api-version')]
         ?string $apiVersion = null,
         #[UploadedFile('avatar')]
-        ?File   $avatar = null,
+        ?File $avatar = null,
     ): Response {
         return Response::json([
             'api_version'    => $apiVersion,
@@ -136,9 +136,9 @@ readonly class UsersController
         #[Body]
         CreateUserDTO $dto,
         #[Headers('x-api-version')]
-        ?string       $apiVersion = null,
+        ?string $apiVersion = null,
         #[UploadedFiles]
-        array         $files = [],
+        array $files = [],
     ): Response {
         $fileInfos = [];
         /** @var File $file */

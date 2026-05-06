@@ -54,7 +54,7 @@ final class SlogTextFormatter implements FormatterInterface
     ];
 
     public function __construct(
-        private readonly bool   $colors = false,
+        private readonly bool $colors = false,
         private readonly string $timeFormat = \DateTimeInterface::RFC3339,
     ) {}
 

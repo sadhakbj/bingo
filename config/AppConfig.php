@@ -16,7 +16,7 @@ final readonly class AppConfig
         public string $env,
 
         #[Env('APP_DEBUG', default: false)]
-        public bool   $debug,
+        public bool $debug,
 
         #[Env('APP_URL', default: 'http://localhost:8000')]
         public string $url,

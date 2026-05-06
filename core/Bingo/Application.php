@@ -319,7 +319,9 @@ class Application
 
     public function frameworkPath(string $path = ''): string
     {
-        return $this->storagePath('framework' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+        return $this->storagePath(
+            'framework' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''),
+        );
     }
 
     public static function create(string $basePath): self

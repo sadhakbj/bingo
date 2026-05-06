@@ -24,9 +24,9 @@ class ApiResponse extends DataTransferObject
     }
 
     public static function success(
-        mixed  $data = null,
+        mixed $data = null,
         string $message = 'Success',
-        int    $statusCode = 200,
+        int $statusCode = 200,
         ?array $meta = null,
     ): self {
         return new self([
@@ -42,8 +42,8 @@ class ApiResponse extends DataTransferObject
     public static function error(
         string $message = 'An error occurred',
         ?array $errors = null,
-        int    $statusCode = 400,
-        mixed  $data = null,
+        int $statusCode = 400,
+        mixed $data = null,
     ): self {
         return new self([
             'success'     => false,

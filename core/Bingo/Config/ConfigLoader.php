@@ -58,7 +58,7 @@ final class ConfigLoader
     // -------------------------------------------------------------------------
 
     private static function loadFromConstructor(
-        ReflectionClass   $reflection,
+        ReflectionClass $reflection,
         \ReflectionMethod $constructor,
     ): object {
         $class = $reflection->getName();

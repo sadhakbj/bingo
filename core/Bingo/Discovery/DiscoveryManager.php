@@ -32,7 +32,7 @@ class DiscoveryManager
         private readonly string $cacheDir,
         private readonly string $appPath,
         private readonly string $coreBingoPath,
-        private readonly bool   $isProduction,
+        private readonly bool $isProduction,
     ) {
         $this->discoverers = [
             new ControllerDiscoverer($appPath),

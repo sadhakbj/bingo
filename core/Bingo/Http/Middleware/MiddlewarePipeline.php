@@ -62,9 +62,9 @@ class MiddlewarePipeline
      * Execute middleware recursively
      */
     private function executeMiddleware(
-        array     $middlewareStack,
-        int       $index,
-        Request   $request,
+        array $middlewareStack,
+        int $index,
+        Request $request,
         ?callable $finalHandler,
     ): HttpResponse {
         // If we've reached the end of middleware stack, call the final handler

@@ -23,10 +23,10 @@ class MiddlewareServiceProvider
 {
     public function boot(
         MiddlewarePipeline $pipeline,
-        RateLimiterStore   $store,
-        AppConfig          $appConfig,
-        RateLimitConfig    $rateLimitConfig,
-        CorsConfig         $corsConfig,
+        RateLimiterStore $store,
+        AppConfig $appConfig,
+        RateLimitConfig $rateLimitConfig,
+        CorsConfig $corsConfig,
     ): void {
         $isProduction = $appConfig->env === 'production';
 

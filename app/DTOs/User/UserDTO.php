@@ -9,14 +9,14 @@ use App\Models\User;
 final readonly class UserDTO
 {
     public function __construct(
-        public int     $id,
-        public string  $email,
-        public string  $name,
-        public ?int    $age = null,
+        public int $id,
+        public string $email,
+        public string $name,
+        public ?int $age = null,
         public ?string $bio = null,
-        public string  $created_at = '',
-        public string  $updated_at = '',
-        public array   $posts = [],
+        public string $created_at = '',
+        public string $updated_at = '',
+        public array $posts = [],
     ) {}
 
     public static function fromModel(User $user): self

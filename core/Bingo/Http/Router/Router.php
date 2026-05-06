@@ -46,7 +46,7 @@ class Router
 
     public function __construct(
         private readonly ?Container $container = null,
-        ?ResponseNormalizer         $responseNormalizer = null,
+        ?ResponseNormalizer $responseNormalizer = null,
     ) {
         $this->routes             = new RouteCollection();
         $this->responseNormalizer = $responseNormalizer ?? new ResponseNormalizer();
